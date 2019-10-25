@@ -2,15 +2,19 @@
 
 lambroll is a minimal deployment tool for [AWS Lambda](https://aws.amazon.com/lambda/).
 
-lambroll does only,
+lambroll does,
 
-- Create a function
-- Update function code / configuration
+- Create a function.
+- Create a Zip archive from local directory.
+- Update function code / configuration.
+
+That's all.
 
 lambrole does not,
 
-- Manage resources related to the Lambda function
-  - e.g. IAM Role, Triggers, API Gateway, etc.
+- Manage resources related to the Lambda function.
+  - e.g. IAM Role, function triggers, API Gateway, etc.
+- Build native extensions for Linux (AWS Lambda running environment).
 
 When you hope to manage these resources, we recommend other deployment tools ([AWS SAM](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/), etc.).
 
