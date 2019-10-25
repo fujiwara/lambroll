@@ -25,40 +25,56 @@ func CreateZipArchive(src string, excludes []string) (*os.File, error) {
 			return err
 		}
 		if info.IsDir() {
-			log.Println("[debug] skipping dir", path)
 			return nil
 		}
 		relpath, _ := filepath.Rel(src, path)
-		for _, pattern := range excludes {
-			log.Printf("[debug] match pattern %s to %s", pattern, path)
-			for _, name := range []string{relpath, filepath.Base(path)} {
-				m, err := filepath.Match(pattern, name)
-				if err != nil {
-					log.Printf("[warn] failed to match exclude pattern %s to %s", pattern, name)
-				}
-				if m {
-					log.Printf("[debug] skip matched exclude pattern %s to %s", pattern, name)
-					return nil
-				}
-			}
+		if matchExcludes(relpath, excludes) {
+			log.Println("[debug] skipping", relpath)
+			return nil
 		}
-		f, err := w.Create(relpath)
-		if err != nil {
-			log.Println("[error] failed to create in zip", err)
-			return err
-		}
-		r, err := os.Open(path)
-		if err != nil {
-			log.Printf("[error] failed to open %s: %s", path, err)
-			return err
-		}
-		defer r.Close()
-		_, err = io.Copy(f, r)
-		return err
+		log.Println("[debug] adding", relpath)
+		return addToZip(w, path, relpath, info)
 	})
 	if err := w.Close(); err != nil {
 		return nil, errors.Wrap(err, "failed to create zip archive")
 	}
 	tmpfile.Seek(0, os.SEEK_SET)
 	return tmpfile, err
+}
+
+func matchExcludes(path string, excludes []string) bool {
+	for _, pattern := range excludes {
+		for _, name := range []string{path, filepath.Base(path)} {
+			m, err := filepath.Match(pattern, name)
+			if err != nil {
+				log.Printf("[warn] failed to match exclude pattern %s to %s", pattern, name)
+			}
+			if m {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
+	header, err := zip.FileInfoHeader(info)
+	if err != nil {
+		log.Println("[error] failed to create zip file header", err)
+		return err
+	}
+	header.Name = relpath // fix name as subdir
+	w, err := z.CreateHeader(header)
+	if err != nil {
+		log.Println("[error] failed to create in zip", err)
+		return err
+	}
+	r, err := os.Open(path)
+	if err != nil {
+		log.Printf("[error] failed to open %s: %s", path, err)
+		return err
+	}
+	defer r.Close()
+	_, err = io.Copy(w, r)
+	return err
 }

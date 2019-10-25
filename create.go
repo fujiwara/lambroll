@@ -3,6 +3,7 @@ package lambroll
 import (
 	"io/ioutil"
 	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -30,6 +31,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	if err != nil {
 		return err
 	}
+	defer os.Remove(zipfile.Name())
 
 	_, err = app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: def.FunctionName,
@@ -50,11 +52,11 @@ func (app *App) Deploy(opt DeployOption) error {
 		return errors.Wrap(err, "failed to read zipfile content")
 	}
 
-	log.Printf("[info] updating function %s", *def.FunctionName)
+	log.Printf("[info] updating function code %s", *def.FunctionName)
 	_, err = app.lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
 		FunctionName: def.FunctionName,
-		Publish: aws.Bool(true),
-		ZipFile: b,
+		Publish:      aws.Bool(true),
+		ZipFile:      b,
 	})
 
 	return err
