@@ -36,8 +36,7 @@ func (opt *DeployOption) Expand() error {
 	}
 	b, err := ioutil.ReadFile(*opt.ExcludeFile)
 	if err != nil {
-		if err == os.ErrNotExist {
-			// exclude file is not exists
+		if os.IsNotExist(err) {
 			return nil
 		}
 		return err
