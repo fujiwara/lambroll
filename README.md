@@ -1,6 +1,6 @@
 # lambroll
 
-lambroll is a minimal deployment tool for AWS Lambda.
+lambroll is a minimal deployment tool for [AWS Lambda](https://aws.amazon.com/lambda/).
 
 lambroll does only,
 
