@@ -22,7 +22,7 @@ jobs:
     - name: setup tools
       run: |
         mkdir ~/bin
-        curl -sL https://github.com/Songmu/goxz/releases/download/v0.4.1/goxz_v0.4.1_linux_amd64.tar.gz | tar xvf - && install goxz_v0.4.1_linux_amd64/goxz ~/bin/
+        curl -sL https://github.com/Songmu/goxz/releases/download/v0.4.1/goxz_v0.4.1_linux_amd64.tar.gz | tar zxvf - && install goxz_v0.4.1_linux_amd64/goxz ~/bin/
 
     - name: dist
       run: PATH=~/bin:$PATH make dist
