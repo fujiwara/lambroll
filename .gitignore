@@ -14,3 +14,4 @@
 *~
 .envrc
 cmd/lambroll/lambroll
+dist/
