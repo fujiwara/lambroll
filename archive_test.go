@@ -10,7 +10,10 @@ import (
 )
 
 func TestCreateZipArchive(t *testing.T) {
-	r, err := lambroll.CreateZipArchive("test/src", []string{"*.bin", "skip/*"})
+	excludes := []string{}
+	excludes = append(excludes, lambroll.DefaultExcludes...)
+	excludes = append(excludes, []string{"*.bin", "skip/*"}...)
+	r, err := lambroll.CreateZipArchive("test/src", excludes)
 	if err != nil {
 		t.Error("faile to CreateZipArchive", err)
 	}
