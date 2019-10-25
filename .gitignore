@@ -12,3 +12,5 @@
 *.out
 
 *~
+.envrc
+cmd/lambroll/lambroll
