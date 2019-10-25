@@ -7,6 +7,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/fujiwara/lambroll"
+	"github.com/hashicorp/logutils"
 )
 
 // Version number
@@ -19,6 +20,7 @@ func main() {
 func _main() int {
 	kingpin.Command("version", "show version")
 	region := kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String()
+	logLevel := kingpin.Flag("log-level", "log level (debug, info, warn, error)").Default("info").String()
 
 	init := kingpin.Command("init", "init function.json")
 	initOption := lambroll.InitOption{
@@ -33,10 +35,19 @@ func _main() int {
 	deployOption := lambroll.DeployOption{
 		FunctionFilePath: deploy.Flag("function", "Function file path").Default("function.json").String(),
 		SrcDir:           deploy.Flag("src", "function zip archive src dir").Default(".").String(),
-		Excludes:         []string{".git/*"},
+		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(".lambdaignore").String(),
+		Excludes:         lambroll.DefaultExcludes,
 	}
 
 	command := kingpin.Parse()
+
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"debug", "info", "warn", "error"},
+		MinLevel: logutils.LogLevel(*logLevel),
+		Writer:   os.Stderr,
+	}
+	log.SetOutput(filter)
+
 	app, err := lambroll.New(*region)
 	if err != nil {
 		log.Println("[error]", err)
@@ -58,5 +69,6 @@ func _main() int {
 		log.Println("[error]", err)
 		return 1
 	}
+	log.Println("[info] completed")
 	return 0
 }

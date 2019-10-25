@@ -5,59 +5,29 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/kayac/go-config"
 	"github.com/pkg/errors"
 )
 
-// DeployOption represens an option for Deploy()
-type DeployOption struct {
-	FunctionFilePath *string
-	SrcDir           *string
-	Excludes         []string
-}
-
-// Deploy deployes a new lambda function code
-func (app *App) Deploy(opt DeployOption) error {
-	var def lambda.CreateFunctionInput
-	err := config.LoadWithEnvJSON(&def, *opt.FunctionFilePath)
-	if err != nil {
-		return errors.Wrap(err, "failed to load "+*opt.FunctionFilePath)
-	}
-
+func (app *App) create(opt DeployOption, def *lambda.CreateFunctionInput) error {
 	zipfile, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
 	if err != nil {
 		return err
 	}
 	defer os.Remove(zipfile.Name())
 
-	_, err = app.lambda.GetFunction(&lambda.GetFunctionInput{
-		FunctionName: def.FunctionName,
-	})
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case lambda.ErrCodeResourceNotFoundException:
-				// return app.create(opt, def)
-				return nil
-			}
-		}
-		return err
-	}
-
 	b, err := ioutil.ReadAll(zipfile)
 	if err != nil {
 		return errors.Wrap(err, "failed to read zipfile content")
 	}
+	if def.Code == nil {
+		def.Code = &lambda.FunctionCode{ZipFile: b}
+	}
 
-	log.Printf("[info] updating function code %s", *def.FunctionName)
-	_, err = app.lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
-		FunctionName: def.FunctionName,
-		Publish:      aws.Bool(true),
-		ZipFile:      b,
-	})
-
-	return err
+	log.Println("[info] creating function")
+	_, err = app.lambda.CreateFunction(def)
+	if err != nil {
+		return errors.Wrap(err, "failed to create function")
+	}
+	return nil
 }

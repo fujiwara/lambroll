@@ -13,6 +13,7 @@ import (
 
 // CreateZipArchive creates a zip archive
 func CreateZipArchive(src string, excludes []string) (*os.File, error) {
+	log.Printf("[info] creating zip archive from %s", src)
 	tmpfile, err := ioutil.TempFile("", "archive")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open tempFile")
@@ -39,6 +40,8 @@ func CreateZipArchive(src string, excludes []string) (*os.File, error) {
 		return nil, errors.Wrap(err, "failed to create zip archive")
 	}
 	tmpfile.Seek(0, os.SEEK_SET)
+	stat, _ := tmpfile.Stat()
+	log.Printf("[info] zip archive wrote %d bytes", stat.Size())
 	return tmpfile, err
 }
 
