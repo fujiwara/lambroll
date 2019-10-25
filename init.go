@@ -2,7 +2,9 @@ package lambroll
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -11,10 +13,13 @@ import (
 	"github.com/pkg/errors"
 )
 
+// InitOption represents options for Init()
 type InitOption struct {
 	FunctionName *string
+	DownloadZip  *bool
 }
 
+// Init initializes function.json
 func (app *App) Init(opt InitOption) error {
 	res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: opt.FunctionName,
@@ -74,6 +79,28 @@ func (app *App) Init(opt InitOption) error {
 		}
 	}
 
+	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
+		log.Println("[info] downloading function.zip")
+		if err := download(*res.Code.Location, "function.zip"); err != nil {
+			return err
+		}
+	}
+
+	log.Println("[info] creating function.json")
 	b, _ := marshalJSON(fn)
 	return app.saveFile("function.json", b, os.FileMode(0644))
+}
+
+func download(url, path string) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get %s", url)
+	}
+	defer resp.Body.Close()
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.FileMode(0644))
+	if err != nil {
+		return errors.Wrapf(err, "failed to open file %s", path)
+	}
+	_, err = io.Copy(f, resp.Body)
+	return err
 }

@@ -23,6 +23,7 @@ func _main() int {
 	init := kingpin.Command("init", "init function.json")
 	initOption := lambroll.InitOption{
 		FunctionName: init.Flag("function-name", "Function name for initialize").Required().String(),
+		DownloadZip:  init.Flag("download", "Download function.zip").Default("false").Bool(),
 	}
 
 	kingpin.Command("list", "list functions")
