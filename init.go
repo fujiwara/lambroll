@@ -37,7 +37,7 @@ func (app *App) Init(opt InitOption) error {
 					Timeout:      aws.Int64(5),
 					Handler:      aws.String(""),
 					Role: aws.String(
-						fmt.Sprintf("arn:aws:iam:%s:role/YOUR_LAMBDA_ROLE_NAME", app.accountID),
+						fmt.Sprintf("arn:aws:iam:%s:role/YOUR_LAMBDA_ROLE_NAME", app.AWSAccountID()),
 					),
 				}
 			default:

@@ -1,17 +1,19 @@
 package lambroll
 
 import (
+	"log"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/pkg/errors"
 )
 
 // App represents lambroll application
 type App struct {
-	accountID string
+	sess      *session.Session
 	lambda    *lambda.Lambda
+	accountID string
 }
 
 // New creates an application
@@ -22,14 +24,23 @@ func New(region string) (*App, error) {
 	}
 	sess := session.Must(session.NewSession(conf))
 
+	return &App{
+		sess:   sess,
+		lambda: lambda.New(sess),
+	}, nil
+}
+
+// AWSAccountID returns AWS account ID in current session
+func (app *App) AWSAccountID() string {
+	if app.accountID != "" {
+		return app.accountID
+	}
 	svc := sts.New(session.New())
 	r, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to sts.GetCallerIdentity")
+		log.Println("[warn] failed to get caller identity", err)
+		return ""
 	}
-
-	return &App{
-		accountID: *r.Account,
-		lambda:    lambda.New(sess),
-	}, nil
+	app.accountID = *r.Account
+	return app.accountID
 }
