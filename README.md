@@ -10,7 +10,7 @@ lambroll does,
 
 That's all.
 
-lambrole does not,
+lambroll does not,
 
 - Manage resources related to the Lambda function.
   - e.g. IAM Role, function triggers, API Gateway, etc.
