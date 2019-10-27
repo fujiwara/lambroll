@@ -12,11 +12,11 @@ import (
 )
 
 // CreateZipArchive creates a zip archive
-func CreateZipArchive(src string, excludes []string) (*os.File, error) {
+func CreateZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] creating zip archive from %s", src)
 	tmpfile, err := ioutil.TempFile("", "archive")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to open tempFile")
+		return nil, nil, errors.Wrap(err, "failed to open tempFile")
 	}
 	w := zip.NewWriter(tmpfile)
 	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
@@ -37,12 +37,12 @@ func CreateZipArchive(src string, excludes []string) (*os.File, error) {
 		return addToZip(w, path, relpath, info)
 	})
 	if err := w.Close(); err != nil {
-		return nil, errors.Wrap(err, "failed to create zip archive")
+		return nil, nil, errors.Wrap(err, "failed to create zip archive")
 	}
 	tmpfile.Seek(0, os.SEEK_SET)
 	stat, _ := tmpfile.Stat()
 	log.Printf("[info] zip archive wrote %d bytes", stat.Size())
-	return tmpfile, err
+	return tmpfile, stat, err
 }
 
 func matchExcludes(path string, excludes []string) bool {

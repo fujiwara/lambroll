@@ -10,7 +10,7 @@ import (
 )
 
 func (app *App) create(opt DeployOption, def *lambda.CreateFunctionInput) error {
-	zipfile, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
+	zipfile, _, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
 	if err != nil {
 		return err
 	}

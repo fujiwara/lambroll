@@ -80,7 +80,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		return err
 	}
 
-	zipfile, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
+	zipfile, _, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
 	if err != nil {
 		return err
 	}
