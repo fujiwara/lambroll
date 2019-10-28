@@ -68,7 +68,7 @@ usage: lambroll [<flags>] <command> [<args> ...]
 Flags:
   --help                     Show context-sensitive help (also try --help-long and --help-man).
   --region="ap-northeast-1"  AWS region
-  --log-level="info"         log level (debug, info, warn, error)
+  --log-level=info           log level (trace, debug, info, warn, error)
 
 Commands:
   help [<command>...]
@@ -84,7 +84,16 @@ Commands:
     list functions
 
   deploy [<flags>]
-    deploy function
+    deploy or create function
+
+  rollback [<flags>]
+    rollback function
+
+  delete [<flags>]
+    delete function
+
+  invoke [<flags>]
+    invoke function
 ```
 
 ### Init
@@ -127,6 +136,65 @@ Flags:
 - Create a zip archive from `--src` directory.
   - Excludes files matched (wildcard pattern) in `--exclude-file`.
 - Create / Update Lambda function.
+
+### Rollback
+
+```
+usage: lambroll rollback [<flags>]
+
+rollback function
+
+Flags:
+  --help                      Show context-sensitive help (also try --help-long and --help-man).
+  --region="ap-northeast-1"   AWS region
+  --log-level=info            log level (trace, debug, info, warn, error)
+  --function="function.json"  Function file path
+  --delete-version            Delete rolled back version
+  --dry-run                   dry run
+```
+
+`lambroll deploy` create/update alias `current` to the published function version on deploy.
+
+`lambroll rollback` works as below.
+
+1. Find previous one version of function.
+2. Update alias `current` to the previous version.
+3. When `--delete-version` specified, delete old version of function.
+
+### Invoke
+
+```
+usage: lambroll invoke [<flags>]
+
+invoke function
+
+Flags:
+  --help                      Show context-sensitive help (also try --help-long and --help-man).
+  --region="ap-northeast-1"   AWS region
+  --log-level=info            log level (trace, debug, info, warn, error)
+  --function="function.json"  Function file path
+  --async                     invocation type async
+  --log-tail                  output tail of log to STDERR
+```
+
+`lambroll invoke` accepts multiple JSON payloads for invocations from STDIN.
+
+Outputs from function are printed in STDOUT.
+
+```console
+$ echo '{"foo":1}{"foo":2}' | lambroll invoke --log-tail
+{"success": true, payload{"foo:1}}
+2019/10/28 23:16:43 [info] StatusCode:200 ExecutionVersion:$LATEST
+START RequestId: 60140e16-018e-41b1-bb46-3f021d4960c0 Version: $LATEST
+END RequestId: 60140e16-018e-41b1-bb46-3f021d4960c0
+REPORT RequestId: 60140e16-018e-41b1-bb46-3f021d4960c0	Duration: 561.77 ms	Billed Duration: 600 ms	Memory Size: 128 MB	Max Memory Used: 50 MB
+{"success": true, payload:{"foo":2}}
+2019/10/28 23:16:43 [info] StatusCode:200 ExecutionVersion:$LATEST
+START RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f Version: $LATEST
+END RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f
+REPORT RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f	Duration: 597.87 ms	Billed Duration: 600 ms	Memory Size: 128 MB	Max Memory Used: 50 MB
+2019/10/28 23:16:43 [info] completed
+```
 
 #### function.json
 
