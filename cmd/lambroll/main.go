@@ -20,7 +20,7 @@ func main() {
 func _main() int {
 	kingpin.Command("version", "show version")
 	region := kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String()
-	logLevel := kingpin.Flag("log-level", "log level (debug, info, warn, error)").Default("info").String()
+	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
 
 	init := kingpin.Command("init", "init function.json")
 	initOption := lambroll.InitOption{
@@ -31,7 +31,7 @@ func _main() int {
 	kingpin.Command("list", "list functions")
 	listOption := lambroll.ListOption{}
 
-	deploy := kingpin.Command("deploy", "deploy function")
+	deploy := kingpin.Command("deploy", "deploy or create function")
 	deployOption := lambroll.DeployOption{
 		FunctionFilePath: deploy.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String(),
 		SrcDir:           deploy.Flag("src", "function zip archive src dir").Default(".").String(),
