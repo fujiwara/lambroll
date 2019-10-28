@@ -123,6 +123,47 @@ Flags:
   - Excludes files matched (wildcard pattern) in `--exclude-file`.
 - Create / Update Lambda function.
 
+#### function.json
+
+function.json is a definition for Lambda function. JSON structure is same as `CreateFunction` for Lambda API.
+
+```json
+{
+  "Description": "hello function for {{ must_env `ENV` }}",
+  "Environment": {
+    "Variables": {
+      "BAR": "baz",
+      "FOO": "{{ env `FOO` `default for FOO` }}"
+    }
+  },
+  "FunctionName": "{{ must_env `ENV` }}-hello",
+  "Handler": "index.js",
+  "MemorySize": 128,
+  "Role": "arn:aws:iam::123456789012:role/hello_lambda_function",
+  "Runtime": "nodejs10.x",
+  "Timeout": 5,
+  "TracingConfig": {
+    "Mode": "PassThrough"
+  }
+}
+```
+
+At reading the file, expand `{{ env }}` and `{{ must_env }}` syntax in JSON.
+
+For example,
+
+```
+{{ env `FOO` `default for FOO` }}
+```
+
+Environment variable `FOO` is expanded. When `FOO` is not defined, use default value.
+
+```
+{{ must_env `FOO` }}
+```
+
+Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will panic and abort.
+
 #### .lambdaignore
 
 lambroll will ignore files defined in `.lambdaignore` file at creating a zip archive.
