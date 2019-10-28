@@ -59,11 +59,27 @@ func (app *App) create(opt DeployOption, def *lambda.CreateFunctionInput) error 
 	}
 	log.Println("[info] creating function", opt.label())
 	log.Println("[debug]\n", def.String())
-	if !*opt.DryRun {
-		_, err = app.lambda.CreateFunction(def)
-		if err != nil {
-			return errors.Wrap(err, "failed to create function")
-		}
+	if *opt.DryRun {
+		return nil
 	}
+
+	def.Publish = aws.Bool(true)
+	res, err := app.lambda.CreateFunction(def)
+	if err != nil {
+		return errors.Wrap(err, "failed to create function")
+	}
+	log.Printf("[info] deployed function version %s", *res.Version)
+
+	log.Printf("[info] creating alias set %s to version %s", DefaultAliasName, *res.Version)
+	alias, err := app.lambda.CreateAlias(&lambda.CreateAliasInput{
+		FunctionName:    def.FunctionName,
+		FunctionVersion: res.Version,
+		Name:            aws.String(DefaultAliasName),
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to create alias")
+	}
+	log.Println("[info] alias created")
+	log.Printf("[debug]\n%s", alias.String())
 	return nil
 }

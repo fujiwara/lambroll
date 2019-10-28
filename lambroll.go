@@ -21,6 +21,9 @@ var (
 
 	// DefaultExcludes is a preset excludes file list
 	DefaultExcludes = []string{IgnoreFilename, FunctionFilename, ".git/*"}
+
+	// DefaultAliasName is name of alias for function
+	DefaultAliasName = "current"
 )
 
 // App represents lambroll application

@@ -109,7 +109,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		}
 	}
 
-	log.Println("[info] updating function code", opt.label)
+	log.Println("[info] updating function code", opt.label())
 	codeIn := &lambda.UpdateFunctionCodeInput{
 		FunctionName:    def.FunctionName,
 		ZipFile:         def.Code.ZipFile,
@@ -123,9 +123,29 @@ func (app *App) Deploy(opt DeployOption) error {
 		codeIn.Publish = aws.Bool(true)
 	}
 	log.Printf("[debug]\n%s", codeIn.String())
-	_, err = app.lambda.UpdateFunctionCode(codeIn)
+
+	res, err := app.lambda.UpdateFunctionCode(codeIn)
 	if err != nil {
 		return errors.Wrap(err, "failed to update function code")
 	}
+	if res.Version != nil {
+		log.Printf("[info] deployed version %s", *res.Version)
+	}
+	if *opt.DryRun {
+		return nil
+	}
+
+	log.Printf("[info] updating alias set %s to version %s", DefaultAliasName, *res.Version)
+	alias, err := app.lambda.UpdateAlias(&lambda.UpdateAliasInput{
+		FunctionName:    def.FunctionName,
+		FunctionVersion: res.Version,
+		Name:            aws.String(DefaultAliasName),
+	})
+	if err != nil {
+		return errors.Wrapf(err, "failed to update alias to version", *res.Version)
+	}
+	log.Println("[info] alias updated")
+	log.Printf("[debug]\n%s", alias.String())
+
 	return nil
 }
