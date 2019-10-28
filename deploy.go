@@ -13,14 +13,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// IgnoreFile is a name of exclude definition file name
-	IgnoreFile = ".lambdaignore"
-
-	// DefaultExcludes is preset excludes file list
-	DefaultExcludes = []string{IgnoreFile, ".git/*"}
-)
-
 // DeployOption represens an option for Deploy()
 type DeployOption struct {
 	FunctionFilePath *string

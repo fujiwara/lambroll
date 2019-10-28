@@ -33,10 +33,9 @@ func _main() int {
 
 	deploy := kingpin.Command("deploy", "deploy function")
 	deployOption := lambroll.DeployOption{
-		FunctionFilePath: deploy.Flag("function", "Function file path").Default("function.json").String(),
+		FunctionFilePath: deploy.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String(),
 		SrcDir:           deploy.Flag("src", "function zip archive src dir").Default(".").String(),
-		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(".lambdaignore").String(),
-		Excludes:         lambroll.DefaultExcludes,
+		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 	}
 
 	command := kingpin.Parse()

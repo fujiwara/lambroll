@@ -9,6 +9,17 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
+var (
+	// IgnoreFilename defines file name includes ingore patterns at creating zip archive.
+	IgnoreFilename = ".lambdaignore"
+
+	// FunctionFilename defines file name to function definition.
+	FunctionFilename = "function.json"
+
+	// DefaultExcludes is a preset excludes file list
+	DefaultExcludes = []string{IgnoreFilename, FunctionFilename, ".git/*"}
+)
+
 // App represents lambroll application
 type App struct {
 	sess      *session.Session

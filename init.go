@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -86,9 +87,19 @@ func (app *App) Init(opt InitOption) error {
 		}
 	}
 
-	log.Println("[info] creating function.json")
+	log.Printf("[info] creating %s", IgnoreFilename)
+	err = app.saveFile(
+		IgnoreFilename,
+		[]byte(strings.Join(DefaultExcludes, "\n")+"\n"),
+		os.FileMode(0644),
+	)
+	if err != nil {
+		return err
+	}
+
+	log.Printf("[info] creating %s", FunctionFilename)
 	b, _ := marshalJSON(fn)
-	return app.saveFile("function.json", b, os.FileMode(0644))
+	return app.saveFile(FunctionFilename, b, os.FileMode(0644))
 }
 
 func download(url, path string) error {
