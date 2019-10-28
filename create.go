@@ -25,7 +25,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *lambda.Creat
 			log.Printf("[info] uploading function %d bytes to s3://%s/%s", info.Size(), *bucket, *key)
 			versionID, err := app.uploadFunctionToS3(zipfile, *bucket, *key)
 			if err != nil {
-				errors.Wrapf(err, "failed to upload function zip to s3://%s/%s", bucket, key)
+				errors.Wrapf(err, "failed to upload function zip to s3://%s/%s", *bucket, *key)
 			}
 			if versionID != "" {
 				log.Printf("[info] object created as version %s", versionID)
