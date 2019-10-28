@@ -8,9 +8,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ListOption represents options for List()
 type ListOption struct {
 }
 
+// List lists lambda functions
 func (app *App) List(opt ListOption) error {
 	var marker *string
 	for {

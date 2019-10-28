@@ -19,6 +19,7 @@ type DeployOption struct {
 	SrcDir           *string
 	Excludes         []string
 	ExcludeFile      *string
+	DryRun           *bool
 }
 
 // Expand expands ExcludeFile contents to Excludes
@@ -77,9 +78,12 @@ func (app *App) Deploy(opt DeployOption) error {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
 
-	log.Println("[info] updating function configuration")
-	log.Printf("[debug] %s", def.String())
-	_, err = app.lambda.UpdateFunctionConfiguration(&lambda.UpdateFunctionConfigurationInput{
+	var label string
+	if *opt.DryRun {
+		label = "**DRY RUN**"
+	}
+	log.Println("[info] updating function configuration", label)
+	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig: def.DeadLetterConfig,
 		Description:      def.Description,
 		Environment:      def.Environment,
@@ -93,20 +97,30 @@ func (app *App) Deploy(opt DeployOption) error {
 		Timeout:          def.Timeout,
 		TracingConfig:    def.TracingConfig,
 		VpcConfig:        def.VpcConfig,
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to update function confugration")
+	}
+	log.Printf("[debug]\n%s", confIn.String())
+	if !*opt.DryRun {
+		_, err = app.lambda.UpdateFunctionConfiguration(confIn)
+		if err != nil {
+			return errors.Wrap(err, "failed to update function confugration")
+		}
 	}
 
-	log.Printf("[info] updating function code %s", *def.FunctionName)
-	_, err = app.lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
+	log.Println("[info] updating function code", label)
+	codeIn := &lambda.UpdateFunctionCodeInput{
 		FunctionName:    def.FunctionName,
-		Publish:         aws.Bool(true),
 		ZipFile:         def.Code.ZipFile,
 		S3Bucket:        def.Code.S3Bucket,
 		S3Key:           def.Code.S3Key,
 		S3ObjectVersion: def.Code.S3ObjectVersion,
-	})
+	}
+	if *opt.DryRun {
+		codeIn.DryRun = aws.Bool(true)
+	} else {
+		codeIn.Publish = aws.Bool(true)
+	}
+	log.Printf("[debug]\n%s", codeIn.String())
+	_, err = app.lambda.UpdateFunctionCode(codeIn)
 	if err != nil {
 		return errors.Wrap(err, "failed to update function code")
 	}
