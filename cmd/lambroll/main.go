@@ -46,6 +46,12 @@ func _main() int {
 		DryRun:           rollback.Flag("dry-run", "dry run").Bool(),
 	}
 
+	delete := kingpin.Command("delete", "delete function")
+	deleteOption := lambroll.DeleteOption{
+		FunctionFilePath: delete.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String(),
+		DryRun:           delete.Flag("dry-run", "dry run").Bool(),
+	}
+
 	command := kingpin.Parse()
 
 	filter := &logutils.LevelFilter{
@@ -72,6 +78,8 @@ func _main() int {
 		err = app.Deploy(deployOption)
 	case "rollback":
 		err = app.Rollback(rollbackOption)
+	case "delete":
+		err = app.Delete(deleteOption)
 	}
 
 	if err != nil {
