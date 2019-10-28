@@ -18,6 +18,18 @@ lambroll does not,
 
 When you hope to manage these resources, we recommend other deployment tools ([AWS SAM](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/), etc.).
 
+## Install
+
+### Homebrew (macOS only)
+
+```console
+$ brew install fujiwara/tap/lambroll
+```
+
+### Binary packages
+
+[Releases](https://github.com/fujiwara/lambroll/releases)
+
 ## Quick start
 
 Try migrate your existing Lambda function `hello`.
