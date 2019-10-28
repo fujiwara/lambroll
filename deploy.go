@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/kayac/go-config"
 	"github.com/pkg/errors"
 )
 
@@ -27,6 +26,11 @@ func (opt DeployOption) label() string {
 		return "**DRY RUN**"
 	}
 	return ""
+}
+
+type versionAlias struct {
+	Version string
+	Name    string
 }
 
 // Expand expands ExcludeFile contents to Excludes
@@ -60,13 +64,12 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	log.Printf("[debug] %#v", opt)
 
-	var def lambda.CreateFunctionInput
-	err := config.LoadWithEnvJSON(&def, *opt.FunctionFilePath)
+	def, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load "+*opt.FunctionFilePath)
+		return errors.Wrap(err, "failed to load function")
 	}
-	log.Printf("[info] starting deploy function %s", *def.FunctionName)
 
+	log.Printf("[info] starting deploy function %s", *def.FunctionName)
 	_, err = app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: def.FunctionName,
 	})
@@ -74,13 +77,13 @@ func (app *App) Deploy(opt DeployOption) error {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case lambda.ErrCodeResourceNotFoundException:
-				return app.create(opt, &def)
+				return app.create(opt, def)
 			}
 		}
 		return err
 	}
 
-	err = app.prepareFunctionCodeForDeploy(opt, &def)
+	err = app.prepareFunctionCodeForDeploy(opt, def)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
@@ -102,8 +105,10 @@ func (app *App) Deploy(opt DeployOption) error {
 		VpcConfig:        def.VpcConfig,
 	}
 	log.Printf("[debug]\n%s", confIn.String())
+
+	var newerVersion string
 	if !*opt.DryRun {
-		_, err = app.lambda.UpdateFunctionConfiguration(confIn)
+		_, err := app.lambda.UpdateFunctionConfiguration(confIn)
 		if err != nil {
 			return errors.Wrap(err, "failed to update function confugration")
 		}
@@ -129,23 +134,29 @@ func (app *App) Deploy(opt DeployOption) error {
 		return errors.Wrap(err, "failed to update function code")
 	}
 	if res.Version != nil {
+		newerVersion = *res.Version
 		log.Printf("[info] deployed version %s", *res.Version)
 	}
 	if *opt.DryRun {
 		return nil
 	}
 
-	log.Printf("[info] updating alias set %s to version %s", DefaultAliasName, *res.Version)
-	alias, err := app.lambda.UpdateAlias(&lambda.UpdateAliasInput{
-		FunctionName:    def.FunctionName,
-		FunctionVersion: res.Version,
-		Name:            aws.String(DefaultAliasName),
-	})
-	if err != nil {
-		return errors.Wrapf(err, "failed to update alias to version", *res.Version)
-	}
-	log.Println("[info] alias updated")
-	log.Printf("[debug]\n%s", alias.String())
+	return app.updateAliases(*def.FunctionName, versionAlias{newerVersion, CurrentAliasName})
+}
 
+func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
+	for _, v := range vs {
+		log.Printf("[info] updating alias set %s to version %s", v.Name, v.Version)
+		alias, err := app.lambda.UpdateAlias(&lambda.UpdateAliasInput{
+			FunctionName:    aws.String(functionName),
+			FunctionVersion: aws.String(v.Version),
+			Name:            aws.String(v.Name),
+		})
+		if err != nil {
+			return errors.Wrapf(err, "failed to update alias")
+		}
+		log.Println("[info] alias updated")
+		log.Printf("[debug]\n%s", alias.String())
+	}
 	return nil
 }

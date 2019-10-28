@@ -13,7 +13,7 @@ import (
 
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
-func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *lambda.CreateFunctionInput) error {
+func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *Function) error {
 	zipfile, info, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
 	if err != nil {
 		return err
@@ -70,11 +70,11 @@ func (app *App) create(opt DeployOption, def *lambda.CreateFunctionInput) error 
 	}
 	log.Printf("[info] deployed function version %s", *res.Version)
 
-	log.Printf("[info] creating alias set %s to version %s", DefaultAliasName, *res.Version)
+	log.Printf("[info] creating alias set %s to version %s", CurrentAliasName, *res.Version)
 	alias, err := app.lambda.CreateAlias(&lambda.CreateAliasInput{
 		FunctionName:    def.FunctionName,
 		FunctionVersion: res.Version,
-		Name:            aws.String(DefaultAliasName),
+		Name:            aws.String(CurrentAliasName),
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to create alias")

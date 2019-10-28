@@ -7,7 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/kayac/go-config"
+	"github.com/pkg/errors"
 )
+
+// Function is alias for lambda.CreateFunctionInput
+type Function = lambda.CreateFunctionInput
 
 var (
 	// IgnoreFilename defines file name includes ingore patterns at creating zip archive.
@@ -22,8 +27,8 @@ var (
 	// DefaultExcludes is a preset excludes file list
 	DefaultExcludes = []string{IgnoreFilename, FunctionFilename, ".git/*"}
 
-	// DefaultAliasName is name of alias for function
-	DefaultAliasName = "current"
+	// CurrentAliasName is alias name for current deployed function
+	CurrentAliasName = "current"
 )
 
 // App represents lambroll application
@@ -60,4 +65,13 @@ func (app *App) AWSAccountID() string {
 	}
 	app.accountID = *r.Account
 	return app.accountID
+}
+
+func (app *App) loadFunction(path string) (*Function, error) {
+	var def Function
+	err := config.LoadWithEnvJSON(&def, path)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to load %s", path)
+	}
+	return &def, nil
 }

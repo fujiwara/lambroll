@@ -39,6 +39,13 @@ func _main() int {
 		DryRun:           deploy.Flag("dry-run", "dry run").Bool(),
 	}
 
+	rollback := kingpin.Command("rollback", "rollback function")
+	rollbackOption := lambroll.RollbackOption{
+		FunctionFilePath: rollback.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String(),
+		DeleteVersion:    rollback.Flag("delete-version", "Delete rolled back version").Bool(),
+		DryRun:           rollback.Flag("dry-run", "dry run").Bool(),
+	}
+
 	command := kingpin.Parse()
 
 	filter := &logutils.LevelFilter{
@@ -63,6 +70,8 @@ func _main() int {
 		err = app.List(listOption)
 	case "deploy":
 		err = app.Deploy(deployOption)
+	case "rollback":
+		err = app.Rollback(rollbackOption)
 	}
 
 	if err != nil {
