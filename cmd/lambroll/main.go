@@ -36,12 +36,13 @@ func _main() int {
 		FunctionFilePath: deploy.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String(),
 		SrcDir:           deploy.Flag("src", "function zip archive src dir").Default(".").String(),
 		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
+		DryRun:           deploy.Flag("dry-run", "dry run").Bool(),
 	}
 
 	command := kingpin.Parse()
 
 	filter := &logutils.LevelFilter{
-		Levels:   []logutils.LogLevel{"debug", "info", "warn", "error"},
+		Levels:   []logutils.LogLevel{"trace", "debug", "info", "warn", "error"},
 		MinLevel: logutils.LogLevel(*logLevel),
 		Writer:   os.Stderr,
 	}

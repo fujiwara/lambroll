@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -22,7 +23,7 @@ func CreateZipArchive(src string, excludes []string) (*os.File, os.FileInfo, err
 	}
 	w := zip.NewWriter(tmpfile)
 	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-		log.Println("[debug] waking", path)
+		log.Println("[trace] waking", path)
 		if err != nil {
 			log.Println("[error] failed to walking dir in", src)
 			return err
@@ -32,10 +33,10 @@ func CreateZipArchive(src string, excludes []string) (*os.File, os.FileInfo, err
 		}
 		relpath, _ := filepath.Rel(src, path)
 		if matchExcludes(relpath, excludes) {
-			log.Println("[debug] skipping", relpath)
+			log.Println("[trace] skipping", relpath)
 			return nil
 		}
-		log.Println("[debug] adding", relpath)
+		log.Println("[trace] adding", relpath)
 		return addToZip(w, path, relpath, info)
 	})
 	if err := w.Close(); err != nil {
@@ -81,6 +82,7 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 	}
 	defer r.Close()
 	_, err = io.Copy(w, r)
+	log.Printf("[debug] %s %s %s", header.Mode(), header.Modified.Format(time.RFC3339), header.Name)
 	return err
 }
 
