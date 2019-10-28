@@ -13,8 +13,11 @@ var (
 	// IgnoreFilename defines file name includes ingore patterns at creating zip archive.
 	IgnoreFilename = ".lambdaignore"
 
-	// FunctionFilename defines file name to function definition.
+	// FunctionFilename defines file name for function definition.
 	FunctionFilename = "function.json"
+
+	// FunctionZipFilename defines file name for zip archive downloaded at init.
+	FunctionZipFilename = "function.zip"
 
 	// DefaultExcludes is a preset excludes file list
 	DefaultExcludes = []string{IgnoreFilename, FunctionFilename, ".git/*"}

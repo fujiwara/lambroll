@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/pkg/errors"
 )
 
@@ -80,4 +82,22 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 	defer r.Close()
 	_, err = io.Copy(w, r)
 	return err
+}
+
+func (app *App) uploadFunctionToS3(f *os.File, bucket, key string) (string, error) {
+	svc := s3.New(app.sess)
+	log.Printf("[debug] PutObjcet to s3://%s/%s", bucket, key)
+	// TODO multipart upload
+	res, err := svc.PutObject(&s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
+		Body:   f,
+	})
+	if err != nil {
+		return "", err
+	}
+	if res.VersionId != nil {
+		return *res.VersionId, nil
+	}
+	return "", nil // not versioned
 }

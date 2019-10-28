@@ -81,8 +81,8 @@ func (app *App) Init(opt InitOption) error {
 	}
 
 	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
-		log.Println("[info] downloading function.zip")
-		if err := download(*res.Code.Location, "function.zip"); err != nil {
+		log.Printf("[info] downloading %s", FunctionZipFilename)
+		if err := download(*res.Code.Location, FunctionZipFilename); err != nil {
 			return err
 		}
 	}

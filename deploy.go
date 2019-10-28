@@ -72,15 +72,9 @@ func (app *App) Deploy(opt DeployOption) error {
 		return err
 	}
 
-	zipfile, _, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
+	err = app.prepareFunctionCodeForDeploy(opt, &def)
 	if err != nil {
-		return err
-	}
-	defer os.Remove(zipfile.Name())
-
-	b, err := ioutil.ReadAll(zipfile)
-	if err != nil {
-		return errors.Wrap(err, "failed to read zipfile content")
+		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
 
 	log.Println("[info] updating function configuration")
@@ -106,9 +100,12 @@ func (app *App) Deploy(opt DeployOption) error {
 
 	log.Printf("[info] updating function code %s", *def.FunctionName)
 	_, err = app.lambda.UpdateFunctionCode(&lambda.UpdateFunctionCodeInput{
-		FunctionName: def.FunctionName,
-		Publish:      aws.Bool(true),
-		ZipFile:      b,
+		FunctionName:    def.FunctionName,
+		Publish:         aws.Bool(true),
+		ZipFile:         def.Code.ZipFile,
+		S3Bucket:        def.Code.S3Bucket,
+		S3Key:           def.Code.S3Key,
+		S3ObjectVersion: def.Code.S3ObjectVersion,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to update function code")
