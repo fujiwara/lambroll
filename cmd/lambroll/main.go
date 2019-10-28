@@ -52,6 +52,13 @@ func _main() int {
 		DryRun:           delete.Flag("dry-run", "dry run").Bool(),
 	}
 
+	invoke := kingpin.Command("invoke", "invoke function")
+	invokeOption := lambroll.InvokeOption{
+		FunctionFilePath: invoke.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String(),
+		Async:            invoke.Flag("async", "invocation type async").Bool(),
+		LogTail:          invoke.Flag("log-tail", "output tail of log to STDERR").Bool(),
+	}
+
 	command := kingpin.Parse()
 
 	filter := &logutils.LevelFilter{
@@ -80,6 +87,8 @@ func _main() int {
 		err = app.Rollback(rollbackOption)
 	case "delete":
 		err = app.Delete(deleteOption)
+	case "invoke":
+		err = app.Invoke(invokeOption)
 	}
 
 	if err != nil {
