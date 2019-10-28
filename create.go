@@ -57,10 +57,13 @@ func (app *App) create(opt DeployOption, def *lambda.CreateFunctionInput) error 
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare function code")
 	}
-	log.Println("[info] creating function")
-	_, err = app.lambda.CreateFunction(def)
-	if err != nil {
-		return errors.Wrap(err, "failed to create function")
+	log.Println("[info] creating function", opt.label())
+	log.Println("[debug]\n", def.String())
+	if !*opt.DryRun {
+		_, err = app.lambda.CreateFunction(def)
+		if err != nil {
+			return errors.Wrap(err, "failed to create function")
+		}
 	}
 	return nil
 }

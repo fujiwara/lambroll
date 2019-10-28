@@ -22,6 +22,13 @@ type DeployOption struct {
 	DryRun           *bool
 }
 
+func (opt DeployOption) label() string {
+	if *opt.DryRun {
+		return "**DRY RUN**"
+	}
+	return ""
+}
+
 // Expand expands ExcludeFile contents to Excludes
 func (opt *DeployOption) Expand() error {
 	if opt.ExcludeFile == nil {
@@ -78,11 +85,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
 
-	var label string
-	if *opt.DryRun {
-		label = "**DRY RUN**"
-	}
-	log.Println("[info] updating function configuration", label)
+	log.Println("[info] updating function configuration", opt.label())
 	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig: def.DeadLetterConfig,
 		Description:      def.Description,
@@ -106,7 +109,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		}
 	}
 
-	log.Println("[info] updating function code", label)
+	log.Println("[info] updating function code", opt.label)
 	codeIn := &lambda.UpdateFunctionCodeInput{
 		FunctionName:    def.FunctionName,
 		ZipFile:         def.Code.ZipFile,
