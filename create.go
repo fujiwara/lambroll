@@ -18,6 +18,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *lambda.Creat
 	if err != nil {
 		return err
 	}
+	defer zipfile.Close()
 	defer os.Remove(zipfile.Name())
 
 	if def.Code != nil {
@@ -40,7 +41,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *lambda.Creat
 	} else {
 		// try direct upload
 		if s := info.Size(); s > directUploadThreshold {
-			return fmt.Errorf("cannot create zip file directly. Too large file %d bytes", s)
+			return fmt.Errorf("cannot use a zip file for update function directly. Too large file %d bytes. Please define Code.S3Bucket and Code.S3Key in function.json", s)
 		}
 		b, err := ioutil.ReadAll(zipfile)
 		if err != nil {

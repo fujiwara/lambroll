@@ -34,8 +34,8 @@ func (app *App) Init(opt InitOption) error {
 				c = &lambda.FunctionConfiguration{
 					FunctionName: opt.FunctionName,
 					MemorySize:   aws.Int64(128),
-					Runtime:      aws.String(""),
-					Timeout:      aws.Int64(5),
+					Runtime:      aws.String("nodejs10.x"),
+					Timeout:      aws.Int64(3),
 					Handler:      aws.String(""),
 					Role: aws.String(
 						fmt.Sprintf("arn:aws:iam:%s:role/YOUR_LAMBDA_ROLE_NAME", app.AWSAccountID()),
