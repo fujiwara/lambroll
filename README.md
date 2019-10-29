@@ -78,9 +78,10 @@ $ lambroll deploy
 usage: lambroll [<flags>] <command> [<args> ...]
 
 Flags:
-  --help                     Show context-sensitive help (also try --help-long and --help-man).
-  --region="ap-northeast-1"  AWS region
-  --log-level=info           log level (trace, debug, info, warn, error)
+  --help                      Show context-sensitive help (also try --help-long and --help-man).
+  --region="ap-northeast-1"   AWS region
+  --log-level=info            log level (trace, debug, info, warn, error)
+  --function="function.json"  Function file path
 
 Commands:
   help [<command>...]
@@ -106,6 +107,9 @@ Commands:
 
   invoke [<flags>]
     invoke function
+
+  archive [<flags>]
+    archive zip
 ```
 
 ### Init
