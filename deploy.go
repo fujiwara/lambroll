@@ -153,7 +153,20 @@ func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
 			Name:            aws.String(v.Name),
 		})
 		if err != nil {
-			return errors.Wrapf(err, "failed to update alias")
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				case lambda.ErrCodeResourceNotFoundException:
+					log.Printf("[info] alias %s is not found. creating alias", v.Name)
+					alias, err = app.lambda.CreateAlias(&lambda.CreateAliasInput{
+						FunctionName:    aws.String(functionName),
+						FunctionVersion: aws.String(v.Version),
+						Name:            aws.String(v.Name),
+					})
+				}
+			}
+			if err != nil {
+				return errors.Wrap(err, "failed to update alias")
+			}
 		}
 		log.Println("[info] alias updated")
 		log.Printf("[debug]\n%s", alias.String())
