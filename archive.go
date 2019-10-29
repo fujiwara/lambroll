@@ -14,6 +14,21 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Archive archives zip
+func (app *App) Archive(opt DeployOption) error {
+	if err := (&opt).Expand(); err != nil {
+		return errors.Wrap(err, "failed to validate deploy options")
+	}
+
+	zipfile, _, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
+	if err != nil {
+		return err
+	}
+	defer zipfile.Close()
+	_, err = io.Copy(os.Stdout, zipfile)
+	return err
+}
+
 // CreateZipArchive creates a zip archive
 func CreateZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] creating zip archive from %s", src)
@@ -70,6 +85,7 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 		return err
 	}
 	header.Name = relpath // fix name as subdir
+	header.Method = zip.Deflate
 	w, err := z.CreateHeader(header)
 	if err != nil {
 		log.Println("[error] failed to create in zip", err)
@@ -82,7 +98,12 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 	}
 	defer r.Close()
 	_, err = io.Copy(w, r)
-	log.Printf("[debug] %s %s %s", header.Mode(), header.Modified.Format(time.RFC3339), header.Name)
+	log.Printf("[debug] %s %10d %s %s",
+		header.Mode(),
+		header.UncompressedSize64,
+		header.Modified.Format(time.RFC3339),
+		header.Name,
+	)
 	return err
 }
 

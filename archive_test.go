@@ -29,7 +29,12 @@ func TestCreateZipArchive(t *testing.T) {
 	}
 	for _, f := range zr.File {
 		h := f.FileHeader
-		t.Logf("%s %s %s", h.Mode(), h.Modified.Format(time.RFC3339), h.Name)
+		t.Logf("%s %10d %s %s",
+			h.Mode(),
+			h.UncompressedSize64,
+			h.Modified.Format(time.RFC3339),
+			h.Name,
+		)
 	}
 	if info.Size() < 100 {
 		t.Errorf("too small file got %d bytes", info.Size())

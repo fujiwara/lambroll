@@ -2,6 +2,7 @@ package lambroll
 
 import (
 	"bytes"
+	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os"
@@ -57,12 +58,17 @@ func (opt *DeployOption) Expand() error {
 	return nil
 }
 
+func (opt *DeployOption) String() string {
+	b, _ := json.Marshal(opt)
+	return string(b)
+}
+
 // Deploy deployes a new lambda function code
 func (app *App) Deploy(opt DeployOption) error {
 	if err := (&opt).Expand(); err != nil {
 		return errors.Wrap(err, "failed to validate deploy options")
 	}
-	log.Printf("[debug] %#v", opt)
+	log.Printf("[debug] %s", opt.String())
 
 	def, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
