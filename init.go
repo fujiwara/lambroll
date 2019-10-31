@@ -26,6 +26,7 @@ func (app *App) Init(opt InitOption) error {
 		FunctionName: opt.FunctionName,
 	})
 	var c *lambda.FunctionConfiguration
+	exists := true
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
@@ -41,6 +42,7 @@ func (app *App) Init(opt InitOption) error {
 						fmt.Sprintf("arn:aws:iam:%s:role/YOUR_LAMBDA_ROLE_NAME", app.AWSAccountID()),
 					),
 				}
+				exists = false
 			default:
 			}
 		}
@@ -88,15 +90,17 @@ func (app *App) Init(opt InitOption) error {
 	}
 
 	fn := &Function{CreateFunctionInput: cfi}
-	arn := app.functionArn(fn)
-	log.Printf("[debug] listing tags of %s", arn)
-	tags, err := app.lambda.ListTags(&lambda.ListTagsInput{
-		Resource: aws.String(arn),
-	})
-	if err != nil {
-		return errors.Wrap(err, "faled to list tags")
+	if exists {
+		arn := app.functionArn(fn)
+		log.Printf("[debug] listing tags of %s", arn)
+		tags, err := app.lambda.ListTags(&lambda.ListTagsInput{
+			Resource: aws.String(arn),
+		})
+		if err != nil {
+			return errors.Wrap(err, "faled to list tags")
+		}
+		fn.Tags = tags.Tags
 	}
-	fn.Tags = tags.Tags
 
 	log.Printf("[info] creating %s", IgnoreFilename)
 	err = app.saveFile(
