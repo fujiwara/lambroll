@@ -6,7 +6,7 @@ lambroll does,
 
 - Create a function.
 - Create a Zip archive from local directory.
-- Update function code / configuration.
+- Update function code / configuration / tags / aliases.
 
 That's all.
 
@@ -14,7 +14,7 @@ lambroll does not,
 
 - Manage resources related to the Lambda function.
   - e.g. IAM Role, function triggers, API Gateway, etc.
-- Build native extensions for Linux (AWS Lambda running environment).
+- Build native binaries or extensions for Linux (AWS Lambda running environment).
 
 When you hope to manage these resources, we recommend other deployment tools ([AWS SAM](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/), etc.).
 
@@ -212,9 +212,9 @@ REPORT RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f	Duration: 597.87 ms	Bille
 2019/10/28 23:16:43 [info] completed
 ```
 
-#### function.json
+### function.json
 
-function.json is a definition for Lambda function. JSON structure is same as `CreateFunction` for Lambda API.
+function.json is a definition for Lambda function. JSON structure is based from `CreateFunction` for Lambda API.
 
 ```json
 {
@@ -230,6 +230,9 @@ function.json is a definition for Lambda function. JSON structure is same as `Cr
   "MemorySize": 128,
   "Role": "arn:aws:iam::123456789012:role/hello_lambda_function",
   "Runtime": "nodejs10.x",
+  "Tags": {
+    "Env": "dev"
+  },
   "Timeout": 5,
   "TracingConfig": {
     "Mode": "PassThrough"
@@ -237,7 +240,26 @@ function.json is a definition for Lambda function. JSON structure is same as `Cr
 }
 ```
 
-At reading the file, expand `{{ env }}` and `{{ must_env }}` syntax in JSON.
+#### Tags
+
+When "Tags" key exists in function.json, lambroll set / remove tags to the lambda function at deploy.
+
+```json5
+{
+  // ...
+  "Tags": {
+    "Env": "dev",
+    "Foo": "Bar"
+  }
+}
+```
+
+When "Tags" key does not exist, lambroll doesn't manage tags.
+If you hope to remove all tags, set `"Tags": {}` expressly.
+
+#### Expand enviroment variables
+
+At reading the file, lambrol evaluates `{{ env }}` and `{{ must_env }}` syntax in JSON.
 
 For example,
 
@@ -245,7 +267,7 @@ For example,
 {{ env `FOO` `default for FOO` }}
 ```
 
-Environment variable `FOO` is expanded. When `FOO` is not defined, use default value.
+Environment variable `FOO` is expanded here. When `FOO` is not defined, use default value.
 
 ```
 {{ must_env `FOO` }}
@@ -253,11 +275,11 @@ Environment variable `FOO` is expanded. When `FOO` is not defined, use default v
 
 Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will panic and abort.
 
-#### .lambdaignore
+### .lambdaignore
 
 lambroll will ignore files defined in `.lambdaignore` file at creating a zip archive.
 
-For example, 
+For example,
 
 ```
 # comment
