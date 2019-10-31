@@ -35,7 +35,12 @@ func (app *App) updateTags(fn *Function, opt DeployOption) error {
 
 	setTags, removeTagKeys := MergeTags(tags.Tags, fn.Tags)
 
-	if n := len(setTags); n != 0 {
+	if len(setTags) == 0 && len(removeTagKeys) == 0 {
+		log.Println("[debug] no need to update tags (unchnaged)")
+		return nil
+	}
+
+	if n := len(setTags); n > 0 {
 		log.Printf("[info] setting %d tags %s", n, opt.label())
 		if !*opt.DryRun {
 			_, err = app.lambda.TagResource(&lambda.TagResourceInput{
@@ -48,7 +53,7 @@ func (app *App) updateTags(fn *Function, opt DeployOption) error {
 		}
 	}
 
-	if n := len(removeTagKeys); n != 0 {
+	if n := len(removeTagKeys); n > 0 {
 		log.Printf("[info] removing %d tags %s", n, opt.label())
 		if !*opt.DryRun {
 			_, err = app.lambda.UntagResource(&lambda.UntagResourceInput{
