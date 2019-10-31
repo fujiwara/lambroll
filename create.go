@@ -52,34 +52,41 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *Function) er
 	return nil
 }
 
-func (app *App) create(opt DeployOption, def *lambda.CreateFunctionInput) error {
-	err := app.prepareFunctionCodeForDeploy(opt, def)
+func (app *App) create(opt DeployOption, fn *Function) error {
+	err := app.prepareFunctionCodeForDeploy(opt, fn)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare function code")
 	}
 	log.Println("[info] creating function", opt.label())
-	log.Println("[debug]\n", def.String())
-	if *opt.DryRun {
-		return nil
+	log.Println("[debug]\n", fn.String())
+
+	version := "(created)"
+	if !*opt.DryRun {
+		fn.Publish = aws.Bool(true)
+		res, err := app.lambda.CreateFunction(fn.CreateFunctionInput)
+		if err != nil {
+			return errors.Wrap(err, "failed to create function")
+		}
+		version = *res.Version
+		log.Printf("[info] deployed function version %s", version)
 	}
 
-	def.Publish = aws.Bool(true)
-	res, err := app.lambda.CreateFunction(def)
-	if err != nil {
-		return errors.Wrap(err, "failed to create function")
+	if err := app.updateTags(fn, opt); err != nil {
+		return err
 	}
-	log.Printf("[info] deployed function version %s", *res.Version)
 
-	log.Printf("[info] creating alias set %s to version %s", CurrentAliasName, *res.Version)
-	alias, err := app.lambda.CreateAlias(&lambda.CreateAliasInput{
-		FunctionName:    def.FunctionName,
-		FunctionVersion: res.Version,
-		Name:            aws.String(CurrentAliasName),
-	})
-	if err != nil {
-		return errors.Wrap(err, "failed to create alias")
+	log.Printf("[info] creating alias set %s to version %s %s", CurrentAliasName, version, opt.label())
+	if !*opt.DryRun {
+		alias, err := app.lambda.CreateAlias(&lambda.CreateAliasInput{
+			FunctionName:    fn.FunctionName,
+			FunctionVersion: aws.String(version),
+			Name:            aws.String(CurrentAliasName),
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to create alias")
+		}
+		log.Println("[info] alias created")
+		log.Printf("[debug]\n%s", alias.String())
 	}
-	log.Println("[info] alias created")
-	log.Printf("[debug]\n%s", alias.String())
 	return nil
 }

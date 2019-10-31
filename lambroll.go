@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,7 +13,19 @@ import (
 )
 
 // Function is alias for lambda.CreateFunctionInput
-type Function = lambda.CreateFunctionInput
+type Function struct {
+	*lambda.CreateFunctionInput
+	Tags map[string]*string `json:"Tags,omitempty"`
+}
+
+func (app *App) functionArn(fn *Function) string {
+	return fmt.Sprintf(
+		"arn:aws:lambda:%s:%s:function:%s",
+		*app.sess.Config.Region,
+		app.AWSAccountID(),
+		*fn.FunctionName,
+	)
+}
 
 var (
 	// IgnoreFilename defines file name includes ingore patterns at creating zip archive.
