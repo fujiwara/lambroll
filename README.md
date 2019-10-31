@@ -214,7 +214,7 @@ REPORT RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f	Duration: 597.87 ms	Bille
 
 ### function.json
 
-function.json is a definition for Lambda function. JSON structure is based from `CreateFunction` for Lambda API.
+function.json is a definition for Lambda function. JSON structure is based from [`CreateFunction` for Lambda API](https://docs.aws.amazon.com/lambda/latest/dg/API_CreateFunction.html).
 
 ```json
 {
