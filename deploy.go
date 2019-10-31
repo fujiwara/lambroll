@@ -70,63 +70,65 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	log.Printf("[debug] %s", opt.String())
 
-	def, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load function")
 	}
 
-	log.Printf("[info] starting deploy function %s", *def.FunctionName)
+	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
 	_, err = app.lambda.GetFunction(&lambda.GetFunctionInput{
-		FunctionName: def.FunctionName,
+		FunctionName: fn.FunctionName,
 	})
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case lambda.ErrCodeResourceNotFoundException:
-				return app.create(opt, def)
+				return app.create(opt, fn)
 			}
 		}
 		return err
 	}
 
-	err = app.prepareFunctionCodeForDeploy(opt, def)
+	err = app.prepareFunctionCodeForDeploy(opt, fn)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
 
 	log.Println("[info] updating function configuration", opt.label())
 	confIn := &lambda.UpdateFunctionConfigurationInput{
-		DeadLetterConfig: def.DeadLetterConfig,
-		Description:      def.Description,
-		Environment:      def.Environment,
-		FunctionName:     def.FunctionName,
-		Handler:          def.Handler,
-		KMSKeyArn:        def.KMSKeyArn,
-		Layers:           def.Layers,
-		MemorySize:       def.MemorySize,
-		Role:             def.Role,
-		Runtime:          def.Runtime,
-		Timeout:          def.Timeout,
-		TracingConfig:    def.TracingConfig,
-		VpcConfig:        def.VpcConfig,
+		DeadLetterConfig: fn.DeadLetterConfig,
+		Description:      fn.Description,
+		Environment:      fn.Environment,
+		FunctionName:     fn.FunctionName,
+		Handler:          fn.Handler,
+		KMSKeyArn:        fn.KMSKeyArn,
+		Layers:           fn.Layers,
+		MemorySize:       fn.MemorySize,
+		Role:             fn.Role,
+		Runtime:          fn.Runtime,
+		Timeout:          fn.Timeout,
+		TracingConfig:    fn.TracingConfig,
+		VpcConfig:        fn.VpcConfig,
 	}
 	log.Printf("[debug]\n%s", confIn.String())
 
 	var newerVersion string
 	if !*opt.DryRun {
-		_, err := app.lambda.UpdateFunctionConfiguration(confIn)
-		if err != nil {
+		if _, err := app.lambda.UpdateFunctionConfiguration(confIn); err != nil {
 			return errors.Wrap(err, "failed to update function confugration")
 		}
+	}
+	if err := app.updateTags(fn, opt); err != nil {
+		return err
 	}
 
 	log.Println("[info] updating function code", opt.label())
 	codeIn := &lambda.UpdateFunctionCodeInput{
-		FunctionName:    def.FunctionName,
-		ZipFile:         def.Code.ZipFile,
-		S3Bucket:        def.Code.S3Bucket,
-		S3Key:           def.Code.S3Key,
-		S3ObjectVersion: def.Code.S3ObjectVersion,
+		FunctionName:    fn.FunctionName,
+		ZipFile:         fn.Code.ZipFile,
+		S3Bucket:        fn.Code.S3Bucket,
+		S3Key:           fn.Code.S3Key,
+		S3ObjectVersion: fn.Code.S3ObjectVersion,
 	}
 	if *opt.DryRun {
 		codeIn.DryRun = aws.Bool(true)
@@ -141,13 +143,13 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	if res.Version != nil {
 		newerVersion = *res.Version
-		log.Printf("[info] deployed version %s", *res.Version)
+		log.Printf("[info] deployed version %s %s", *res.Version, opt.label())
 	}
 	if *opt.DryRun {
 		return nil
 	}
 
-	return app.updateAliases(*def.FunctionName, versionAlias{newerVersion, CurrentAliasName})
+	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, CurrentAliasName})
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {

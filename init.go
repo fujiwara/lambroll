@@ -51,7 +51,7 @@ func (app *App) Init(opt InitOption) error {
 		log.Printf("[info] function %s found", *opt.FunctionName)
 		c = res.Configuration
 	}
-	fn := &lambda.CreateFunctionInput{
+	cfi := &lambda.CreateFunctionInput{
 		Description:  c.Description,
 		FunctionName: c.FunctionName,
 		Handler:      c.Handler,
@@ -61,20 +61,20 @@ func (app *App) Init(opt InitOption) error {
 		Timeout:      c.Timeout,
 	}
 	if e := c.Environment; e != nil {
-		fn.Environment = &lambda.Environment{
+		cfi.Environment = &lambda.Environment{
 			Variables: e.Variables,
 		}
 	}
 	for _, layer := range c.Layers {
-		fn.Layers = append(fn.Layers, layer.Arn)
+		cfi.Layers = append(cfi.Layers, layer.Arn)
 	}
 	if t := c.TracingConfig; t != nil {
-		fn.TracingConfig = &lambda.TracingConfig{
+		cfi.TracingConfig = &lambda.TracingConfig{
 			Mode: t.Mode,
 		}
 	}
 	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
-		fn.VpcConfig = &lambda.VpcConfig{
+		cfi.VpcConfig = &lambda.VpcConfig{
 			SubnetIds:        v.SubnetIds,
 			SecurityGroupIds: v.SecurityGroupIds,
 		}
@@ -86,6 +86,17 @@ func (app *App) Init(opt InitOption) error {
 			return err
 		}
 	}
+
+	fn := &Function{CreateFunctionInput: cfi}
+	arn := app.functionArn(fn)
+	log.Printf("[debug] listing tags of %s", arn)
+	tags, err := app.lambda.ListTags(&lambda.ListTagsInput{
+		Resource: aws.String(arn),
+	})
+	if err != nil {
+		return errors.Wrap(err, "faled to list tags")
+	}
+	fn.Tags = tags.Tags
 
 	log.Printf("[info] creating %s", IgnoreFilename)
 	err = app.saveFile(
