@@ -29,8 +29,8 @@ func (app *App) Archive(opt DeployOption) error {
 	return err
 }
 
-// CreateZipArchive creates a zip archive
-func CreateZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
+// createZipArchive creates a zip archive
+func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] creating zip archive from %s", src)
 	tmpfile, err := ioutil.TempFile("", "archive")
 	if err != nil {

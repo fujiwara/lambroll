@@ -69,8 +69,8 @@ func (app *App) updateTags(fn *Function, opt DeployOption) error {
 	return nil
 }
 
-// MergeTags merges old/new tags
-func MergeTags(oldTags, newTags map[string]*string) (sets map[string]*string, removes []*string) {
+// mergeTags merges old/new tags
+func mergeTags(oldTags, newTags map[string]*string) (sets map[string]*string, removes []*string) {
 	sets = make(map[string]*string)
 	removes = make([]*string, 0)
 	for key, oldValue := range oldTags {
