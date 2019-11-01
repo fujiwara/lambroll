@@ -20,7 +20,7 @@ func (app *App) Archive(opt DeployOption) error {
 		return errors.Wrap(err, "failed to validate deploy options")
 	}
 
-	zipfile, _, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
+	zipfile, _, err := createZipArchive(*opt.SrcDir, opt.Excludes)
 	if err != nil {
 		return err
 	}

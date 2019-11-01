@@ -33,7 +33,7 @@ func (app *App) updateTags(fn *Function, opt DeployOption) error {
 	}
 	log.Printf("[debug] %d tags found", len(tags.Tags))
 
-	setTags, removeTagKeys := MergeTags(tags.Tags, fn.Tags)
+	setTags, removeTagKeys := mergeTags(tags.Tags, fn.Tags)
 
 	if len(setTags) == 0 && len(removeTagKeys) == 0 {
 		log.Println("[debug] no need to update tags (unchnaged)")

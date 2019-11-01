@@ -14,7 +14,7 @@ import (
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
 func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, def *Function) error {
-	zipfile, info, err := CreateZipArchive(*opt.SrcDir, opt.Excludes)
+	zipfile, info, err := createZipArchive(*opt.SrcDir, opt.Excludes)
 	if err != nil {
 		return err
 	}
