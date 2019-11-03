@@ -15,12 +15,15 @@ import (
 // Function represents configuration of Lambda function
 type Function = lambda.CreateFunctionInput
 
-func (app *App) functionArn(fn *Function) string {
+// Tags represents tags of function
+type Tags = map[string]*string
+
+func (app *App) functionArn(name string) string {
 	return fmt.Sprintf(
 		"arn:aws:lambda:%s:%s:function:%s",
 		*app.sess.Config.Region,
 		app.AWSAccountID(),
-		*fn.FunctionName,
+		name,
 	)
 }
 
@@ -89,4 +92,38 @@ func (app *App) loadFunction(path string) (*Function, error) {
 		return nil, errors.Wrapf(err, "failed to load %s", path)
 	}
 	return &fn, nil
+}
+
+func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
+	fn := &Function{
+		Description:  c.Description,
+		FunctionName: c.FunctionName,
+		Handler:      c.Handler,
+		MemorySize:   c.MemorySize,
+		Role:         c.Role,
+		Runtime:      c.Runtime,
+		Timeout:      c.Timeout,
+	}
+	if e := c.Environment; e != nil {
+		fn.Environment = &lambda.Environment{
+			Variables: e.Variables,
+		}
+	}
+	for _, layer := range c.Layers {
+		fn.Layers = append(fn.Layers, layer.Arn)
+	}
+	if t := c.TracingConfig; t != nil {
+		fn.TracingConfig = &lambda.TracingConfig{
+			Mode: t.Mode,
+		}
+	}
+	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
+		fn.VpcConfig = &lambda.VpcConfig{
+			SubnetIds:        v.SubnetIds,
+			SecurityGroupIds: v.SecurityGroupIds,
+		}
+	}
+	fn.Tags = tags
+
+	return fn
 }

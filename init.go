@@ -37,7 +37,7 @@ func (app *App) Init(opt InitOption) error {
 					MemorySize:   aws.Int64(128),
 					Runtime:      aws.String("nodejs10.x"),
 					Timeout:      aws.Int64(3),
-					Handler:      aws.String(""),
+					Handler:      aws.String("index.handler"),
 					Role: aws.String(
 						fmt.Sprintf(
 							"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
@@ -56,52 +56,27 @@ func (app *App) Init(opt InitOption) error {
 		log.Printf("[info] function %s found", *opt.FunctionName)
 		c = res.Configuration
 	}
-	fn := &Function{
-		Description:  c.Description,
-		FunctionName: c.FunctionName,
-		Handler:      c.Handler,
-		MemorySize:   c.MemorySize,
-		Role:         c.Role,
-		Runtime:      c.Runtime,
-		Timeout:      c.Timeout,
-	}
-	if e := c.Environment; e != nil {
-		fn.Environment = &lambda.Environment{
-			Variables: e.Variables,
+
+	var tags Tags
+	if exists {
+		arn := app.functionArn(*c.FunctionName)
+		log.Printf("[debug] listing tags of %s", arn)
+		res, err := app.lambda.ListTags(&lambda.ListTagsInput{
+			Resource: aws.String(arn),
+		})
+		if err != nil {
+			return errors.Wrap(err, "faled to list tags")
 		}
+		tags = res.Tags
 	}
-	for _, layer := range c.Layers {
-		fn.Layers = append(fn.Layers, layer.Arn)
-	}
-	if t := c.TracingConfig; t != nil {
-		fn.TracingConfig = &lambda.TracingConfig{
-			Mode: t.Mode,
-		}
-	}
-	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
-		fn.VpcConfig = &lambda.VpcConfig{
-			SubnetIds:        v.SubnetIds,
-			SecurityGroupIds: v.SecurityGroupIds,
-		}
-	}
+
+	fn := newFuctionFrom(c, tags)
 
 	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
 		if err := download(*res.Code.Location, FunctionZipFilename); err != nil {
 			return err
 		}
-	}
-
-	if exists {
-		arn := app.functionArn(fn)
-		log.Printf("[debug] listing tags of %s", arn)
-		tags, err := app.lambda.ListTags(&lambda.ListTagsInput{
-			Resource: aws.String(arn),
-		})
-		if err != nil {
-			return errors.Wrap(err, "faled to list tags")
-		}
-		fn.Tags = tags.Tags
 	}
 
 	log.Printf("[info] creating %s", IgnoreFilename)

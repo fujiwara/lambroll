@@ -14,7 +14,7 @@ func (app *App) updateTags(fn *Function, opt DeployOption) error {
 		log.Println("[debug] Tags not defined in function.json skip udpating tags")
 		return nil
 	}
-	arn := app.functionArn(fn)
+	arn := app.functionArn(*fn.FunctionName)
 	tags, err := app.lambda.ListTags(&lambda.ListTagsInput{
 		Resource: aws.String(arn),
 	})
@@ -70,8 +70,8 @@ func (app *App) updateTags(fn *Function, opt DeployOption) error {
 }
 
 // mergeTags merges old/new tags
-func mergeTags(oldTags, newTags map[string]*string) (sets map[string]*string, removes []*string) {
-	sets = make(map[string]*string)
+func mergeTags(oldTags, newTags Tags) (sets Tags, removes []*string) {
+	sets = make(Tags)
 	removes = make([]*string, 0)
 	for key, oldValue := range oldTags {
 		if newValue, ok := newTags[key]; ok {

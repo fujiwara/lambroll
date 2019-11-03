@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,8 +23,16 @@ func (app *App) List(opt ListOption) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to ListFunctions")
 		}
-		for _, fn := range res.Functions {
-			b, _ := marshalJSON(fn)
+		for _, c := range res.Functions {
+			arn := app.functionArn(*c.FunctionName)
+			log.Printf("[debug] listing tags of %s", arn)
+			res, err := app.lambda.ListTags(&lambda.ListTagsInput{
+				Resource: aws.String(arn),
+			})
+			if err != nil {
+				return errors.Wrap(err, "faled to list tags")
+			}
+			b, _ := marshalJSON(newFuctionFrom(c, res.Tags))
 			os.Stdout.Write(b)
 		}
 		if marker = res.NextMarker; marker == nil {
