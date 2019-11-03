@@ -22,7 +22,7 @@ type InvokeOption struct {
 
 // Invoke invokes function
 func (app *App) Invoke(opt InvokeOption) error {
-	def, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load function")
 	}
@@ -51,7 +51,7 @@ PAYLOAD:
 		}
 		b, _ := json.Marshal(payload)
 		in := &lambda.InvokeInput{
-			FunctionName:   def.FunctionName,
+			FunctionName:   fn.FunctionName,
 			InvocationType: invocationType,
 			LogType:        logType,
 			Payload:        b,

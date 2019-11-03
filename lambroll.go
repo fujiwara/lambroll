@@ -12,11 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Function is alias for lambda.CreateFunctionInput
-type Function struct {
-	*lambda.CreateFunctionInput
-	Tags map[string]*string `json:"Tags,omitempty"`
-}
+// Function represents configuration of Lambda function
+type Function = lambda.CreateFunctionInput
 
 func (app *App) functionArn(fn *Function) string {
 	return fmt.Sprintf(
@@ -38,7 +35,12 @@ var (
 	FunctionZipFilename = "function.zip"
 
 	// DefaultExcludes is a preset excludes file list
-	DefaultExcludes = []string{IgnoreFilename, FunctionFilename, ".git/*"}
+	DefaultExcludes = []string{
+		IgnoreFilename,
+		FunctionFilename,
+		FunctionZipFilename,
+		".git/*",
+	}
 
 	// CurrentAliasName is alias name for current deployed function
 	CurrentAliasName = "current"
@@ -81,10 +83,10 @@ func (app *App) AWSAccountID() string {
 }
 
 func (app *App) loadFunction(path string) (*Function, error) {
-	var def Function
-	err := config.LoadWithEnvJSON(&def, path)
+	var fn Function
+	err := config.LoadWithEnvJSON(&fn, path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s", path)
 	}
-	return &def, nil
+	return &fn, nil
 }

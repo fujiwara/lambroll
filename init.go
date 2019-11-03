@@ -39,7 +39,10 @@ func (app *App) Init(opt InitOption) error {
 					Timeout:      aws.Int64(3),
 					Handler:      aws.String(""),
 					Role: aws.String(
-						fmt.Sprintf("arn:aws:iam:%s:role/YOUR_LAMBDA_ROLE_NAME", app.AWSAccountID()),
+						fmt.Sprintf(
+							"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
+							app.AWSAccountID(),
+						),
 					),
 				}
 				exists = false
@@ -53,7 +56,7 @@ func (app *App) Init(opt InitOption) error {
 		log.Printf("[info] function %s found", *opt.FunctionName)
 		c = res.Configuration
 	}
-	cfi := &lambda.CreateFunctionInput{
+	fn := &Function{
 		Description:  c.Description,
 		FunctionName: c.FunctionName,
 		Handler:      c.Handler,
@@ -63,20 +66,20 @@ func (app *App) Init(opt InitOption) error {
 		Timeout:      c.Timeout,
 	}
 	if e := c.Environment; e != nil {
-		cfi.Environment = &lambda.Environment{
+		fn.Environment = &lambda.Environment{
 			Variables: e.Variables,
 		}
 	}
 	for _, layer := range c.Layers {
-		cfi.Layers = append(cfi.Layers, layer.Arn)
+		fn.Layers = append(fn.Layers, layer.Arn)
 	}
 	if t := c.TracingConfig; t != nil {
-		cfi.TracingConfig = &lambda.TracingConfig{
+		fn.TracingConfig = &lambda.TracingConfig{
 			Mode: t.Mode,
 		}
 	}
 	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
-		cfi.VpcConfig = &lambda.VpcConfig{
+		fn.VpcConfig = &lambda.VpcConfig{
 			SubnetIds:        v.SubnetIds,
 			SecurityGroupIds: v.SecurityGroupIds,
 		}
@@ -89,7 +92,6 @@ func (app *App) Init(opt InitOption) error {
 		}
 	}
 
-	fn := &Function{CreateFunctionInput: cfi}
 	if exists {
 		arn := app.functionArn(fn)
 		log.Printf("[debug] listing tags of %s", arn)

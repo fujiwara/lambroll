@@ -27,15 +27,15 @@ func (opt RollbackOption) label() string {
 
 // Rollback rollbacks function
 func (app *App) Rollback(opt RollbackOption) error {
-	def, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load function")
 	}
 
-	log.Printf("[info] starting rollback function %s", *def.FunctionName)
+	log.Printf("[info] starting rollback function %s", *fn.FunctionName)
 
 	res, err := app.lambda.GetAlias(&lambda.GetAliasInput{
-		FunctionName: def.FunctionName,
+		FunctionName: fn.FunctionName,
 		Name:         aws.String(CurrentAliasName),
 	})
 	if err != nil {
@@ -54,7 +54,7 @@ VERSIONS:
 		log.Printf("[debug] get function version %d", v)
 		vs := strconv.FormatInt(v, 10)
 		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
-			FunctionName: def.FunctionName,
+			FunctionName: fn.FunctionName,
 			Qualifier:    aws.String(vs),
 		})
 		if err != nil {
@@ -78,7 +78,7 @@ VERSIONS:
 	if *opt.DryRun {
 		return nil
 	}
-	err = app.updateAliases(*def.FunctionName, versionAlias{Version: prevVersion, Name: CurrentAliasName})
+	err = app.updateAliases(*fn.FunctionName, versionAlias{Version: prevVersion, Name: CurrentAliasName})
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ VERSIONS:
 		return nil
 	}
 
-	return app.deleteFunctionVersion(*def.FunctionName, currentVersion)
+	return app.deleteFunctionVersion(*fn.FunctionName, currentVersion)
 }
 
 func (app *App) deleteFunctionVersion(functionName, version string) error {
