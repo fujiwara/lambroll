@@ -18,7 +18,8 @@ clean:
 	rm -fr dist/
 
 dist:
-	goxz -pv=$(GIT_VER) \
+	CGO_ENABLED=0 \
+		goxz -pv=$(GIT_VER) \
 		-build-ldflags="-s -w -X main.Version=${GIT_VER}" \
 		-os=darwin,linux -arch=amd64 -d=dist ./cmd/lambroll
 
