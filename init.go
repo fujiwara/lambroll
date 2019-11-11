@@ -50,7 +50,7 @@ func (app *App) Init(opt InitOption) error {
 			}
 		}
 		if c == nil {
-			return errors.Wrap(err, "failed to GetFunciton"+*opt.FunctionName)
+			return errors.Wrap(err, "failed to GetFunction"+*opt.FunctionName)
 		}
 	} else {
 		log.Printf("[info] function %s found", *opt.FunctionName)
