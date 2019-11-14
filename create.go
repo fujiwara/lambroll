@@ -62,25 +62,32 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 
 	version := "(created)"
 	if !*opt.DryRun {
-		fn.Publish = aws.Bool(true)
+		fn.Publish = opt.Publish
 		res, err := app.lambda.CreateFunction(fn)
 		if err != nil {
 			return errors.Wrap(err, "failed to create function")
 		}
-		version = *res.Version
-		log.Printf("[info] deployed function version %s", version)
+		if res.Version != nil {
+			log.Printf("[info] deployed function version %s", *res.Version)
+		} else {
+			log.Println("[info] deployed")
+		}
 	}
 
 	if err := app.updateTags(fn, opt); err != nil {
 		return err
 	}
 
-	log.Printf("[info] creating alias set %s to version %s %s", CurrentAliasName, version, opt.label())
+	if !*opt.Publish {
+		return nil
+	}
+
+	log.Printf("[info] creating alias set %s to version %s %s", *opt.AliasName, version, opt.label())
 	if !*opt.DryRun {
 		alias, err := app.lambda.CreateAlias(&lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,
 			FunctionVersion: aws.String(version),
-			Name:            aws.String(CurrentAliasName),
+			Name:            aws.String(*opt.AliasName),
 		})
 		if err != nil {
 			return errors.Wrap(err, "failed to create alias")
