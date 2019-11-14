@@ -38,6 +38,8 @@ func _main() int {
 		SrcDir:           deploy.Flag("src", "function zip archive src dir").Default(".").String(),
 		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 		DryRun:           deploy.Flag("dry-run", "dry run").Bool(),
+		Publish:          deploy.Flag("publish", "publish function").Default("true").Bool(),
+		AliasName:        deploy.Flag("alias", "alias name for publish").Default(lambroll.CurrentAliasName).String(),
 	}
 
 	rollback := kingpin.Command("rollback", "rollback function")

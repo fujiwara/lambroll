@@ -19,6 +19,8 @@ type DeployOption struct {
 	SrcDir           *string
 	Excludes         []string
 	ExcludeFile      *string
+	Publish          *bool
+	AliasName        *string
 	DryRun           *bool
 }
 
@@ -133,7 +135,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	if *opt.DryRun {
 		codeIn.DryRun = aws.Bool(true)
 	} else {
-		codeIn.Publish = aws.Bool(true)
+		codeIn.Publish = opt.Publish
 	}
 	log.Printf("[debug]\n%s", codeIn.String())
 
@@ -144,12 +146,14 @@ func (app *App) Deploy(opt DeployOption) error {
 	if res.Version != nil {
 		newerVersion = *res.Version
 		log.Printf("[info] deployed version %s %s", *res.Version, opt.label())
+	} else {
+		log.Println("[info] deployed")
 	}
-	if *opt.DryRun {
+	if *opt.DryRun || !*opt.Publish {
 		return nil
 	}
 
-	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, CurrentAliasName})
+	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
