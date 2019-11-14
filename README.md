@@ -145,13 +145,16 @@ Flags:
   --exclude-file=".lambdaignore"  
                               exclude file
   --dry-run                   dry run
+  --publish                   publish function
+  --alias="current"           alias name for publish
 ```
 
 `deplpoy` works as below.
 
 - Create a zip archive from `--src` directory.
   - Excludes files matched (wildcard pattern) in `--exclude-file`.
-- Create / Update Lambda function.
+- Create / Update Lambda function
+- Create an alias to the published version when `--publish` (default).
 
 ### Rollback
 
