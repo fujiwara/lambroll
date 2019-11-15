@@ -75,7 +75,7 @@ func (app *App) AWSAccountID() string {
 	if app.accountID != "" {
 		return app.accountID
 	}
-	svc := sts.New(session.New())
+	svc := sts.New(app.sess)
 	r, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
 	if err != nil {
 		log.Println("[warn] failed to get caller identity", err)
