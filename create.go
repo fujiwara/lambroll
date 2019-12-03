@@ -68,6 +68,7 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 			return errors.Wrap(err, "failed to create function")
 		}
 		if res.Version != nil {
+			version = *res.Version
 			log.Printf("[info] deployed function version %s", *res.Version)
 		} else {
 			log.Println("[info] deployed")
