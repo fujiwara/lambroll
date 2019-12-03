@@ -69,7 +69,7 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 		}
 		if res.Version != nil {
 			version = *res.Version
-			log.Printf("[info] deployed function version %s", *res.Version)
+			log.Printf("[info] deployed function version %s", version)
 		} else {
 			log.Println("[info] deployed")
 		}
