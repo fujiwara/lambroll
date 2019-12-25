@@ -149,7 +149,7 @@ Flags:
   --alias="current"           alias name for publish
 ```
 
-`deplpoy` works as below.
+`deploy` works as below.
 
 - Create a zip archive from `--src` directory.
   - Excludes files matched (wildcard pattern) in `--exclude-file`.
