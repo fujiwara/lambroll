@@ -66,7 +66,10 @@ PAYLOAD:
 		stdout.Write([]byte("\n"))
 		stdout.Flush()
 
-		log.Printf("[info] StatusCode:%d ExecutionVersion:%s", *res.StatusCode, *res.ExecutedVersion)
+		log.Printf("[info] StatusCode:%d", *res.StatusCode)
+		if res.ExecutedVersion != nil {
+			log.Printf("[info] ExecutionVersion:%s", *res.ExecutedVersion)
+		}
 		if res.LogResult != nil {
 			b, _ := base64.StdEncoding.DecodeString(*res.LogResult)
 			stderr.Write(b)
