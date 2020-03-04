@@ -22,6 +22,7 @@ func _main() int {
 	region := kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String()
 	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
 	function := kingpin.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String()
+	profile := kingpin.Flag("profile", "AWS credential profile name").Default("default").String()
 
 	init := kingpin.Command("init", "init function.json")
 	initOption := lambroll.InitOption{
@@ -77,7 +78,7 @@ func _main() int {
 	}
 	log.SetOutput(filter)
 
-	app, err := lambroll.New(*region)
+	app, err := lambroll.New(*region, *profile)
 	if err != nil {
 		log.Println("[error]", err)
 		return 1
