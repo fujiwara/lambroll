@@ -57,12 +57,15 @@ type App struct {
 }
 
 // New creates an application
-func New(region string) (*App, error) {
+func New(region string, profile string) (*App, error) {
 	conf := &aws.Config{}
 	if region != "" {
 		conf.Region = aws.String(region)
 	}
-	sess := session.Must(session.NewSession(conf))
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		Profile: profile,
+		Config: *conf,
+	}))
 
 	return &App{
 		sess:   sess,
