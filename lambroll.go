@@ -54,6 +54,7 @@ type App struct {
 	sess      *session.Session
 	lambda    *lambda.Lambda
 	accountID string
+	profile   string
 }
 
 // New creates an application
@@ -64,12 +65,13 @@ func New(region string, profile string) (*App, error) {
 	}
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		Profile: profile,
-		Config: *conf,
+		Config:  *conf,
 	}))
 
 	return &App{
-		sess:   sess,
-		lambda: lambda.New(sess),
+		sess:    sess,
+		lambda:  lambda.New(sess),
+		profile: profile,
 	}, nil
 }
 
