@@ -69,6 +69,15 @@ func _main() int {
 		ExcludeFile: archive.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 	}
 
+	logs := kingpin.Command("logs", "tail logs using `aws logs tail` (aws-cli v2 required)")
+	logsOption := lambroll.LogsOption{
+		FunctionFilePath: function,
+		Since:            logs.Flag("since", "From what time to begin displaying logs").Default("10m").String(),
+		Follow:           logs.Flag("follow", "follow new logs").Default("false").Bool(),
+		Format:           logs.Flag("format", "The format to display the logs").Default("detailed").String(),
+		FilterPattern:    logs.Flag("filter-pattern", "The filter  pattern to use").Default("").String(),
+	}
+
 	command := kingpin.Parse()
 
 	filter := &logutils.LevelFilter{
@@ -104,6 +113,8 @@ func _main() int {
 		err = app.Invoke(invokeOption)
 	case "archive":
 		err = app.Archive(archiveOption)
+	case "logs":
+		err = app.Logs(logsOption)
 	}
 
 	if err != nil {

@@ -11,7 +11,8 @@ require (
 	github.com/go-test/deep v1.0.4
 	github.com/hashicorp/logutils v1.0.0
 	github.com/kayac/go-config v0.1.0
-	github.com/mattn/go-isatty v0.0.8 // indirect
+	github.com/mattn/go-isatty v0.0.10 // indirect
 	github.com/pkg/errors v0.8.1
 	golang.org/x/net v0.0.0-20191021144547-ec77196f6094 // indirect
+	golang.org/x/sys v0.0.0-20191115151921-52ab43148777 // indirect
 )
