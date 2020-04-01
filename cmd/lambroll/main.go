@@ -19,10 +19,14 @@ func main() {
 
 func _main() int {
 	kingpin.Command("version", "show version")
-	region := kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String()
 	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
 	function := kingpin.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String()
-	profile := kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String()
+
+	opt := lambroll.Option{
+		Profile: kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
+		Region:  kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
+		TFState: kingpin.Flag("tfstate", "path to terraform.tfstate").Default("").String(),
+	}
 
 	init := kingpin.Command("init", "init function.json")
 	initOption := lambroll.InitOption{
@@ -87,7 +91,7 @@ func _main() int {
 	}
 	log.SetOutput(filter)
 
-	app, err := lambroll.New(*region, *profile)
+	app, err := lambroll.New(&opt)
 	if err != nil {
 		log.Println("[error]", err)
 		return 1
