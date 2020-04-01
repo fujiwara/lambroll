@@ -67,10 +67,13 @@ func New(opt *Option) (*App, error) {
 	if opt.Region != nil {
 		awsCfg.Region = aws.String(*opt.Region)
 	}
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		Profile: *opt.Profile,
-		Config:  *awsCfg,
-	}))
+	sessOpt := session.Options{Config: *awsCfg}
+	var profile string
+	if opt.Profile != nil {
+		sessOpt.Profile = *opt.Profile
+		profile = *opt.Profile
+	}
+	sess := session.Must(session.NewSessionWithOptions(sessOpt))
 
 	loader := config.New()
 	if opt.TFState != nil {
@@ -84,7 +87,7 @@ func New(opt *Option) (*App, error) {
 	return &App{
 		sess:    sess,
 		lambda:  lambda.New(sess),
-		profile: *opt.Profile,
+		profile: profile,
 		loader:  loader,
 	}, nil
 }
