@@ -82,6 +82,7 @@ Flags:
   --region="ap-northeast-1"   AWS region
   --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
+  --tfstate=""                path to terraform.tfstate
 
 Commands:
   help [<command>...]
@@ -242,7 +243,6 @@ function.json is a definition for Lambda function. JSON structure is based from 
   }
 }
 ```
-
 #### Tags
 
 When "Tags" key exists in function.json, lambroll set / remove tags to the lambda function at deploy.
@@ -277,6 +277,37 @@ Environment variable `FOO` is expanded here. When `FOO` is not defined, use defa
 ```
 
 Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will panic and abort.
+
+#### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
+
+If `--tfstate` options set to path to `terraform.tfstate`, tfstate template function enabled.
+
+For example, define your AWS resource by terraform.
+
+```terraform
+data "aws_iam_role" "lambda" {
+  name = "hello_lambda_function"
+}
+```
+
+`terraform apply` creates a terraform.tfstate file.
+
+`lambroll --tfstate terraform.tfstate ...` enables to lookup resource attributes in the tfstate.
+
+```json
+{
+  "Description": "hello function",
+  "FunctionName": "hello",
+  "Handler": "index.js",
+  "MemorySize": 128,
+  "Role": "{{ tfstate `data.aws_iam_role.lambda.arn` }}",
+  "Runtime": "nodejs12.x",
+  "Timeout": 5,
+  "TracingConfig": {
+    "Mode": "PassThrough"
+  }
+}
+```
 
 ### .lambdaignore
 
