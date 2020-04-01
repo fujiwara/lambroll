@@ -280,9 +280,9 @@ Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will
 
 #### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
 
-If `--tfstate` options set to path to `terraform.tfstate`, tfstate template function enabled.
+When `--tfstate` option set to path to `terraform.tfstate`, tfstate template function enabled.
 
-For example, define your AWS resource by terraform.
+For example, define your AWS resources by terraform.
 
 ```terraform
 data "aws_iam_role" "lambda" {

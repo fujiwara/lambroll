@@ -44,6 +44,8 @@ var (
 		FunctionFilename,
 		FunctionZipFilename,
 		".git/*",
+		".terraform/*",
+		"terraform.tfstate",
 	}
 
 	// CurrentAliasName is alias name for current deployed function
