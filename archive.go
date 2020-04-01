@@ -11,6 +11,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/fujiwara/lambroll/wildcard"
 	"github.com/pkg/errors"
 )
 
@@ -65,14 +66,8 @@ func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, err
 
 func matchExcludes(path string, excludes []string) bool {
 	for _, pattern := range excludes {
-		for _, name := range []string{path, filepath.Base(path)} {
-			m, err := filepath.Match(pattern, name)
-			if err != nil {
-				log.Printf("[warn] failed to match exclude pattern %s to %s", pattern, name)
-			}
-			if m {
-				return true
-			}
+		if wildcard.Match(pattern, path) {
+			return true
 		}
 	}
 	return false
