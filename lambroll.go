@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/kayac/go-config"
+	"github.com/kayac/go-config/tfstate"
 	"github.com/pkg/errors"
 )
 
@@ -43,6 +44,8 @@ var (
 		FunctionFilename,
 		FunctionZipFilename,
 		".git/*",
+		".terraform/*",
+		"terraform.tfstate",
 	}
 
 	// CurrentAliasName is alias name for current deployed function
@@ -55,23 +58,37 @@ type App struct {
 	lambda    *lambda.Lambda
 	accountID string
 	profile   string
+	loader    *config.Loader
 }
 
 // New creates an application
-func New(region string, profile string) (*App, error) {
-	conf := &aws.Config{}
-	if region != "" {
-		conf.Region = aws.String(region)
+func New(opt *Option) (*App, error) {
+	awsCfg := &aws.Config{}
+	if opt.Region != nil {
+		awsCfg.Region = aws.String(*opt.Region)
 	}
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		Profile: profile,
-		Config:  *conf,
-	}))
+	sessOpt := session.Options{Config: *awsCfg}
+	var profile string
+	if opt.Profile != nil {
+		sessOpt.Profile = *opt.Profile
+		profile = *opt.Profile
+	}
+	sess := session.Must(session.NewSessionWithOptions(sessOpt))
+
+	loader := config.New()
+	if opt.TFState != nil {
+		funcs, err := tfstate.Load(*opt.TFState)
+		if err != nil {
+			return nil, err
+		}
+		loader.Funcs(funcs)
+	}
 
 	return &App{
 		sess:    sess,
 		lambda:  lambda.New(sess),
 		profile: profile,
+		loader:  loader,
 	}, nil
 }
 
@@ -92,7 +109,7 @@ func (app *App) AWSAccountID() string {
 
 func (app *App) loadFunction(path string) (*Function, error) {
 	var fn Function
-	err := config.LoadWithEnvJSON(&fn, path)
+	err := app.loader.LoadWithEnvJSON(&fn, path)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s", path)
 	}

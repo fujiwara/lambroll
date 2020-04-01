@@ -10,8 +10,7 @@ install: cmd/lambroll/lambroll
 	install cmd/lambroll/lambroll ${GOPATH}/bin
 
 test:
-	go test -race .
-	go test -race ./cmd/lambroll
+	go test -race ./...
 
 clean:
 	rm -f cmd/lambroll/lambroll
