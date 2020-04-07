@@ -83,6 +83,10 @@ func _main() int {
 	}
 
 	command := kingpin.Parse()
+	if command == "version" {
+		fmt.Println("lambroll", Version)
+		return 0
+	}
 
 	filter := &logutils.LevelFilter{
 		Levels:   []logutils.LogLevel{"trace", "debug", "info", "warn", "error"},
@@ -95,10 +99,6 @@ func _main() int {
 	if err != nil {
 		log.Println("[error]", err)
 		return 1
-	}
-	if command == "version" {
-		fmt.Println("lambroll", Version)
-		return 0
 	}
 
 	log.Println("[info] lambroll", Version)

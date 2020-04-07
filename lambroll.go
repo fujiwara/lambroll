@@ -64,19 +64,19 @@ type App struct {
 // New creates an application
 func New(opt *Option) (*App, error) {
 	awsCfg := &aws.Config{}
-	if opt.Region != nil {
+	if opt.Region != nil && *opt.Region != "" {
 		awsCfg.Region = aws.String(*opt.Region)
 	}
 	sessOpt := session.Options{Config: *awsCfg}
 	var profile string
-	if opt.Profile != nil {
+	if opt.Profile != nil && *opt.Profile != "" {
 		sessOpt.Profile = *opt.Profile
 		profile = *opt.Profile
 	}
 	sess := session.Must(session.NewSessionWithOptions(sessOpt))
 
 	loader := config.New()
-	if opt.TFState != nil {
+	if opt.TFState != nil && *opt.TFState != "" {
 		funcs, err := tfstate.Load(*opt.TFState)
 		if err != nil {
 			return nil, err
