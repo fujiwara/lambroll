@@ -5,8 +5,6 @@ go 1.13
 require (
 	github.com/Songmu/prompter v0.3.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/aws/aws-sdk-go v1.30.26
 	github.com/go-test/deep v1.0.6
 	github.com/hashicorp/logutils v1.0.0
