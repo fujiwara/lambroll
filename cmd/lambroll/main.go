@@ -40,7 +40,7 @@ func _main() int {
 	deploy := kingpin.Command("deploy", "deploy or create function")
 	deployOption := lambroll.DeployOption{
 		FunctionFilePath: function,
-		SrcDir:           deploy.Flag("src", "function zip archive src dir").Default(".").String(),
+		Src:              deploy.Flag("src", "function zip archive or src dir").Default(".").String(),
 		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 		DryRun:           deploy.Flag("dry-run", "dry run").Bool(),
 		Publish:          deploy.Flag("publish", "publish function").Default("true").Bool(),
@@ -69,7 +69,7 @@ func _main() int {
 
 	archive := kingpin.Command("archive", "archive zip")
 	archiveOption := lambroll.DeployOption{
-		SrcDir:      archive.Flag("src", "function zip archive src dir").Default(".").String(),
+		Src:         archive.Flag("src", "function src dir for archive").Default(".").String(),
 		ExcludeFile: archive.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 	}
 
