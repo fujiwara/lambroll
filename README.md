@@ -142,7 +142,7 @@ Flags:
   --region="ap-northeast-1"   AWS region
   --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
-  --src="."                   function zip archive src dir
+  --src="."                   function zip archive or src dir
   --exclude-file=".lambdaignore"  
                               exclude file
   --dry-run                   dry run
