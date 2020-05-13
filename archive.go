@@ -21,13 +21,38 @@ func (app *App) Archive(opt DeployOption) error {
 		return errors.Wrap(err, "failed to validate deploy options")
 	}
 
-	zipfile, _, err := createZipArchive(*opt.SrcDir, opt.Excludes)
+	zipfile, _, err := createZipArchive(*opt.Src, opt.Excludes)
 	if err != nil {
 		return err
 	}
 	defer zipfile.Close()
 	_, err = io.Copy(os.Stdout, zipfile)
 	return err
+}
+
+func loadZipArchive(src string) (*os.File, os.FileInfo, error) {
+	log.Printf("[info] reading zip archive from %s", src)
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to open zip file %s", src)
+	}
+	for _, f := range r.File {
+		header := f.FileHeader
+		log.Printf("[debug] %s %10d %s %s",
+			header.Mode(),
+			header.UncompressedSize64,
+			header.Modified.Format(time.RFC3339),
+			header.Name,
+		)
+	}
+	r.Close()
+	info, err := os.Stat(src)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to stat %s", src)
+	}
+	log.Printf("[info] zip archive %d bytes", info.Size())
+	fh, err := os.Open(src)
+	return fh, info, err
 }
 
 // createZipArchive creates a zip archive

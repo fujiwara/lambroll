@@ -14,12 +14,26 @@ import (
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
 func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) error {
-	zipfile, info, err := createZipArchive(*opt.SrcDir, opt.Excludes)
-	if err != nil {
-		return err
+	var (
+		zipfile *os.File
+		info    os.FileInfo
+	)
+
+	if fi, err := os.Stat(*opt.Src); err != nil {
+		return errors.Wrapf(err, "src %s is not found", *opt.Src)
+	} else if fi.IsDir() {
+		zipfile, info, err = createZipArchive(fi.Name(), opt.Excludes)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(zipfile.Name())
+	} else if !fi.IsDir() {
+		zipfile, info, err = loadZipArchive(fi.Name())
+		if err != nil {
+			return err
+		}
 	}
 	defer zipfile.Close()
-	defer os.Remove(zipfile.Name())
 
 	if fn.Code != nil {
 		if bucket, key := fn.Code.S3Bucket, fn.Code.S3Key; bucket != nil && key != nil {
