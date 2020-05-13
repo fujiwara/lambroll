@@ -16,7 +16,7 @@ import (
 // DeployOption represens an option for Deploy()
 type DeployOption struct {
 	FunctionFilePath *string
-	SrcDir           *string
+	Src              *string
 	Excludes         []string
 	ExcludeFile      *string
 	Publish          *bool

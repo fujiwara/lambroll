@@ -40,3 +40,23 @@ func TestCreateZipArchive(t *testing.T) {
 		t.Errorf("too small file got %d bytes", info.Size())
 	}
 }
+
+func TestLoadZipArchive(t *testing.T) {
+	r, info, err := lambroll.LoadZipArchive("test/src.zip")
+	if err != nil {
+		t.Error("failed to LoadZipArchive", err)
+	}
+	defer r.Close()
+
+	if info.Size() < 100 {
+		t.Errorf("too small file got %d bytes", info.Size())
+	}
+}
+
+func TestLoadNotZipArchive(t *testing.T) {
+	_, _, err := lambroll.LoadZipArchive("test/src/hello.txt")
+	if err == nil {
+		t.Error("must be failed to load not a zip file")
+	}
+	t.Log(err)
+}
