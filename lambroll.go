@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -66,6 +67,17 @@ func New(opt *Option) (*App, error) {
 	awsCfg := &aws.Config{}
 	if opt.Region != nil && *opt.Region != "" {
 		awsCfg.Region = aws.String(*opt.Region)
+	}
+	if opt.Endpoint != nil && *opt.Endpoint != "" {
+		customResolverFunc := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
+			if service == endpoints.LambdaServiceID {
+				return endpoints.ResolvedEndpoint{
+					URL: *opt.Endpoint,
+				}, nil
+			}
+			return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
+		}
+		awsCfg.EndpointResolver = endpoints.ResolverFunc(customResolverFunc)
 	}
 	sessOpt := session.Options{Config: *awsCfg}
 	var profile string
