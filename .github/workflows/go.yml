@@ -8,8 +8,20 @@ jobs:
           - 1.14
     name: Build
     runs-on: ubuntu-latest
-    steps:
 
+    services:
+      localstack:
+        image: localstack/localstack
+        env:
+          SERVICES: lambda,sts,s3
+          DEFAULT_REGION: ap-northeast-1
+          DEBUG: 1
+          LAMBDA_EXECUTOR: local
+          TEST_AWS_ACCOUNT_ID: 123456789012
+        ports:
+          - 4566:4566
+
+    steps:
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
@@ -19,16 +31,6 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
-    - name: Start localstask
-      run: |
-        docker run -d -p 4566:4566 \
-          -e SERVICES=lambda,sts,s3 \
-          -e DEFAULT_REGION=ap-northeast-1 \
-          -e DEBUG=1 \
-          -e LAMBDA_EXECUTOR=local \
-          -e TEST_AWS_ACCOUNT_ID=123456789012 \
-          localstack/localstack
-
     - name: Build & Test
       run: |
         make clean
@@ -37,10 +39,11 @@ jobs:
     - name: deploy test
       run: |
         make
-        cd test
-        dockerize -wait tcp://127.0.0.1:4566 \
-        FUNCTION_NAME=hello ./cmd/lambroll/lambroll deploy \
-          --src ./src \
+        ./cmd/lambroll/lambroll deploy \
+          --function test/function.json
+          --src test/src \
           --endpoint http://127.0.0.1:4566 \
           --tfstate terraform.tfstate \
           --log-level debug
+      env:
+        FUNCTION_NAME: hello
