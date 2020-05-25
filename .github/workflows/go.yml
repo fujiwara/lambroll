@@ -40,7 +40,7 @@ jobs:
       run: |
         make
         ./cmd/lambroll/lambroll deploy \
-          --function test/function.json
+          --function test/function.json \
           --src test/src \
           --endpoint http://127.0.0.1:4566 \
           --tfstate test/terraform.tfstate \
