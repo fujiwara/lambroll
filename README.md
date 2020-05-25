@@ -83,6 +83,7 @@ Flags:
   --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
   --tfstate=""                path to terraform.tfstate
+  --endpoint=""               AWS API Lambda Endpoint
 
 Commands:
   help [<command>...]

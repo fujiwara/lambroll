@@ -23,9 +23,10 @@ func _main() int {
 	function := kingpin.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String()
 
 	opt := lambroll.Option{
-		Profile: kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
-		Region:  kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
-		TFState: kingpin.Flag("tfstate", "path to terraform.tfstate").Default("").String(),
+		Profile:  kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
+		Region:   kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
+		TFState:  kingpin.Flag("tfstate", "path to terraform.tfstate").Default("").String(),
+		Endpoint: kingpin.Flag("endpoint", "AWS API Lambda Endpoint").Default("").String(),
 	}
 
 	init := kingpin.Command("init", "init function.json")

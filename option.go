@@ -1,7 +1,8 @@
 package lambroll
 
 type Option struct {
-	Region  *string
-	Profile *string
-	TFState *string
+	Region   *string
+	Profile  *string
+	TFState  *string
+	Endpoint *string
 }
