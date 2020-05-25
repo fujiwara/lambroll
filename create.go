@@ -19,16 +19,17 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		info    os.FileInfo
 	)
 
-	if fi, err := os.Stat(*opt.Src); err != nil {
-		return errors.Wrapf(err, "src %s is not found", *opt.Src)
+	src := *opt.Src
+	if fi, err := os.Stat(src); err != nil {
+		return errors.Wrapf(err, "src %s is not found", src)
 	} else if fi.IsDir() {
-		zipfile, info, err = createZipArchive(fi.Name(), opt.Excludes)
+		zipfile, info, err = createZipArchive(src, opt.Excludes)
 		if err != nil {
 			return err
 		}
 		defer os.Remove(zipfile.Name())
 	} else if !fi.IsDir() {
-		zipfile, info, err = loadZipArchive(fi.Name())
+		zipfile, info, err = loadZipArchive(src)
 		if err != nil {
 			return err
 		}

@@ -8,8 +8,20 @@ jobs:
           - 1.14
     name: Build
     runs-on: ubuntu-latest
-    steps:
 
+    services:
+      localstack:
+        image: localstack/localstack
+        env:
+          SERVICES: lambda,sts,s3
+          DEFAULT_REGION: ap-northeast-1
+          DEBUG: 1
+          LAMBDA_EXECUTOR: local
+          TEST_AWS_ACCOUNT_ID: 123456789012
+        ports:
+          - 4566:4566
+
+    steps:
     - name: Set up Go
       uses: actions/setup-go@v1
       with:
@@ -23,3 +35,18 @@ jobs:
       run: |
         make clean
         make test
+
+    - name: deploy test
+      run: |
+        make
+        ./cmd/lambroll/lambroll deploy \
+          --function test/function.json \
+          --src test/src \
+          --endpoint http://127.0.0.1:4566 \
+          --tfstate test/terraform.tfstate \
+          --log-level debug
+      env:
+        FUNCTION_NAME: hello
+        AWS_REGION: ap-northeast-1
+        AWS_ACCESS_KEY_ID: dummy
+        AWS_SECRET_ACCESS_KEY: dummy

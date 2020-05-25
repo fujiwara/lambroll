@@ -24,7 +24,7 @@ func TestCreateZipArchive(t *testing.T) {
 	if err != nil {
 		t.Error("failed to new zip reader", err)
 	}
-	if len(zr.File) != 3 {
+	if len(zr.File) != 4 {
 		t.Errorf("unexpected included files num %d expect %d", len(zr.File), 3)
 	}
 	for _, f := range zr.File {

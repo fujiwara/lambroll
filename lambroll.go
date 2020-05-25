@@ -70,12 +70,14 @@ func New(opt *Option) (*App, error) {
 	}
 	if opt.Endpoint != nil && *opt.Endpoint != "" {
 		customResolverFunc := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-			if service == endpoints.LambdaServiceID {
+			switch service {
+			case endpoints.S3ServiceID, endpoints.LambdaServiceID, endpoints.StsServiceID:
 				return endpoints.ResolvedEndpoint{
 					URL: *opt.Endpoint,
 				}, nil
+			default:
+				return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
 			}
-			return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
 		}
 		awsCfg.EndpointResolver = endpoints.ResolverFunc(customResolverFunc)
 	}
