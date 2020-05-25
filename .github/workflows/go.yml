@@ -47,3 +47,4 @@ jobs:
           --log-level debug
       env:
         FUNCTION_NAME: hello
+        AWS_REGION: ap-northeast-1
