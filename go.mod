@@ -9,6 +9,6 @@ require (
 	github.com/go-test/deep v1.0.6
 	github.com/hashicorp/logutils v1.0.0
 	github.com/kayac/go-config v0.3.2
-	github.com/kayac/go-config/tfstate v0.0.0-20200331045335-c9a3d0bc9790
+	github.com/kayac/go-config/tfstate v0.0.0-20200526163631-723a9d864f5f
 	github.com/pkg/errors v0.9.1
 )
