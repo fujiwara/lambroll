@@ -45,6 +45,8 @@ github.com/jmespath/go-jmespath v0.3.0/go.mod h1:9QtRXoHjLGCJ5IBSaohpXITPlowMeeY
 github.com/kayac/go-config v0.3.0/go.mod h1:m8920IaLog2vC6iFDMSROoD3n98ThCBW+XzroliX3Bc=
 github.com/kayac/go-config v0.3.1 h1:f3BVT/vogMex3oK6HeBFcbcnOZ8kQEegIvr2r/bsnq8=
 github.com/kayac/go-config v0.3.1/go.mod h1:m8920IaLog2vC6iFDMSROoD3n98ThCBW+XzroliX3Bc=
+github.com/kayac/go-config v0.3.2 h1:zGXc3aCAC6LaSc7wILnOKQ7ltp0eSSrT2z2Q2QGdna0=
+github.com/kayac/go-config v0.3.2/go.mod h1:84EZnsRGz4HEn2KmSXkQ+j7YrtPrJ7I9mSnETtm9RS8=
 github.com/kayac/go-config/tfstate v0.0.0-20200331045335-c9a3d0bc9790 h1:ri5c1Nx/MKfnp+DR1u9d5qRJ2o32psENkdgljOUdfTM=
 github.com/kayac/go-config/tfstate v0.0.0-20200331045335-c9a3d0bc9790/go.mod h1:X3zGzN387X90BxJ6wIz6aX7Zf8DSQWrtdA6BzM8jQH0=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
@@ -108,4 +110,6 @@ gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 h1:qIbj1fsPNlZgppZ+VLlY7N33
 gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
+gopkg.in/yaml.v2 v2.2.8 h1:obN1ZagJSUGI0Ek/LBmuj4SNLPfIny3KsKFopxRdj10=
+gopkg.in/yaml.v2 v2.2.8/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
 gopkg.in/yaml.v3 v3.0.0-20200121175148-a6ecf24a6d71/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
