@@ -231,6 +231,12 @@ function.json is a definition for Lambda function. JSON structure is based from 
     }
   },
   "FunctionName": "{{ must_env `ENV` }}-hello",
+  "FileSystemConfigs": [
+    {
+      "Arn": "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a",
+      "LocalMountPath": "/mnt/lambda"
+    }
+  ],
   "Handler": "index.js",
   "MemorySize": 128,
   "Role": "arn:aws:iam::123456789012:role/hello_lambda_function",
