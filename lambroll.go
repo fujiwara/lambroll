@@ -132,13 +132,16 @@ func (app *App) loadFunction(path string) (*Function, error) {
 
 func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
 	fn := &Function{
-		Description:  c.Description,
-		FunctionName: c.FunctionName,
-		Handler:      c.Handler,
-		MemorySize:   c.MemorySize,
-		Role:         c.Role,
-		Runtime:      c.Runtime,
-		Timeout:      c.Timeout,
+		Description:       c.Description,
+		FunctionName:      c.FunctionName,
+		Handler:           c.Handler,
+		MemorySize:        c.MemorySize,
+		Role:              c.Role,
+		Runtime:           c.Runtime,
+		Timeout:           c.Timeout,
+		DeadLetterConfig:  c.DeadLetterConfig,
+		FileSystemConfigs: c.FileSystemConfigs,
+		KMSKeyArn:         c.KMSKeyArn,
 	}
 	if e := c.Environment; e != nil {
 		fn.Environment = &lambda.Environment{

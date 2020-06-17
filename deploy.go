@@ -98,19 +98,20 @@ func (app *App) Deploy(opt DeployOption) error {
 
 	log.Println("[info] updating function configuration", opt.label())
 	confIn := &lambda.UpdateFunctionConfigurationInput{
-		DeadLetterConfig: fn.DeadLetterConfig,
-		Description:      fn.Description,
-		Environment:      fn.Environment,
-		FunctionName:     fn.FunctionName,
-		Handler:          fn.Handler,
-		KMSKeyArn:        fn.KMSKeyArn,
-		Layers:           fn.Layers,
-		MemorySize:       fn.MemorySize,
-		Role:             fn.Role,
-		Runtime:          fn.Runtime,
-		Timeout:          fn.Timeout,
-		TracingConfig:    fn.TracingConfig,
-		VpcConfig:        fn.VpcConfig,
+		DeadLetterConfig:  fn.DeadLetterConfig,
+		Description:       fn.Description,
+		Environment:       fn.Environment,
+		FunctionName:      fn.FunctionName,
+		FileSystemConfigs: fn.FileSystemConfigs,
+		Handler:           fn.Handler,
+		KMSKeyArn:         fn.KMSKeyArn,
+		Layers:            fn.Layers,
+		MemorySize:        fn.MemorySize,
+		Role:              fn.Role,
+		Runtime:           fn.Runtime,
+		Timeout:           fn.Timeout,
+		TracingConfig:     fn.TracingConfig,
+		VpcConfig:         fn.VpcConfig,
 	}
 	log.Printf("[debug]\n%s", confIn.String())
 
