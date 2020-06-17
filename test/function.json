@@ -1,6 +1,12 @@
 {
     "Description": "hello function",
     "FunctionName": "{{ must_env `FUNCTION_NAME` }}",
+    "FileSystemConfigs": [
+        {
+            "Arn": "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a",
+            "LocalMountPath": "/mnt/lambda"
+        }
+    ],
     "Handler": "index.js",
     "MemorySize": 128,
     "Role": "{{ tfstate `data.aws_iam_role.lambda.arn` }}",

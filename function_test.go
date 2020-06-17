@@ -22,5 +22,8 @@ func TestLoadFunction(t *testing.T) {
 	if *fn.FunctionName != "test" {
 		t.Errorf("unexpected function name got %s", *fn.FunctionName)
 	}
+	if *fn.FileSystemConfigs[0].Arn != "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a" {
+		t.Errorf("unexpected fileSystemConfigs %v", *&fn.FileSystemConfigs)
+	}
 	t.Log(fn.String())
 }
