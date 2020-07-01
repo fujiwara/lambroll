@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.32.3
 	github.com/go-test/deep v1.0.6
 	github.com/hashicorp/logutils v1.0.0
-	github.com/kayac/go-config v0.3.2
-	github.com/kayac/go-config/tfstate v0.0.0-20200526163631-723a9d864f5f
+	github.com/kayac/go-config v0.4.0
+	github.com/kayac/go-config/tfstate v0.0.0-20200701045006-992317101de7
 	github.com/pkg/errors v0.9.1
 )
