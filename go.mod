@@ -10,5 +10,6 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/kayac/go-config v0.3.2
 	github.com/kayac/go-config/tfstate v0.0.0-20200526163631-723a9d864f5f
+	github.com/kylelemons/godebug v1.1.0
 	github.com/pkg/errors v0.9.1
 )

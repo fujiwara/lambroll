@@ -83,6 +83,11 @@ func _main() int {
 		FilterPattern:    logs.Flag("filter-pattern", "The filter  pattern to use").Default("").String(),
 	}
 
+	kingpin.Command("diff", "show display diff of function.json compared with latest function")
+	diffOption := lambroll.DiffOption{
+		FunctionFilePath: function,
+	}
+
 	command := kingpin.Parse()
 	if command == "version" {
 		fmt.Println("lambroll", Version)
@@ -120,6 +125,8 @@ func _main() int {
 		err = app.Archive(archiveOption)
 	case "logs":
 		err = app.Logs(logsOption)
+	case "diff":
+		err = app.Diff(diffOption)
 	}
 
 	if err != nil {
