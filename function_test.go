@@ -7,6 +7,7 @@ import (
 
 func TestLoadFunction(t *testing.T) {
 	os.Setenv("FUNCTION_NAME", "test")
+	os.Setenv("JSON", `{"foo":"bar"}`)
 	path := "test/terraform.tfstate"
 	app, err := New(&Option{TFState: &path})
 	if err != nil {
@@ -24,6 +25,9 @@ func TestLoadFunction(t *testing.T) {
 	}
 	if *fn.FileSystemConfigs[0].Arn != "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a" {
 		t.Errorf("unexpected fileSystemConfigs %v", *&fn.FileSystemConfigs)
+	}
+	if *fn.Environment.Variables["JSON"] != `{"foo":"bar"}` {
+		t.Errorf("unexpected environment %v", fn.Environment.Variables)
 	}
 	t.Log(fn.String())
 }
