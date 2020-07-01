@@ -112,6 +112,12 @@ Commands:
 
   archive [<flags>]
     archive zip
+
+  logs [<flags>]
+    tail logs using `aws logs tail` (aws-cli v2 required)
+
+  diff
+    show display diff of function.json compared with latest function
 ```
 
 ### Init
