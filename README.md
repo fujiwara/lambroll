@@ -291,6 +291,18 @@ Environment variable `FOO` is expanded here. When `FOO` is not defined, use defa
 
 Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will panic and abort.
 
+`json_escape` template function escapes JSON meta characters in string values. This is useful for inject structured values into environment variables.
+
+```json
+{
+    "Environment": {
+        "Variables": {
+            "JSON": "{{ env `JSON` | json_escape }}"
+        }
+    }
+}
+```
+
 #### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
 
 When `--tfstate` option set to path to `terraform.tfstate`, tfstate template function enabled.

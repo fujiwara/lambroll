@@ -1,5 +1,10 @@
 {
     "Description": "hello function",
+    "Environment": {
+        "Variables": {
+            "JSON": "{{ env `JSON` | json_escape }}"
+        }
+    },
     "FunctionName": "{{ must_env `FUNCTION_NAME` }}",
     "FileSystemConfigs": [
         {
