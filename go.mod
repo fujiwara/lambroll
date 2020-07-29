@@ -9,7 +9,7 @@ require (
 	github.com/go-test/deep v1.0.7
 	github.com/hashicorp/logutils v1.0.0
 	github.com/kayac/go-config v0.4.1
-	github.com/kayac/go-config/tfstate v0.0.0-20200701045006-992317101de7
+	github.com/kayac/go-config/tfstate v0.0.0-20200729013618-ff052c21cefb
 	github.com/kylelemons/godebug v1.1.0
 	github.com/pkg/errors v0.9.1
 )
