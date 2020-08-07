@@ -18,6 +18,7 @@ type InvokeOption struct {
 	FunctionFilePath *string
 	Async            *bool
 	LogTail          *bool
+	Qualifier        *string
 }
 
 // Invoke invokes function
@@ -55,6 +56,9 @@ PAYLOAD:
 			InvocationType: invocationType,
 			LogType:        logType,
 			Payload:        b,
+		}
+		if len(*opt.Qualifier) > 0 {
+			in.Qualifier = opt.Qualifier
 		}
 		log.Println("[debug] invoking function", in.String())
 		res, err := app.lambda.Invoke(in)
