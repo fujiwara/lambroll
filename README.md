@@ -144,17 +144,18 @@ usage: lambroll deploy [<flags>]
 deploy or create function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long
-                              and --help-man).
-  --region="ap-northeast-1"   AWS region
-  --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
+  --profile="$AWS_PROFILE"    AWS credential profile name
+  --region="$AWS_REGION"      AWS region
+  --tfstate=""                path to terraform.tfstate
+  --endpoint=""               AWS API Lambda Endpoint
   --src="."                   function zip archive or src dir
-  --exclude-file=".lambdaignore"  
+  --exclude-file=".lambdaignore"
                               exclude file
   --dry-run                   dry run
   --publish                   publish function
   --alias="current"           alias name for publish
+  --skip-archive              skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition
 ```
 
 `deploy` works as below.
