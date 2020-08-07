@@ -66,6 +66,7 @@ func _main() int {
 		FunctionFilePath: function,
 		Async:            invoke.Flag("async", "invocation type async").Bool(),
 		LogTail:          invoke.Flag("log-tail", "output tail of log to STDERR").Bool(),
+		Qualifier:        invoke.Flag("qualifier", "version or alias to invoke").String(),
 	}
 
 	archive := kingpin.Command("archive", "archive zip")
