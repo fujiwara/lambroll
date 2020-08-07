@@ -22,6 +22,7 @@ type DeployOption struct {
 	Publish          *bool
 	AliasName        *string
 	DryRun           *bool
+	SkipArchive      *bool
 }
 
 func (opt DeployOption) label() string {
