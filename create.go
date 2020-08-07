@@ -19,6 +19,13 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		info    os.FileInfo
 	)
 
+	if opt.SkipArchive != nil && *opt.SkipArchive {
+		if fn.Code == nil || fn.Code.S3Bucket == nil || fn.Code.S3Key == nil {
+			return errors.New("--skip-archive requires Code.S3Bucket and Code.S3key elements in function definition")
+		}
+		return nil
+	}
+
 	src := *opt.Src
 	if fi, err := os.Stat(src); err != nil {
 		return errors.Wrapf(err, "src %s is not found", src)
