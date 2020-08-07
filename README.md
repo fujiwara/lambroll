@@ -202,6 +202,7 @@ Flags:
   --function="function.json"  Function file path
   --async                     invocation type async
   --log-tail                  output tail of log to STDERR
+  --qualifier=QUALIFIER       version or alias to invoke
 ```
 
 `lambroll invoke` accepts multiple JSON payloads for invocations from STDIN.
