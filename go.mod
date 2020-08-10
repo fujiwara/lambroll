@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/Songmu/prompter v0.3.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aws/aws-sdk-go v1.32.3
+	github.com/aws/aws-sdk-go v1.34.1
 	github.com/go-test/deep v1.0.7
 	github.com/hashicorp/logutils v1.0.0
 	github.com/kayac/go-config v0.4.1
