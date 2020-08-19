@@ -33,6 +33,7 @@ jobs:
 
     - name: Build & Test
       run: |
+        echo $PATH
         make clean
         make test
 
