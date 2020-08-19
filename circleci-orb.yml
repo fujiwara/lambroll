@@ -1,0 +1,56 @@
+version: 2.1
+
+description: "orb for lambroll"
+
+orbs:
+  detect: circleci/os-detect@0.1
+
+commands:
+  install:
+    description: "install lambroll"
+    parameters:
+      version:
+        description: lambroll version
+        type: string
+        default: v0.9.1
+    steps:
+      - detect/init
+      - run:
+          name: "Install lambroll"
+          command: |
+            case $OSD_FAMILY in
+              linux)
+                PKG_EXT=tar.gz
+               EXTRACT="tar zxvf"
+                ;;
+              darwin)
+                PKG_EXT=zip
+                EXTRACT="unzip"
+                ;;
+              *)
+                echo "Unsupported operating system. $OSD_FAMILY"
+                exit 1
+              ;;
+            esac
+            DIRNAME=lambroll_<< parameters.version >>_${OSD_FAMILY}_amd64
+            FILENAME=${DIRNAME}.${PKG_EXT}
+            LAMBROLL_URL=https://github.com/fujiwara/lambroll/releases/download/<< parameters.version >>/${FILENAME}
+            curl -L $LAMBROLL_URL > /tmp/${FILENAME}
+            $EXTRACT /tmp/${FILENAME}
+            sudo install ${DIRNAME}/lambroll /usr/local/bin
+
+examples:
+  install_lambroll:
+    description: Easily install lambroll command
+    usage:
+      version: 2.1
+      orbs:
+        lambroll: fujiwara/lambroll@x.y
+        jobs:
+          lambroll_example:
+          steps:
+            - checkout
+            - lambroll/install
+            - run:
+                command: |
+                  lambroll deploy

@@ -30,6 +30,39 @@ $ brew install fujiwara/tap/lambroll
 
 [Releases](https://github.com/fujiwara/lambroll/releases)
 
+### CircleCI Orb
+
+https://circleci.com/orbs/registry/orb/fujiwara/lambroll
+
+```yml
+version: 2.1
+orbs:
+  ecspresso: fujiwara/lambroll@0.0.7
+  jobs:
+    steps:
+      - checkout
+      - lambroll/install:
+          version: v0.9.1
+      - run:
+          command: |
+            lambroll deploy
+```
+
+### GitHub Actions
+
+Action fujiwara/lambroll@v0 installs lambroll binary for Linux into /usr/local/bin. This action runs install only.
+
+```yml
+jobs:
+  deploy:
+    - uses: actions/checkout@v2
+    - uses: fujiwara/lambroll@v0
+      with:
+        version: v0.9.1
+    - run: |
+        lambroll deploy
+```
+
 ## Quick start
 
 Try migrate your existing Lambda function `hello`.
