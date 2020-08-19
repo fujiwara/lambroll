@@ -55,12 +55,14 @@ Action fujiwara/lambroll@v0 installs lambroll binary for Linux into /usr/local/b
 ```yml
 jobs:
   deploy:
-    - uses: actions/checkout@v2
-    - uses: fujiwara/lambroll@v0
-      with:
-        version: v0.9.1
-    - run: |
-        lambroll deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: fujiwara/lambroll@v0
+        with:
+          version: v0.9.1
+      - run: |
+          lambroll deploy
 ```
 
 ## Quick start
