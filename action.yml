@@ -6,6 +6,9 @@ runs:
   using: "composite"
   steps:
     - run: |
-        curl -sL https://github.com/fujiwara/lambroll/releases/download/${{ inputs.version }}/lambroll_${{ inputs.version}}_linux_amd64 > /tmp/lambroll
-        sudo install /tmp/lambroll /usr/local/bin
+        cd /tmp
+        curl -sL https://github.com/fujiwara/lambroll/releases/download/${{ inputs.version }}/lambroll_${{ inputs.version}}_linux_amd64.tar.gz \
+        | tar xvf -
+        sudo install lambroll_${{ inputs.version }}_linux_amd64/lambroll /usr/local/bin
+        rm -rf lambroll_${{ inputs.version }}_linux_amd64/
       shell: bash
