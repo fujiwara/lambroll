@@ -1,6 +1,7 @@
 package appspec
 
 import (
+	"github.com/aws/aws-sdk-go/aws"
 	"gopkg.in/yaml.v2"
 )
 
@@ -12,9 +13,22 @@ type AppSpec struct {
 	Hooks     []*Hook                `yaml:"Hooks,omitempty"`
 }
 
-func New() *AppSpec {
+func New(funcName, aliasName, currentVersion, targetVersion string) *AppSpec {
 	return &AppSpec{
-		Version: &Version,
+		Version: aws.String("0.0"),
+		Resources: []map[string]*Resource{
+			{
+				funcName: {
+					Type: aws.String("AWS::Lambda::Function"),
+					Properties: &Properties{
+						Name:           aws.String(funcName),
+						Alias:          aws.String(aliasName),
+						CurrentVersion: aws.String(currentVersion),
+						TargetVersion:  aws.String(targetVersion),
+					},
+				},
+			},
+		},
 	}
 }
 

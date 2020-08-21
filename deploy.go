@@ -23,6 +23,7 @@ type DeployOption struct {
 	AliasName        *string
 	DryRun           *bool
 	SkipArchive      *bool
+	AppSpec          *bool
 }
 
 func (opt DeployOption) label() string {
@@ -151,11 +152,18 @@ func (app *App) Deploy(opt DeployOption) error {
 	} else {
 		log.Println("[info] deployed")
 	}
-	if *opt.DryRun || !*opt.Publish {
+	if *opt.DryRun {
 		return nil
 	}
 
-	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+	if *opt.AppSpec {
+		if err := app.generateAppSpec(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName}); err != nil {
+			return err
+		}
+	} else if *opt.Publish {
+		return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+	}
+	return nil
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
