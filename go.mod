@@ -7,9 +7,11 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.32.3
 	github.com/go-test/deep v1.0.7
+	github.com/google/go-cmp v0.5.1
 	github.com/hashicorp/logutils v1.0.0
 	github.com/kayac/go-config v0.4.2
 	github.com/kayac/go-config/tfstate v0.0.0-20200817062630-a1dc51ca7726
 	github.com/kylelemons/godebug v1.1.0
 	github.com/pkg/errors v0.9.1
+	gopkg.in/yaml.v2 v2.3.0
 )
