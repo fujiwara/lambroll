@@ -24,3 +24,10 @@ dist:
 
 release:
 	ghr -u fujiwara -r lambroll -n "$(GIT_VER)" $(GIT_VER) dist/
+
+orb/publish:
+	circleci orb validate circleci-orb.yml
+	circleci orb publish circleci-orb.yml $(ORB_NAMESPACE)/lambroll@dev:latest
+
+orb/promote:
+	circleci orb publish promote $(ORB_NAMESPACE)/lambroll@dev:latest patch

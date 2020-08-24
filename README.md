@@ -20,7 +20,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 
 ## Install
 
-### Homebrew (macOS only)
+### Homebrew (macOS and Linux)
 
 ```console
 $ brew install fujiwara/tap/lambroll
