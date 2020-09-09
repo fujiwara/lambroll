@@ -119,7 +119,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	var newerVersion string
 	if !*opt.DryRun {
 		if _, err := app.lambda.UpdateFunctionConfiguration(confIn); err != nil {
-			return errors.Wrap(err, "failed to update function confugration")
+			return errors.Wrap(err, "failed to update function configuration")
 		}
 	}
 	if err := app.updateTags(fn, opt); err != nil {
