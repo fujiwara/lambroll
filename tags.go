@@ -11,7 +11,7 @@ import (
 
 func (app *App) updateTags(fn *Function, opt DeployOption) error {
 	if fn.Tags == nil {
-		log.Println("[debug] Tags not defined in function.json skip udpating tags")
+		log.Println("[debug] Tags not defined in function.json skip updating tags")
 		return nil
 	}
 	arn := app.functionArn(*fn.FunctionName)
