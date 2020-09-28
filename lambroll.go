@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/kayac/go-config"
-	"github.com/kayac/go-config/tfstate"
 	"github.com/pkg/errors"
 )
 
@@ -91,7 +91,7 @@ func New(opt *Option) (*App, error) {
 
 	loader := config.New()
 	if opt.TFState != nil && *opt.TFState != "" {
-		funcs, err := tfstate.Load(*opt.TFState)
+		funcs, err := tfstate.FuncMap(*opt.TFState)
 		if err != nil {
 			return nil, err
 		}
