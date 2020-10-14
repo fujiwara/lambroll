@@ -1,7 +1,5 @@
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/Songmu/prompter v0.3.0 h1:u4T18daNMg/p37COWQqIhZXVLhwnL5LJin6BU4JD2bs=
-github.com/Songmu/prompter v0.3.0/go.mod h1:qXRyRoOsLZIF5fWoylqmM6xtUzwjvV+dg2hxfS3xikM=
 github.com/Songmu/prompter v0.4.0 h1:4dEOeAegBsB7xU5kTvo6+YfSAdTD11UjA7FcDk8xk8A=
 github.com/Songmu/prompter v0.4.0/go.mod h1:qXRyRoOsLZIF5fWoylqmM6xtUzwjvV+dg2hxfS3xikM=
 github.com/alecthomas/go-thrift v0.0.0-20170109061633-7914173639b2/go.mod h1:CxCgO+NdpMdi9SsTlGbc0W+/UNxO3I0AabOEJZ3w61w=
@@ -25,8 +23,8 @@ github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSs
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 h1:Ghm4eQYC0nEPnSJdVkTrXpu9KtoVCSo1hg7mtI7G9KU=
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239/go.mod h1:Gdwt2ce0yfBxPvZrHkprdPPTTS3N5rwmLE8T22KBXlw=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
-github.com/fujiwara/tfstate-lookup v0.0.13 h1:CIRlGuOPWgY+5aD56ZTxmCNNJUFupXqAknIvEc014po=
-github.com/fujiwara/tfstate-lookup v0.0.13/go.mod h1:08o5Rm5pKzvIxoZe3D0NIT8AHYBqTzyUU03BZ/c0IKA=
+github.com/fujiwara/tfstate-lookup v0.0.14 h1:cjSRXGRWRq57WCDt5VESFpFBNTQF18eCAv8zv+En260=
+github.com/fujiwara/tfstate-lookup v0.0.14/go.mod h1:08o5Rm5pKzvIxoZe3D0NIT8AHYBqTzyUU03BZ/c0IKA=
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/go-test/deep v1.0.7 h1:/VSMRlnY/JSyqxQUzQLKVMAskpY/NZKFA5j2P+0pP2M=
 github.com/go-test/deep v1.0.7/go.mod h1:QV8Hv/iy04NyLBxAdO9njL0iVPN1S4d/A3NVv1V36o8=
@@ -49,8 +47,6 @@ github.com/jmespath/go-jmespath v0.4.0 h1:BEgLn5cpjn8UN1mAw4NjwDrS35OdebyEtFe+9Y
 github.com/jmespath/go-jmespath v0.4.0/go.mod h1:T8mJZnbsbmF+m6zOOFylbeCJqk5+pHWvzYPziyZiYoo=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1 h1:shLQSRRSCCPj3f2gpwzGwWFoC7ycTf1rcQZHOlsJ6N8=
 github.com/jmespath/go-jmespath/internal/testify v1.5.1/go.mod h1:L3OGu8Wl2/fWfCI6z80xFu9LTZmf1ZRjMHUOPmWr69U=
-github.com/kayac/go-config v0.4.2 h1:gdp+dhvVzapEj0f7p7Sy9gChN50ZS2WcThbOexJCFwE=
-github.com/kayac/go-config v0.4.2/go.mod h1:5C4ZN+sMjYpEX0bi+AcgF6g0hZYVdzZiV16TEyzAzfk=
 github.com/kayac/go-config v0.5.0 h1:a1q0KYp++NaZ4xcAb3q6DBnBpL6475YiTMHPFhuXgUQ=
 github.com/kayac/go-config v0.5.0/go.mod h1:5C4ZN+sMjYpEX0bi+AcgF6g0hZYVdzZiV16TEyzAzfk=
 github.com/kr/pretty v0.1.0 h1:L/CwN0zerZDmRFUapSPitk6f+Q3+0za1rQkzVuMiMFI=
