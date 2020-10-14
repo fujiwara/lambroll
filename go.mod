@@ -3,7 +3,7 @@ module github.com/fujiwara/lambroll
 go 1.13
 
 require (
-	github.com/Songmu/prompter v0.3.0
+	github.com/Songmu/prompter v0.4.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.32.3
 	github.com/fujiwara/tfstate-lookup v0.0.13
