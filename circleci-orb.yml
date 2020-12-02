@@ -12,7 +12,7 @@ commands:
       version:
         description: lambroll version
         type: string
-        default: v0.9.1
+        default: v0.10.0
     steps:
       - detect/init
       - run:
