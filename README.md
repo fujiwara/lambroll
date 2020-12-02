@@ -38,7 +38,10 @@ https://circleci.com/orbs/registry/orb/fujiwara/lambroll
 version: 2.1
 orbs:
   lambroll: fujiwara/lambroll@0.0.7
-  jobs:
+jobs:
+  deloy:
+    docker:
+      - image: cimg/base
     steps:
       - checkout
       - lambroll/install:
@@ -199,6 +202,24 @@ Flags:
   - Excludes files matched (wildcard pattern) in `--exclude-file`.
 - Create / Update Lambda function
 - Create an alias to the published version when `--publish` (default).
+
+#### Deploy container image
+
+lambroll also support to deploy a container image for Lambda.
+
+PackageType=Image and Code.ImageUri are required in function.json.
+
+```json
+{
+  "FunctionName": "container",
+  "MemorySize": 128,
+  "Role": "arn:aws:iam::012345678912:role/test_lambda_function",
+  "PackageType": "Image",
+  "Code": {
+    "ImageUri": "012345678912.dkr.ecr.ap-northeast-1.amazonaws.com/lambda/test:latest"
+  }
+}
+```
 
 ### Rollback
 
