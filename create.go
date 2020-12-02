@@ -19,6 +19,15 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		info    os.FileInfo
 	)
 
+	if aws.StringValue(fn.PackageType) == "Image" {
+		if fn.Code == nil || fn.Code.ImageUri == nil {
+			return errors.New("PackageType=Image requires Code.ImageUri in function definition")
+		}
+		// deploy docker image. no need to preprare
+		log.Printf("[info] using docker image %s", *fn.Code.ImageUri)
+		return nil
+	}
+
 	if opt.SkipArchive != nil && *opt.SkipArchive {
 		if fn.Code == nil || fn.Code.S3Bucket == nil || fn.Code.S3Key == nil {
 			return errors.New("--skip-archive requires Code.S3Bucket and Code.S3key elements in function definition")

@@ -113,6 +113,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		Timeout:           fn.Timeout,
 		TracingConfig:     fn.TracingConfig,
 		VpcConfig:         fn.VpcConfig,
+		ImageConfig:       fn.ImageConfig,
 	}
 	log.Printf("[debug]\n%s", confIn.String())
 
@@ -133,6 +134,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		S3Bucket:        fn.Code.S3Bucket,
 		S3Key:           fn.Code.S3Key,
 		S3ObjectVersion: fn.Code.S3ObjectVersion,
+		ImageUri:        fn.Code.ImageUri,
 	}
 	if *opt.DryRun {
 		codeIn.DryRun = aws.Bool(true)
