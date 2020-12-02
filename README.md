@@ -45,7 +45,7 @@ jobs:
     steps:
       - checkout
       - lambroll/install:
-          version: v0.9.1
+          version: v0.10.0
       - run:
           command: |
             lambroll deploy
@@ -63,7 +63,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: fujiwara/lambroll@v0
         with:
-          version: v0.9.1
+          version: v0.10.0
       - run: |
           lambroll deploy
 ```
