@@ -47,6 +47,7 @@ func _main() int {
 		Publish:          deploy.Flag("publish", "publish function").Default("true").Bool(),
 		AliasName:        deploy.Flag("alias", "alias name for publish").Default(lambroll.CurrentAliasName).String(),
 		SkipArchive:      deploy.Flag("skip-archive", "skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition").Default("false").Bool(),
+		AppSpec:          deploy.Flag("appspec", "generate appspec.yml").Default("false").Bool(),
 	}
 
 	rollback := kingpin.Command("rollback", "rollback function")
