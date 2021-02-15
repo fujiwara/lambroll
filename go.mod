@@ -5,7 +5,7 @@ go 1.13
 require (
 	github.com/Songmu/prompter v0.4.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aws/aws-sdk-go v1.36.0
+	github.com/aws/aws-sdk-go v1.37.11
 	github.com/fujiwara/tfstate-lookup v0.1.2
 	github.com/go-test/deep v1.0.7
 	github.com/hashicorp/logutils v1.0.0
