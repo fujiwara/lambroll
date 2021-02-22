@@ -122,6 +122,7 @@ Flags:
   --function="function.json"  Function file path
   --tfstate=""                URL to terraform.tfstate
   --endpoint=""               AWS API Lambda Endpoint
+  --envfile=ENVFILE ...       environment files
 
 Commands:
   help [<command>...]
@@ -359,6 +360,17 @@ Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will
         }
     }
 }
+```
+
+#### Enviroment variables from envfile
+
+`lambroll --envfile .env1 .env2` reads files named .env1 and .env2 as environment files and export variables in these files.
+
+These files are parsed by [hashicorp/go-envparse](https://github.com/hashicorp/go-envparse).
+
+```env
+FOO=foo
+export BAR="bar"
 ```
 
 #### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))

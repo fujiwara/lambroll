@@ -27,6 +27,7 @@ func _main() int {
 		Region:   kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
 		TFState:  kingpin.Flag("tfstate", "URL to terraform.tfstate").Default("").String(),
 		Endpoint: kingpin.Flag("endpoint", "AWS API Lambda Endpoint").Default("").String(),
+		Envfile:  kingpin.Flag("envfile", "environment files").Strings(),
 	}
 
 	init := kingpin.Command("init", "init function.json")

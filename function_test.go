@@ -7,10 +7,12 @@ import (
 
 func TestLoadFunction(t *testing.T) {
 	os.Setenv("FUNCTION_NAME", "test")
-	os.Setenv("JSON", `{"foo":"bar"}`)
-	os.Setenv("WORLD", "a")
+	envfiles := []string{"test/env"}
 	path := "test/terraform.tfstate"
-	app, err := New(&Option{TFState: &path})
+	app, err := New(&Option{
+		TFState: &path,
+		Envfile: &envfiles,
+	})
 	if err != nil {
 		t.Error(err)
 	}
