@@ -25,7 +25,7 @@ func _main() int {
 	opt := lambroll.Option{
 		Profile:  kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
 		Region:   kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
-		TFState:  kingpin.Flag("tfstate", "path to terraform.tfstate").Default("").String(),
+		TFState:  kingpin.Flag("tfstate", "URL to terraform.tfstate").Default("").String(),
 		Endpoint: kingpin.Flag("endpoint", "AWS API Lambda Endpoint").Default("").String(),
 	}
 

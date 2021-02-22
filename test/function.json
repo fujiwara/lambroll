@@ -19,5 +19,15 @@
     "Timeout": 5,
     "TracingConfig": {
         "Mode": "PassThrough"
+    },
+    "VpcConfig": {
+        "SubnetIds": [
+            "subnet-08dc9a51660120991",
+            "subnet-023e96b860485e2ad",
+            "subnet-045cd24ab8e92a20d"
+        ],
+        "SecurityGroupIds": [
+            "{{ tfstatef `aws_security_group.internal['%s'].id` (must_env `WORLD`) }}"
+        ]
     }
 }
