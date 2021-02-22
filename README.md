@@ -120,7 +120,7 @@ Flags:
   --region="ap-northeast-1"   AWS region
   --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
-  --tfstate=""                path to terraform.tfstate
+  --tfstate=""                URL to terraform.tfstate
   --endpoint=""               AWS API Lambda Endpoint
 
 Commands:
@@ -185,7 +185,7 @@ Flags:
   --function="function.json"  Function file path
   --profile="$AWS_PROFILE"    AWS credential profile name
   --region="$AWS_REGION"      AWS region
-  --tfstate=""                path to terraform.tfstate
+  --tfstate=""                URL to terraform.tfstate
   --endpoint=""               AWS API Lambda Endpoint
   --src="."                   function zip archive or src dir
   --exclude-file=".lambdaignore"
@@ -363,7 +363,7 @@ Environment variable `FOO` is expanded. When `FOO` is not defined, lambroll will
 
 #### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
 
-When `--tfstate` option set to path to `terraform.tfstate`, tfstate template function enabled.
+When `--tfstate` option set to an URL to `terraform.tfstate`, tfstate template function enabled.
 
 For example, define your AWS resources by terraform.
 
@@ -375,7 +375,7 @@ data "aws_iam_role" "lambda" {
 
 `terraform apply` creates a terraform.tfstate file.
 
-`lambroll --tfstate terraform.tfstate ...` enables to lookup resource attributes in the tfstate.
+`lambroll --tfstate URL ...` enables to lookup resource attributes in the tfstate URL.
 
 ```json
 {
@@ -388,6 +388,15 @@ data "aws_iam_role" "lambda" {
   "Timeout": 5,
   "TracingConfig": {
     "Mode": "PassThrough"
+  },
+  "VpcConfig": {
+    "SubnetIds": [
+      "{{ tfstate `aws_subnet.lambda['az-a'].id` }}",
+      "{{ tfstate `aws_subnet.lambda['az-b'].id` }}"
+    ],
+    "SecurityGroupIds": [
+      "{{ tfstatef `aws_security_group.internal['%s'].id` (must_env `WORLD`) }}"
+    ]
   }
 }
 ```
