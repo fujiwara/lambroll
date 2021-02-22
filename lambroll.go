@@ -3,6 +3,7 @@ package lambroll
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -10,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
+	"github.com/hashicorp/go-envparse"
 	"github.com/kayac/go-config"
 	"github.com/pkg/errors"
 )
@@ -64,6 +66,12 @@ type App struct {
 
 // New creates an application
 func New(opt *Option) (*App, error) {
+	for _, envfile := range *opt.Envfile {
+		if err := exportEnvFile(envfile); err != nil {
+			return nil, err
+		}
+	}
+
 	awsCfg := &aws.Config{}
 	if opt.Region != nil && *opt.Region != "" {
 		awsCfg.Region = aws.String(*opt.Region)
@@ -165,4 +173,25 @@ func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
 	fn.Tags = tags
 
 	return fn
+}
+
+func exportEnvFile(file string) error {
+	if file == "" {
+		return nil
+	}
+
+	f, err := os.Open(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	envs, err := envparse.Parse(f)
+	if err != nil {
+		return err
+	}
+	for key, value := range envs {
+		os.Setenv(key, value)
+	}
+	return nil
 }

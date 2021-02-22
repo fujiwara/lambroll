@@ -1,0 +1,2 @@
+export JSON='{"foo":"bar"}'
+WORLD="a"
