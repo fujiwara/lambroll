@@ -8,6 +8,7 @@ import (
 func TestLoadFunction(t *testing.T) {
 	os.Setenv("FUNCTION_NAME", "test")
 	os.Setenv("JSON", `{"foo":"bar"}`)
+	os.Setenv("WORLD", "a")
 	path := "test/terraform.tfstate"
 	app, err := New(&Option{TFState: &path})
 	if err != nil {
@@ -28,6 +29,9 @@ func TestLoadFunction(t *testing.T) {
 	}
 	if *fn.Environment.Variables["JSON"] != `{"foo":"bar"}` {
 		t.Errorf("unexpected environment %v", fn.Environment.Variables)
+	}
+	if *fn.VpcConfig.SecurityGroupIds[0] != "sg-01a9b01eab0a3c154" {
+		t.Errorf("unexpected SecurityGroupIds %v", fn.VpcConfig.SecurityGroupIds)
 	}
 	t.Log(fn.String())
 }
