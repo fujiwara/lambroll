@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -135,11 +136,10 @@ func (app *App) Deploy(opt DeployOption) error {
 		S3Key:           fn.Code.S3Key,
 		S3ObjectVersion: fn.Code.S3ObjectVersion,
 		ImageUri:        fn.Code.ImageUri,
+		Publish:         nil, // temporary disable publish to avoid AWS Bug
 	}
 	if *opt.DryRun {
 		codeIn.DryRun = aws.Bool(true)
-	} else {
-		codeIn.Publish = opt.Publish
 	}
 	log.Printf("[debug]\n%s", codeIn.String())
 
@@ -157,7 +157,39 @@ func (app *App) Deploy(opt DeployOption) error {
 		return nil
 	}
 
+	// call PublishVersion API instead of UpdateFunctionCode.Publish
+	if aws.BoolValue(opt.Publish) {
+		newerVersion, err = app.publishVersion(*fn.FunctionName, *res.CodeSha256)
+		if err != nil {
+			return err
+		}
+	}
+
 	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+}
+
+func (app *App) publishVersion(functionName, codeSha256 string) (string, error) {
+	log.Printf("[info] publish version $LATEST to sha256:%s", codeSha256)
+PUBLISH:
+	for {
+		res, err := app.lambda.PublishVersion(&lambda.PublishVersionInput{
+			FunctionName: aws.String(functionName),
+			CodeSha256:   aws.String(codeSha256),
+		})
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				case lambda.ErrCodeResourceConflictException:
+					log.Println("[debug] retrying", aerr.Message())
+					time.Sleep(5 * time.Second) // mostly UpdateFunctionCode needs 30sec...
+					continue PUBLISH
+				}
+			}
+			return "", errors.Wrap(err, "failed to publish version")
+		}
+		log.Println("[info] published version", *res.Version)
+		return aws.StringValue(res.Version), nil
+	}
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
