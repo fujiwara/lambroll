@@ -2,6 +2,7 @@ package lambroll
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -143,9 +144,9 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	log.Printf("[debug]\n%s", codeIn.String())
 
-	res, err := app.lambda.UpdateFunctionCode(codeIn)
+	res, err := app.updateFunctionCodeWithRetry(context.Background(), codeIn)
 	if err != nil {
-		return errors.Wrap(err, "failed to update function code")
+		return err
 	}
 	if res.Version != nil {
 		newerVersion = *res.Version
@@ -158,6 +159,26 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 
 	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+}
+
+func (app *App) updateFunctionCodeWithRetry(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {
+	retrier := retryPolicy.Start(ctx)
+	for retrier.Continue() {
+		res, err := app.lambda.UpdateFunctionCode(in)
+		if err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				case lambda.ErrCodeResourceConflictException:
+					log.Println("[debug] retrying", aerr.Message())
+					continue
+				}
+			} else {
+				return nil, errors.Wrap(err, "failed to update function code")
+			}
+		}
+		return res, nil
+	}
+	return nil, errors.New("failed to update function code (max retries)")
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {

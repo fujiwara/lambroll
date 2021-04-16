@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -14,7 +15,14 @@ import (
 	"github.com/hashicorp/go-envparse"
 	"github.com/kayac/go-config"
 	"github.com/pkg/errors"
+	"github.com/shogo82148/go-retry"
 )
+
+var retryPolicy = retry.Policy{
+	MinDelay: time.Second,
+	MaxDelay: 5 * time.Second,
+	MaxCount: 10,
+}
 
 // Function represents configuration of Lambda function
 type Function = lambda.CreateFunctionInput
