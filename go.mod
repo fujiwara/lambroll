@@ -3,9 +3,9 @@ module github.com/fujiwara/lambroll
 go 1.15
 
 require (
-	github.com/Songmu/prompter v0.4.0
+	github.com/Songmu/prompter v0.5.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aws/aws-sdk-go v1.37.11
+	github.com/aws/aws-sdk-go v1.38.22
 	github.com/fujiwara/tfstate-lookup v0.1.4
 	github.com/go-test/deep v1.0.7
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
