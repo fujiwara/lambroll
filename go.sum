@@ -79,8 +79,8 @@ github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239 h1:Ghm4eQYC0nEPnSJdVkTrXpu9KtoVCSo1hg7mtI7G9KU=
 github.com/fastly/go-utils v0.0.0-20180712184237-d95a45783239/go.mod h1:Gdwt2ce0yfBxPvZrHkprdPPTTS3N5rwmLE8T22KBXlw=
 github.com/fatih/color v1.9.0/go.mod h1:eQcE1qtQxscV5RaZvpXrrb8Drkc3/DdQ+uUYCNjL+zU=
-github.com/fujiwara/tfstate-lookup v0.2.2 h1:NjErHJlL/bV4KOJShcgwG8KW5HCZK+6oG2TH5SvmCvY=
-github.com/fujiwara/tfstate-lookup v0.2.2/go.mod h1:vPezdEeEKbIJ7UEdvmrCbbiNksFXRCWWbUtHPbyXbxc=
+github.com/fujiwara/tfstate-lookup v0.2.3 h1:w1Ej6ifgWvKXlSiiMjjUS81u0nIwH7+ZbZCRgNA7geI=
+github.com/fujiwara/tfstate-lookup v0.2.3/go.mod h1:vPezdEeEKbIJ7UEdvmrCbbiNksFXRCWWbUtHPbyXbxc=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
