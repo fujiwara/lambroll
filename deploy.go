@@ -22,6 +22,7 @@ type DeployOption struct {
 	ExcludeFile      *string
 	Publish          *bool
 	AliasName        *string
+	AliasToLatest    *bool
 	DryRun           *bool
 	SkipArchive      *bool
 }
@@ -152,13 +153,16 @@ func (app *App) Deploy(opt DeployOption) error {
 		newerVersion = *res.Version
 		log.Printf("[info] deployed version %s %s", *res.Version, opt.label())
 	} else {
-		log.Println("[info] deployed")
+		newerVersion = versionLatest
+		log.Printf("[info] deployed version %s %s", newerVersion, opt.label())
 	}
-	if *opt.DryRun || !*opt.Publish {
+	if *opt.DryRun {
 		return nil
 	}
-
-	return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+	if *opt.Publish || *opt.AliasToLatest {
+		return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+	}
+	return nil
 }
 
 func (app *App) updateFunctionCodeWithRetry(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {

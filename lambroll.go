@@ -18,6 +18,8 @@ import (
 	"github.com/shogo82148/go-retry"
 )
 
+const versionLatest = "$LATEST"
+
 var retryPolicy = retry.Policy{
 	MinDelay: time.Second,
 	MaxDelay: 5 * time.Second,
