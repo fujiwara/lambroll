@@ -99,7 +99,10 @@ func New(opt *Option) (*App, error) {
 		}
 		awsCfg.EndpointResolver = endpoints.ResolverFunc(customResolverFunc)
 	}
-	sessOpt := session.Options{Config: *awsCfg}
+	sessOpt := session.Options{
+		Config:            *awsCfg,
+		SharedConfigState: session.SharedConfigEnable,
+	}
 	var profile string
 	if opt.Profile != nil && *opt.Profile != "" {
 		sessOpt.Profile = *opt.Profile
