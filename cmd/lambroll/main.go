@@ -49,6 +49,7 @@ func _main() int {
 		AliasName:        deploy.Flag("alias", "alias name for publish").Default(lambroll.CurrentAliasName).String(),
 		AliasToLatest:    deploy.Flag("alias-to-latest", "set alias to unpublished $LATEST version").Default("false").Bool(),
 		SkipArchive:      deploy.Flag("skip-archive", "skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition").Default("false").Bool(),
+		KeepVersions:     deploy.Flag("keep-versions", "Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).").Default("0").Int(),
 	}
 
 	rollback := kingpin.Command("rollback", "rollback function")

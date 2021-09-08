@@ -25,6 +25,7 @@ type DeployOption struct {
 	AliasToLatest    *bool
 	DryRun           *bool
 	SkipArchive      *bool
+	KeepVersions     *int
 }
 
 func (opt DeployOption) label() string {
@@ -160,7 +161,13 @@ func (app *App) Deploy(opt DeployOption) error {
 		return nil
 	}
 	if *opt.Publish || *opt.AliasToLatest {
-		return app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+		err := app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+		if err != nil {
+			return err
+		}
+	}
+	if *opt.KeepVersions > 0 { // Ignore zero-value.
+		return app.deleteVersions(*fn.FunctionName, *opt.KeepVersions)
 	}
 	return nil
 }
@@ -212,5 +219,52 @@ func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
 		log.Println("[info] alias updated")
 		log.Printf("[debug]\n%s", alias.String())
 	}
+	return nil
+}
+
+func (app *App) deleteVersions(functionName string, keepVersions int) error {
+	params := &lambda.ListVersionsByFunctionInput{
+		FunctionName: aws.String(functionName),
+	}
+
+	// versions will be set asc order, like 1 to N
+	versions := []*lambda.FunctionConfiguration{}
+
+	for {
+		req, resp := app.lambda.ListVersionsByFunctionRequest(params)
+		if err := req.Send(); err != nil {
+			return err
+		}
+
+		versions = append(versions, resp.Versions...)
+
+		if resp.NextMarker != nil {
+			params.Marker = resp.NextMarker
+			continue
+		}
+
+		break
+	}
+
+	keep := len(versions) - keepVersions
+	for i, v := range versions {
+		if i == 0 {
+			continue
+		}
+		if i >= keep {
+			break
+		}
+
+		log.Printf("[info] deleting function version: %s", *v.Version)
+		_, err := app.lambda.DeleteFunction(&lambda.DeleteFunctionInput{
+			FunctionName: aws.String(functionName),
+			Qualifier:    v.Version,
+		})
+		if err != nil {
+			return errors.Wrap(err, "failed to delete version")
+		}
+	}
+
+	log.Printf("[info] except %d latest versions are deleted", keepVersions)
 	return nil
 }
