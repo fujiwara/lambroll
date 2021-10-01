@@ -93,10 +93,12 @@ func _main() int {
 		FunctionFilePath: function,
 	}
 
-	kingpin.Command("versions", "manage function versions")
+	versions := kingpin.Command("versions", "manage function versions")
 	versionsOption := lambroll.VersionsOption{
 		FunctionFilePath: function,
-		Output:           kingpin.Flag("output", "output format").Default("table").Enum("table", "json", "tsv"),
+		Output:           versions.Flag("output", "output format").Default("table").Enum("table", "json", "tsv"),
+		Purge:            versions.Flag("purge", "purge versions").Default("false").Bool(),
+		KeepVersions:     versions.Flag("keep-versions", "Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).").Default("0").Int(),
 	}
 
 	command := kingpin.Parse()

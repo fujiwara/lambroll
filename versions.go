@@ -17,6 +17,8 @@ import (
 type VersionsOption struct {
 	FunctionFilePath *string
 	Output           *string
+	Purge            *bool
+	KeepVersions     *int
 }
 
 type versionsOutput struct {
@@ -68,6 +70,9 @@ func (app *App) Versions(opt VersionsOption) error {
 		return errors.Wrap(err, "failed to load function")
 	}
 	name := *newFunc.FunctionName
+	if *opt.Purge {
+		return app.deleteVersions(name, *opt.KeepVersions)
+	}
 
 	aliases := make(map[string][]string)
 	var nextAliasMarker *string

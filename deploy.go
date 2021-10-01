@@ -223,6 +223,11 @@ func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
 }
 
 func (app *App) deleteVersions(functionName string, keepVersions int) error {
+	if keepVersions == 0 {
+		log.Printf("[info] specify --keep-versions")
+		return nil
+	}
+
 	params := &lambda.ListVersionsByFunctionInput{
 		FunctionName: aws.String(functionName),
 	}
