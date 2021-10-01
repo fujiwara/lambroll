@@ -93,6 +93,12 @@ func _main() int {
 		FunctionFilePath: function,
 	}
 
+	kingpin.Command("versions", "manage function versions")
+	versionsOption := lambroll.VersionsOption{
+		FunctionFilePath: function,
+		Output:           kingpin.Flag("output", "output format").Default("table").Enum("table", "json", "tsv"),
+	}
+
 	command := kingpin.Parse()
 	if command == "version" {
 		fmt.Println("lambroll", Version)
@@ -132,6 +138,8 @@ func _main() int {
 		err = app.Logs(logsOption)
 	case "diff":
 		err = app.Diff(diffOption)
+	case "versions":
+		err = app.Versions(versionsOption)
 	}
 
 	if err != nil {
