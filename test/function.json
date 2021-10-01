@@ -1,4 +1,8 @@
 {
+    "Architectures": [
+        "x86_64",
+        "arm64"
+    ],
     "Description": "hello function",
     "Environment": {
         "Variables": {

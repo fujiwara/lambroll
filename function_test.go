@@ -35,5 +35,9 @@ func TestLoadFunction(t *testing.T) {
 	if *fn.VpcConfig.SecurityGroupIds[0] != "sg-01a9b01eab0a3c154" {
 		t.Errorf("unexpected SecurityGroupIds %v", fn.VpcConfig.SecurityGroupIds)
 	}
+	arch := fn.Architectures
+	if len(arch) != 2 || *arch[0] != "x86_64" || *arch[1] != "arm64" {
+		t.Errorf("unexpected Architectures %v", fn.Architectures)
+	}
 	t.Log(fn.String())
 }

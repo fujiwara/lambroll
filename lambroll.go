@@ -153,6 +153,7 @@ func (app *App) loadFunction(path string) (*Function, error) {
 
 func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
 	fn := &Function{
+		Architectures:     c.Architectures,
 		Description:       c.Description,
 		FunctionName:      c.FunctionName,
 		Handler:           c.Handler,
