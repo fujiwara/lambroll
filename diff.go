@@ -21,6 +21,7 @@ func (app *App) Diff(opt DiffOption) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to load function")
 	}
+	fillDefaultValues(newFunc)
 	name := *newFunc.FunctionName
 
 	var latest *lambda.FunctionConfiguration
