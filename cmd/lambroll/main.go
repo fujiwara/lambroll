@@ -93,6 +93,14 @@ func _main() int {
 		FunctionFilePath: function,
 	}
 
+	versions := kingpin.Command("versions", "manage function versions")
+	versionsOption := lambroll.VersionsOption{
+		FunctionFilePath: function,
+		Output:           versions.Flag("output", "output format").Default("table").Enum("table", "json", "tsv"),
+		Delete:           versions.Flag("delete", "delete older versions").Default("false").Bool(),
+		KeepVersions:     versions.Flag("keep-versions", "Number of latest versions to keep. Older versions will be deleted with --delete.").Default("-1").Int(),
+	}
+
 	command := kingpin.Parse()
 	if command == "version" {
 		fmt.Println("lambroll", Version)
@@ -132,6 +140,8 @@ func _main() int {
 		err = app.Logs(logsOption)
 	case "diff":
 		err = app.Diff(diffOption)
+	case "versions":
+		err = app.Versions(versionsOption)
 	}
 
 	if err != nil {
