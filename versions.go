@@ -17,7 +17,7 @@ import (
 type VersionsOption struct {
 	FunctionFilePath *string
 	Output           *string
-	Purge            *bool
+	Delete           *bool
 	KeepVersions     *int
 }
 
@@ -70,7 +70,7 @@ func (app *App) Versions(opt VersionsOption) error {
 		return errors.Wrap(err, "failed to load function")
 	}
 	name := *newFunc.FunctionName
-	if *opt.Purge {
+	if *opt.Delete {
 		return app.deleteVersions(name, *opt.KeepVersions)
 	}
 
