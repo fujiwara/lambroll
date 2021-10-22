@@ -71,6 +71,7 @@ func (opt *DeployOption) String() string {
 
 // Deploy deployes a new lambda function code
 func (app *App) Deploy(opt DeployOption) error {
+	ctx := context.Background()
 	if err := (&opt).Expand(); err != nil {
 		return errors.Wrap(err, "failed to validate deploy options")
 	}
@@ -122,7 +123,7 @@ func (app *App) Deploy(opt DeployOption) error {
 
 	var newerVersion string
 	if !*opt.DryRun {
-		if _, err := app.lambda.UpdateFunctionConfiguration(confIn); err != nil {
+		if _, err := app.updateFunctionConfiguration(ctx, confIn); err != nil {
 			return errors.Wrap(err, "failed to update function configuration")
 		}
 	}
@@ -146,7 +147,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	log.Printf("[debug]\n%s", codeIn.String())
 
-	res, err := app.updateFunctionCodeWithRetry(context.Background(), codeIn)
+	res, err := app.updateFunctionCode(ctx, codeIn)
 	if err != nil {
 		return err
 	}
@@ -172,7 +173,32 @@ func (app *App) Deploy(opt DeployOption) error {
 	return nil
 }
 
-func (app *App) updateFunctionCodeWithRetry(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {
+func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.UpdateFunctionConfigurationInput) (*lambda.FunctionConfiguration, error) {
+	retrier := retryPolicy.Start(ctx)
+	for retrier.Continue() {
+		if _, err := app.lambda.UpdateFunctionConfigurationWithContext(ctx, in); err != nil {
+			log.Println("[warn] failed to update function configuration", err)
+			continue
+		}
+		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+			FunctionName: in.FunctionName,
+		})
+		if err != nil {
+			log.Println("[warn] failed to get function, retrying", err)
+			continue
+		} else {
+			s := aws.StringValue(res.Configuration.LastUpdateStatus)
+			if s == lambda.LastUpdateStatusSuccessful {
+				log.Printf("[info] LastUpdateStatus %s", s)
+				return res.Configuration, nil
+			}
+			log.Printf("[debug] LastUpdateStatus %s, retrying", s)
+		}
+	}
+	return nil, errors.New("failed to update function configuration (max retries)")
+}
+
+func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
 		res, err := app.lambda.UpdateFunctionCode(in)
