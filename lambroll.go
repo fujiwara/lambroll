@@ -151,6 +151,26 @@ func (app *App) loadFunction(path string) (*Function, error) {
 	return &fn, nil
 }
 
+func fillDefaultValues(fn *Function) {
+	if len(fn.Architectures) == 0 {
+		fn.Architectures = []*string{aws.String("x86_64")}
+	}
+	if fn.Description == nil {
+		fn.Description = aws.String("")
+	}
+	if fn.MemorySize == nil {
+		fn.MemorySize = aws.Int64(128)
+	}
+	if fn.TracingConfig == nil {
+		fn.TracingConfig = &lambda.TracingConfig{
+			Mode: aws.String("PassThrough"),
+		}
+	}
+	if fn.Timeout == nil {
+		fn.Timeout = aws.Int64(3)
+	}
+}
+
 func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
 	fn := &Function{
 		Architectures:     c.Architectures,
