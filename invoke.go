@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 )
 
@@ -35,6 +37,10 @@ func (app *App) Invoke(opt InvokeOption) error {
 	}
 	if *opt.LogTail {
 		logType = aws.String("Tail")
+	}
+
+	if isatty.IsTerminal(os.Stdin.Fd()) {
+		fmt.Println("Enter JSON payloads for the invoking function into STDIN. (Type Ctrl-D to close.)")
 	}
 
 	dec := json.NewDecoder(os.Stdin)
