@@ -28,6 +28,8 @@ func _main() int {
 		TFState:  kingpin.Flag("tfstate", "URL to terraform.tfstate").Default("").String(),
 		Endpoint: kingpin.Flag("endpoint", "AWS API Lambda Endpoint").Default("").String(),
 		Envfile:  kingpin.Flag("envfile", "environment files").Strings(),
+		ExtStr:   kingpin.Flag("ext-str", "external string values for Jsonnet").StringMap(),
+		ExtCode:  kingpin.Flag("ext-code", "external code values for Jsonnet").StringMap(),
 	}
 
 	init := kingpin.Command("init", "init function.json")

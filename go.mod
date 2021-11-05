@@ -8,9 +8,10 @@ require (
 	github.com/aws/aws-sdk-go v1.40.52
 	github.com/fujiwara/tfstate-lookup v0.4.0
 	github.com/go-test/deep v1.0.7
+	github.com/google/go-jsonnet v0.17.0
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
 	github.com/hashicorp/logutils v1.0.0
-	github.com/kayac/go-config v0.5.1
+	github.com/kayac/go-config v0.6.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/olekukonko/tablewriter v0.0.5
