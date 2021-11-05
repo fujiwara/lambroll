@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
+	"github.com/google/go-jsonnet"
 	"github.com/hashicorp/go-envparse"
 	"github.com/kayac/go-config"
 	"github.com/pkg/errors"
@@ -143,11 +145,27 @@ func (app *App) AWSAccountID() string {
 }
 
 func (app *App) loadFunction(path string) (*Function, error) {
-	src, err := app.loader.ReadWithEnv(path)
-	if err != nil {
-		return nil, err
+	var (
+		src []byte
+		err error
+	)
+	switch filepath.Ext(path) {
+	case ".jsonnet":
+		vm := jsonnet.MakeVM()
+		jsonStr, err := vm.EvaluateFile(path)
+		if err != nil {
+			return nil, err
+		}
+		src, err = app.loader.ReadWithEnvBytes([]byte(jsonStr))
+		if err != nil {
+			return nil, err
+		}
+	default:
+		src, err = app.loader.ReadWithEnv(path)
+		if err != nil {
+			return nil, err
+		}
 	}
-
 	var fn Function
 	if err := unmarshalJSON(src, &fn, path); err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s", path)
