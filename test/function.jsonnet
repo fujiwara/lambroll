@@ -3,7 +3,7 @@
     'x86_64',
     'arm64',
   ],
-  Description: 'hello function',
+  Description: std.extVar('Description'),
   Environment: {
     Variables: {
       JSON: '{{ env `JSON` | json_escape }}',
@@ -17,7 +17,7 @@
     },
   ],
   Handler: 'index.js',
-  MemorySize: 128,
+  MemorySize: std.extVar('MemorySize'),
   Role: '{{ tfstate `data.aws_iam_role.lambda.arn` }}',
   Runtime: 'nodejs12.x',
   Timeout: 5,

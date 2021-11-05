@@ -12,6 +12,12 @@ func TestLoadFunction(t *testing.T) {
 	app, err := New(&Option{
 		TFState: &path,
 		Envfile: &envfiles,
+		ExtStr: &map[string]string{
+			"Description": "hello function",
+		},
+		ExtCode: &map[string]string{
+			"MemorySize": "64 * 2", // == 128
+		},
 	})
 	if err != nil {
 		t.Error(err)

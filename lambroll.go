@@ -74,6 +74,9 @@ type App struct {
 	accountID string
 	profile   string
 	loader    *config.Loader
+
+	extStr  map[string]string
+	extCode map[string]string
 }
 
 // New creates an application
@@ -121,12 +124,20 @@ func New(opt *Option) (*App, error) {
 		loader.Funcs(funcs)
 	}
 
-	return &App{
+	app := &App{
 		sess:    sess,
 		lambda:  lambda.New(sess),
 		profile: profile,
 		loader:  loader,
-	}, nil
+	}
+	if opt.ExtStr != nil {
+		app.extStr = *opt.ExtStr
+	}
+	if opt.ExtCode != nil {
+		app.extCode = *opt.ExtCode
+	}
+
+	return app, nil
 }
 
 // AWSAccountID returns AWS account ID in current session
@@ -152,6 +163,12 @@ func (app *App) loadFunction(path string) (*Function, error) {
 	switch filepath.Ext(path) {
 	case ".jsonnet":
 		vm := jsonnet.MakeVM()
+		for k, v := range app.extStr {
+			vm.ExtVar(k, v)
+		}
+		for k, v := range app.extCode {
+			vm.ExtCode(k, v)
+		}
 		jsonStr, err := vm.EvaluateFile(path)
 		if err != nil {
 			return nil, err

@@ -7,4 +7,6 @@ type Option struct {
 	TFState  *string
 	Endpoint *string
 	Envfile  *[]string
+	ExtStr   *map[string]string
+	ExtCode  *map[string]string
 }
