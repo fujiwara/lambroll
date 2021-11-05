@@ -450,7 +450,7 @@ lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) forma
 $ lambroll \
     --function function.jsonnet \
     --ext-str accountID=0123456789012 \
-    --ext-code memorySize="128 * 4"
+    --ext-code memorySize="128 * 4" \
     deploy
 ```
 
