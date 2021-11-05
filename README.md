@@ -7,6 +7,9 @@ lambroll does,
 - Create a function.
 - Create a Zip archive from local directory.
 - Update function code / configuration / tags / aliases.
+- Rollback a function to previous version.
+- Invoke a function with payloads.
+- Manage function versions.
 
 That's all.
 
@@ -63,7 +66,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: fujiwara/lambroll@v0
         with:
-          version: v0.10.0
+          version: v0.12.0
       - run: |
           lambroll deploy
 ```
@@ -116,13 +119,17 @@ $ lambroll deploy
 usage: lambroll [<flags>] <command> [<args> ...]
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --region="ap-northeast-1"   AWS region
+  --help                      Show context-sensitive help (also try --help-long
+                              and --help-man).
   --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
+  --profile=""                AWS credential profile name
+  --region=""                 AWS region
   --tfstate=""                URL to terraform.tfstate
   --endpoint=""               AWS API Lambda Endpoint
   --envfile=ENVFILE ...       environment files
+  --ext-str=EXT-STR ...       external string values for Jsonnet
+  --ext-code=EXT-CODE ...     external code values for Jsonnet
 
 Commands:
   help [<command>...]
@@ -157,6 +164,9 @@ Commands:
 
   diff
     show display diff of function.json compared with latest function
+
+  versions [<flags>]
+    manage function versions
 ```
 
 ### Init
@@ -420,6 +430,28 @@ data "aws_iam_role" "lambda" {
     ]
   }
 }
+```
+
+### Jsonnet support for function configuration
+
+lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) format.
+
+```jsonnet
+{
+  FunctionName: 'hello',
+  Handler: 'index.handler',
+  MemorySize: std.extVar('memorySize'),
+  Role: 'arn:aws:iam::%s:role/lambda_role' % [ std.extVar('accountID') ],
+  Runtime: 'nodejs14.x',
+}
+```
+
+```console
+$ lambroll \
+    --function function.jsonnet \
+    --ext-str accountID=0123456789012 \
+    --ext-code memorySize="128 * 4"
+    deploy
 ```
 
 ### .lambdaignore
