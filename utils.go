@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"strings"
 
 	"github.com/Songmu/prompter"
 	"github.com/aws/aws-sdk-go/private/protocol/json/jsonutil"
@@ -30,4 +32,20 @@ func marshalJSON(s interface{}) ([]byte, error) {
 	json.Indent(&buf, b, "", "  ")
 	buf.WriteString("\n")
 	return buf.Bytes(), nil
+}
+
+func unmarshalJSON(src []byte, v interface{}, path string) error {
+	strict := json.NewDecoder(bytes.NewReader(src))
+	strict.DisallowUnknownFields()
+	if err := strict.Decode(&v); err != nil {
+		if !strings.Contains(err.Error(), "unknown field") {
+			return err
+		}
+		log.Printf("[warn] %s in %s", err, path)
+
+		// unknown field -> try lax decoder
+		lax := json.NewDecoder(bytes.NewReader(src))
+		return lax.Decode(&v)
+	}
+	return nil
 }

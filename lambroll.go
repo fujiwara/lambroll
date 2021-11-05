@@ -143,9 +143,13 @@ func (app *App) AWSAccountID() string {
 }
 
 func (app *App) loadFunction(path string) (*Function, error) {
-	var fn Function
-	err := app.loader.LoadWithEnvJSON(&fn, path)
+	src, err := app.loader.ReadWithEnv(path)
 	if err != nil {
+		return nil, err
+	}
+
+	var fn Function
+	if err := unmarshalJSON(src, &fn, path); err != nil {
 		return nil, errors.Wrapf(err, "failed to load %s", path)
 	}
 	return &fn, nil
