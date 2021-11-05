@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -84,6 +85,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 }
 
 func (app *App) create(opt DeployOption, fn *Function) error {
+	ctx := context.Background()
 	err := app.prepareFunctionCodeForDeploy(opt, fn)
 	if err != nil {
 		return errors.Wrap(err, "failed to prepare function code")
@@ -94,7 +96,7 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 	version := "(created)"
 	if !*opt.DryRun {
 		fn.Publish = opt.Publish
-		res, err := app.lambda.CreateFunction(fn)
+		res, err := app.createFunction(ctx, fn)
 		if err != nil {
 			return errors.Wrap(err, "failed to create function")
 		}
@@ -128,4 +130,29 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 		log.Printf("[debug]\n%s", alias.String())
 	}
 	return nil
+}
+
+func (app *App) createFunction(ctx context.Context, fn *lambda.CreateFunctionInput) (*lambda.FunctionConfiguration, error) {
+	retrier := retryPolicy.Start(ctx)
+	for retrier.Continue() {
+		if _, err := app.lambda.CreateFunctionWithContext(ctx, fn); err != nil {
+			log.Println("[warn] failed to create function", err)
+			continue
+		}
+		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+			FunctionName: fn.FunctionName,
+		})
+		if err != nil {
+			log.Println("[warn] failed to get function, retrying", err)
+			continue
+		} else {
+			s := aws.StringValue(res.Configuration.LastUpdateStatus)
+			if s == lambda.LastUpdateStatusSuccessful {
+				log.Printf("[info] LastUpdateStatus %s", s)
+				return res.Configuration, nil
+			}
+			log.Printf("[debug] LastUpdateStatus %s, retrying", s)
+		}
+	}
+	return nil, errors.New("failed to create function (max retries reached)")
 }
