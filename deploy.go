@@ -195,7 +195,7 @@ func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.Upda
 			log.Printf("[debug] LastUpdateStatus %s, retrying", s)
 		}
 	}
-	return nil, errors.New("failed to update function configuration (max retries)")
+	return nil, errors.New("failed to update function configuration (max retries reached)")
 }
 
 func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {
