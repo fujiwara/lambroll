@@ -78,7 +78,7 @@ func (app *App) Init(opt InitOption) error {
 			return err
 		}
 	}
-	if aws.StringValue(res.Configuration.PackageType) == "Image" {
+	if res.Configuration != nil && aws.StringValue(res.Configuration.PackageType) == "Image" {
 		log.Printf("[debug] Image URL=%s", *res.Code.ImageUri)
 		fn.PackageType = aws.String("Image")
 		fn.Code = &lambda.FunctionCode{
