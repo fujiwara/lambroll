@@ -1,0 +1,33 @@
+name: manual release
+on:
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: setup tools
+        run: |
+          mkdir ~/bin
+          curl -sL https://github.com/Songmu/goxz/releases/download/v0.4.1/goxz_v0.4.1_linux_amd64.tar.gz | tar zxvf - && install goxz_v0.4.1_linux_amd64/goxz ~/bin/
+          curl -sL https://github.com/tcnksm/ghr/releases/download/v0.13.0/ghr_v0.13.0_linux_amd64.tar.gz | tar zxvf - && install ghr_v0.13.0_linux_amd64/ghr ~/bin/
+
+      - name: dist
+        run: PATH=~/bin:$PATH make dist
+
+      - name: release
+        run: PATH=~/bin:$PATH make prerelease
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
