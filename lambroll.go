@@ -24,8 +24,8 @@ const versionLatest = "$LATEST"
 
 var retryPolicy = retry.Policy{
 	MinDelay: time.Second,
-	MaxDelay: 5 * time.Second,
-	MaxCount: 10,
+	MaxDelay: 10 * time.Second,
+	MaxCount: 30,
 }
 
 // Function represents configuration of Lambda function
