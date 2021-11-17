@@ -83,10 +83,10 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 
 	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
-	_, err = app.lambda.GetFunction(&lambda.GetFunctionInput{
+	var current *lambda.FunctionConfiguration
+	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
-	})
-	if err != nil {
+	}); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
 			switch aerr.Code() {
 			case lambda.ErrCodeResourceNotFoundException:
@@ -94,10 +94,11 @@ func (app *App) Deploy(opt DeployOption) error {
 			}
 		}
 		return err
+	} else {
+		current = res.Configuration
 	}
 
-	err = app.prepareFunctionCodeForDeploy(opt, fn)
-	if err != nil {
+	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
 
@@ -105,7 +106,6 @@ func (app *App) Deploy(opt DeployOption) error {
 	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
-		Environment:       fn.Environment,
 		FunctionName:      fn.FunctionName,
 		FileSystemConfigs: fn.FileSystemConfigs,
 		Handler:           fn.Handler,
@@ -119,6 +119,19 @@ func (app *App) Deploy(opt DeployOption) error {
 		VpcConfig:         fn.VpcConfig,
 		ImageConfig:       fn.ImageConfig,
 	}
+	newArch, _ := marshalJSON(fn.Architectures)
+	currArch, _ := marshalJSON(current.Architectures)
+	if len(newArch) != 0 && !bytes.Equal(currArch, newArch) {
+		log.Printf("[warn] Architectures cannot be updated %s %s", currArch, newArch)
+	}
+	if env := fn.Environment; env == nil || env.Variables == nil {
+		confIn.Environment = &lambda.Environment{
+			Variables: map[string]*string{}, // set empty variables explicitly
+		}
+	} else {
+		confIn.Environment = env
+	}
+
 	log.Printf("[debug]\n%s", confIn.String())
 
 	var newerVersion string
