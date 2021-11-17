@@ -187,31 +187,34 @@ func (app *App) Deploy(opt DeployOption) error {
 }
 
 func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.UpdateFunctionConfigurationInput) (*lambda.FunctionConfiguration, error) {
+	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
+		return nil, err
+	}
+
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		if _, err := app.lambda.UpdateFunctionConfigurationWithContext(ctx, in); err != nil {
-			log.Println("[warn] failed to update function configuration", err)
-			continue
-		}
-		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
-			FunctionName: in.FunctionName,
-		})
-		if err != nil {
-			log.Println("[warn] failed to get function, retrying", err)
-			continue
-		} else {
-			s := aws.StringValue(res.Configuration.LastUpdateStatus)
-			if s == lambda.LastUpdateStatusSuccessful {
-				log.Printf("[info] LastUpdateStatus %s", s)
-				return res.Configuration, nil
+		if res, err := app.lambda.UpdateFunctionConfigurationWithContext(ctx, in); err != nil {
+			if aerr, ok := err.(awserr.Error); ok {
+				switch aerr.Code() {
+				case lambda.ErrCodeResourceConflictException:
+					log.Println("[debug] retrying", aerr.Message())
+					continue
+				}
+				return nil, errors.Wrap(err, "failed to update function configuration")
 			}
-			log.Printf("[debug] LastUpdateStatus %s, retrying", s)
+		} else {
+			log.Println("[info] updated function configuration successfully")
+			return res, nil
 		}
 	}
 	return nil, errors.New("failed to update function configuration (max retries reached)")
 }
 
 func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {
+	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
+		return nil, err
+	}
+
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
 		res, err := app.lambda.UpdateFunctionCode(in)
@@ -226,9 +229,32 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 				return nil, errors.Wrap(err, "failed to update function code")
 			}
 		}
+		log.Println("[info] updated function code successfully")
 		return res, nil
 	}
-	return nil, errors.New("failed to update function code (max retries)")
+	return nil, errors.New("failed to update function code (max retries reached)")
+}
+
+func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name string) error {
+	retrier := retryPolicy.Start(ctx)
+	for retrier.Continue() {
+		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+			FunctionName: aws.String(name),
+		})
+		if err != nil {
+			log.Println("[warn] failed to get function, retrying", err)
+			continue
+		} else {
+			state := aws.StringValue(res.Configuration.State)
+			last := aws.StringValue(res.Configuration.LastUpdateStatus)
+			log.Printf("[info] State:%s LastUpdateStatus:%s", state, last)
+			if last == lambda.LastUpdateStatusSuccessful {
+				return nil
+			}
+			log.Printf("[info] waiting for LastUpdateStatus %s", lambda.LastUpdateStatusSuccessful)
+		}
+	}
+	return errors.New("max retries reached")
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {

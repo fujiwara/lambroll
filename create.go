@@ -133,26 +133,9 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 }
 
 func (app *App) createFunction(ctx context.Context, fn *lambda.CreateFunctionInput) (*lambda.FunctionConfiguration, error) {
-	retrier := retryPolicy.Start(ctx)
-	for retrier.Continue() {
-		if _, err := app.lambda.CreateFunctionWithContext(ctx, fn); err != nil {
-			log.Println("[warn] failed to create function", err)
-			continue
-		}
-		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
-			FunctionName: fn.FunctionName,
-		})
-		if err != nil {
-			log.Println("[warn] failed to get function, retrying", err)
-			continue
-		} else {
-			s := aws.StringValue(res.Configuration.LastUpdateStatus)
-			if s == lambda.LastUpdateStatusSuccessful {
-				log.Printf("[info] LastUpdateStatus %s", s)
-				return res.Configuration, nil
-			}
-			log.Printf("[debug] LastUpdateStatus %s, retrying", s)
-		}
+	if res, err := app.lambda.CreateFunctionWithContext(ctx, fn); err != nil {
+		return nil, errors.Wrap(err, "failed to create function")
+	} else {
+		return res, app.waitForLastUpdateStatusSuccessful(ctx, *fn.FunctionName)
 	}
-	return nil, errors.New("failed to create function (max retries reached)")
 }
