@@ -83,8 +83,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 
 	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
-	var current *lambda.FunctionConfiguration
-	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+	if _, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
 	}); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -94,8 +93,6 @@ func (app *App) Deploy(opt DeployOption) error {
 			}
 		}
 		return err
-	} else {
-		current = res.Configuration
 	}
 
 	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
@@ -118,11 +115,6 @@ func (app *App) Deploy(opt DeployOption) error {
 		TracingConfig:     fn.TracingConfig,
 		VpcConfig:         fn.VpcConfig,
 		ImageConfig:       fn.ImageConfig,
-	}
-	newArch, _ := marshalJSON(fn.Architectures)
-	currArch, _ := marshalJSON(current.Architectures)
-	if len(newArch) != 0 && !bytes.Equal(currArch, newArch) {
-		log.Printf("[warn] Architectures cannot be updated %s %s", currArch, newArch)
 	}
 	if env := fn.Environment; env == nil || env.Variables == nil {
 		confIn.Environment = &lambda.Environment{
