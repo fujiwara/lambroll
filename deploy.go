@@ -138,6 +138,7 @@ func (app *App) Deploy(opt DeployOption) error {
 
 	log.Println("[info] updating function code", opt.label())
 	codeIn := &lambda.UpdateFunctionCodeInput{
+		Architectures:   fn.Architectures,
 		FunctionName:    fn.FunctionName,
 		ZipFile:         fn.Code.ZipFile,
 		S3Bucket:        fn.Code.S3Bucket,
