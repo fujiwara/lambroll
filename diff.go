@@ -22,6 +22,8 @@ func (app *App) Diff(opt DiffOption) error {
 	name := *newFunc.FunctionName
 
 	var latest *lambda.FunctionConfiguration
+	var code *lambda.FunctionCodeLocation
+
 	var tags Tags
 	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: &name,
@@ -29,9 +31,10 @@ func (app *App) Diff(opt DiffOption) error {
 		return errors.Wrapf(err, "failed to GetFunction %s", name)
 	} else {
 		latest = res.Configuration
+		code = res.Code
 		tags = res.Tags
 	}
-	latestFunc := newFunctionFrom(latest, tags)
+	latestFunc := newFunctionFrom(latest, code, tags)
 
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)
