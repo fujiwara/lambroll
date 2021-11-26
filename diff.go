@@ -2,9 +2,6 @@ package lambroll
 
 import (
 	"fmt"
-	"log"
-
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/kylelemons/godebug/diff"
 	"github.com/pkg/errors"
@@ -25,31 +22,23 @@ func (app *App) Diff(opt DiffOption) error {
 	name := *newFunc.FunctionName
 
 	var latest *lambda.FunctionConfiguration
+	var tags Tags
 	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: &name,
 	}); err != nil {
 		return errors.Wrapf(err, "failed to GetFunction %s", name)
 	} else {
 		latest = res.Configuration
-	}
-
-	arn := app.functionArn(name)
-	log.Printf("[debug] listing tags of %s", arn)
-	var tags Tags
-	if res, err := app.lambda.ListTags(&lambda.ListTagsInput{
-		Resource: aws.String(arn),
-	}); err != nil {
-		return errors.Wrap(err, "faled to list tags")
-	} else {
 		tags = res.Tags
 	}
+
 	latestFunc := newFuctionFrom(latest, tags)
 
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-		fmt.Println("---", arn)
+		fmt.Println("---", app.functionArn(name))
 		fmt.Println("+++", *opt.FunctionFilePath)
 		fmt.Println(ds)
 	}
