@@ -31,8 +31,7 @@ func (app *App) Diff(opt DiffOption) error {
 		latest = res.Configuration
 		tags = res.Tags
 	}
-
-	latestFunc := newFuctionFrom(latest, tags)
+	latestFunc := newFunctionFrom(latest, tags)
 
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)

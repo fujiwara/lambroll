@@ -210,7 +210,7 @@ func fillDefaultValues(fn *Function) {
 	}
 }
 
-func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
+func newFunctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
 	fn := &Function{
 		Architectures:     c.Architectures,
 		Description:       c.Description,

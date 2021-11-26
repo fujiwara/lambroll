@@ -70,7 +70,7 @@ func (app *App) Init(opt InitOption) error {
 		tags = res.Tags
 	}
 
-	fn := newFuctionFrom(c, tags)
+	fn := newFunctionFrom(c, tags)
 
 	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
