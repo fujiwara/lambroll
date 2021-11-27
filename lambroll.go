@@ -210,7 +210,7 @@ func fillDefaultValues(fn *Function) {
 	}
 }
 
-func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
+func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeLocation, tags Tags) *Function {
 	fn := &Function{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
@@ -243,6 +243,15 @@ func newFuctionFrom(c *lambda.FunctionConfiguration, tags Tags) *Function {
 			SecurityGroupIds: v.SecurityGroupIds,
 		}
 	}
+
+	if aws.StringValue(code.RepositoryType) == "ECR" || aws.StringValue(fn.PackageType) == "Image" {
+		log.Printf("[debug] Image URL=%s", *code.ImageUri)
+		fn.PackageType = aws.String("Image")
+		fn.Code = &lambda.FunctionCode{
+			ImageUri: code.ImageUri,
+		}
+	}
+
 	fn.Tags = tags
 
 	return fn

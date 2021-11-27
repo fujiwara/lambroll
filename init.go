@@ -70,19 +70,12 @@ func (app *App) Init(opt InitOption) error {
 		tags = res.Tags
 	}
 
-	fn := newFuctionFrom(c, tags)
+	fn := newFunctionFrom(c, res.Code, tags)
 
 	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
 		if err := download(*res.Code.Location, FunctionZipFilename); err != nil {
 			return err
-		}
-	}
-	if res.Configuration != nil && aws.StringValue(res.Configuration.PackageType) == "Image" {
-		log.Printf("[debug] Image URL=%s", *res.Code.ImageUri)
-		fn.PackageType = aws.String("Image")
-		fn.Code = &lambda.FunctionCode{
-			ImageUri: res.Code.ImageUri,
 		}
 	}
 
