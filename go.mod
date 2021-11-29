@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/Songmu/prompter v0.5.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aws/aws-sdk-go v1.40.52
+	github.com/aws/aws-sdk-go v1.42.14
 	github.com/fujiwara/tfstate-lookup v0.4.0
 	github.com/go-test/deep v1.0.7
 	github.com/google/go-jsonnet v0.17.0
