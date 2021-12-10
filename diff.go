@@ -2,7 +2,9 @@ package lambroll
 
 import (
 	"fmt"
+
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/fatih/color"
 	"github.com/kylelemons/godebug/diff"
 	"github.com/pkg/errors"
 )
@@ -40,8 +42,8 @@ func (app *App) Diff(opt DiffOption) error {
 	newJSON, _ := marshalJSON(newFunc)
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-		fmt.Println("---", app.functionArn(name))
-		fmt.Println("+++", *opt.FunctionFilePath)
+		fmt.Println(color.RedString("---", app.functionArn(name)))
+		fmt.Println(color.GreenString("+++", *opt.FunctionFilePath))
 		fmt.Println(ds)
 	}
 	return nil
