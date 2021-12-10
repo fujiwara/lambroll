@@ -6,8 +6,10 @@ import (
 	"os"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/fatih/color"
 	"github.com/fujiwara/lambroll"
-	"github.com/hashicorp/logutils"
+	"github.com/fujiwara/logutils"
+	"github.com/mattn/go-isatty"
 )
 
 // Version number
@@ -21,6 +23,11 @@ func _main() int {
 	kingpin.Command("version", "show version")
 	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
 	function := kingpin.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String()
+	colorDefault := "false"
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		colorDefault = "true"
+	}
+	colorOpt := kingpin.Flag("color", "enable colored output").Default(colorDefault).Bool()
 
 	opt := lambroll.Option{
 		Profile:  kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
@@ -108,9 +115,16 @@ func _main() int {
 		fmt.Println("lambroll", Version)
 		return 0
 	}
+	color.NoColor = !*colorOpt
 
 	filter := &logutils.LevelFilter{
-		Levels:   []logutils.LogLevel{"trace", "debug", "info", "warn", "error"},
+		Levels: []logutils.LogLevel{"debug", "info", "warn", "error"},
+		ModifierFuncs: []logutils.ModifierFunc{
+			logutils.Color(color.FgHiBlack), // debug
+			nil,                             // info
+			logutils.Color(color.FgYellow),  // warn
+			logutils.Color(color.FgRed),     // error
+		},
 		MinLevel: logutils.LogLevel(*logLevel),
 		Writer:   os.Stderr,
 	}
