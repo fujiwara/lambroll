@@ -17,5 +17,5 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
-	github.com/shogo82148/go-retry v1.1.0
+	github.com/shogo82148/go-retry v1.1.1
 )
