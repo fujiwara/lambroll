@@ -120,8 +120,8 @@ github.com/form3tech-oss/jwt-go v3.2.2+incompatible h1:TcekIExNqud5crz4xD2pavyTg
 github.com/form3tech-oss/jwt-go v3.2.2+incompatible/go.mod h1:pbq4aXjuKjdthFRnoDwaVPLA+WlJuPGy+QneDUgJi2k=
 github.com/fujiwara/logutils v1.1.0 h1:JAYmqW40d/ZjzouB01sfZiaTxwNe4hwmB6lLajZqm1s=
 github.com/fujiwara/logutils v1.1.0/go.mod h1:pdb/Uk70rjQWEmFm/OvYH7OG8meZt1fEIqC0qZbvro4=
-github.com/fujiwara/tfstate-lookup v0.4.0 h1:AaubXvolethCndWpZ+c/Sibm6J4SCIlSxcxvn6cYon4=
-github.com/fujiwara/tfstate-lookup v0.4.0/go.mod h1:F56Bz3W497ZJA0ijFLVgcYeAVuhtbzvV6/hMtu6f2Ek=
+github.com/fujiwara/tfstate-lookup v0.4.1 h1:Bo8JzqSPmBhunoQWL1pPUR1EyyNZamsMX/spDZB+xAI=
+github.com/fujiwara/tfstate-lookup v0.4.1/go.mod h1:F56Bz3W497ZJA0ijFLVgcYeAVuhtbzvV6/hMtu6f2Ek=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
