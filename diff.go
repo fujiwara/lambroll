@@ -43,8 +43,8 @@ func (app *App) Diff(opt DiffOption) error {
 	newJSON, _ := marshalJSON(newFunc)
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-		fmt.Println(color.RedString("---", app.functionArn(name)))
-		fmt.Println(color.GreenString("+++", *opt.FunctionFilePath))
+		fmt.Println(color.RedString("---" + app.functionArn(name)))
+		fmt.Println(color.GreenString("+++" + *opt.FunctionFilePath))
 		fmt.Println(coloredDiff(ds))
 	}
 	return nil
