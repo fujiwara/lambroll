@@ -20,7 +20,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		info    os.FileInfo
 	)
 
-	if aws.StringValue(fn.PackageType) == "Image" {
+	if aws.StringValue(fn.PackageType) == packageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return errors.New("PackageType=Image requires Code.ImageUri in function definition")
 		}
