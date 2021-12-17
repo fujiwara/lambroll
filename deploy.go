@@ -83,7 +83,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 
 	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
-	if _, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+	if current, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
 	}); err != nil {
 		if aerr, ok := err.(awserr.Error); ok {
@@ -92,6 +92,8 @@ func (app *App) Deploy(opt DeployOption) error {
 				return app.create(opt, fn)
 			}
 		}
+		return err
+	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
 

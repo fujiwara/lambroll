@@ -278,3 +278,27 @@ func exportEnvFile(file string) error {
 	}
 	return nil
 }
+
+var errCannotUpdateImageAndZip = errors.New("cannot update function code between Image and Zip")
+
+func validateUpdateFunction(currentConf *lambda.FunctionConfiguration, currentCode *lambda.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
+	newCode := newFn.Code
+
+	// new=Image
+	if newCode != nil && newCode.ImageUri != nil || aws.StringValue(newFn.PackageType) == packageTypeImage {
+		// current=Zip
+		if currentCode == nil || currentCode.ImageUri == nil {
+			return errCannotUpdateImageAndZip
+		}
+	}
+
+	// current=Image
+	if currentCode != nil && currentCode.ImageUri != nil || aws.StringValue(currentConf.PackageType) == packageTypeImage {
+		// new=Zip
+		if newCode == nil || newCode.ImageUri == nil {
+			return errCannotUpdateImageAndZip
+		}
+	}
+
+	return nil
+}
