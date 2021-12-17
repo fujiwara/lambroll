@@ -47,6 +47,10 @@ func (app *App) Diff(opt DiffOption) error {
 		fmt.Println(color.GreenString("+++" + *opt.FunctionFilePath))
 		fmt.Println(coloredDiff(ds))
 	}
+
+	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
+		return err
+	}
 	return nil
 }
 
