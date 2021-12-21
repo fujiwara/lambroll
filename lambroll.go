@@ -245,7 +245,7 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 		}
 	}
 
-	if aws.StringValue(code.RepositoryType) == "ECR" || aws.StringValue(fn.PackageType) == packageTypeImage {
+	if (code != nil && aws.StringValue(code.RepositoryType) == "ECR") || aws.StringValue(fn.PackageType) == packageTypeImage {
 		log.Printf("[debug] Image URL=%s", *code.ImageUri)
 		fn.PackageType = aws.String(packageTypeImage)
 		fn.Code = &lambda.FunctionCode{
