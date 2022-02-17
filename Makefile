@@ -20,7 +20,7 @@ dist:
 	CGO_ENABLED=0 \
 		goxz -pv=$(GIT_VER) \
 		-build-ldflags="-s -w -X main.Version=${GIT_VER}" \
-		-os=darwin,linux -arch=amd64 -d=dist ./cmd/lambroll
+		-os=darwin,linux -arch=amd64,arm64 -d=dist ./cmd/lambroll
 
 release:
 	ghr -u fujiwara -r lambroll -n "$(GIT_VER)" $(GIT_VER) dist/
