@@ -5,8 +5,8 @@ jobs:
     strategy:
       matrix:
         go:
-          - 1.16
-          - 1.17
+          - 1.17.9
+          - 1.18.1
     name: Build
     runs-on: ubuntu-latest
 
@@ -24,13 +24,13 @@ jobs:
 
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go }}
         id: go
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
 
       - name: Build & Test
         run: |
