@@ -49,7 +49,10 @@ var (
 	IgnoreFilename = ".lambdaignore"
 
 	// FunctionFilename defines file name for function definition.
-	FunctionFilename = "function.json"
+	FunctionFilenames = []string{
+		"function.json",
+		"function.jsonnet",
+	}
 
 	// FunctionZipFilename defines file name for zip archive downloaded at init.
 	FunctionZipFilename = "function.zip"
@@ -57,7 +60,8 @@ var (
 	// DefaultExcludes is a preset excludes file list
 	DefaultExcludes = []string{
 		IgnoreFilename,
-		FunctionFilename,
+		FunctionFilenames[0],
+		FunctionFilenames[1],
 		FunctionZipFilename,
 		".git/*",
 		".terraform/*",

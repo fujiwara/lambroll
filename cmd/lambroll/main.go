@@ -22,7 +22,7 @@ func main() {
 func _main() int {
 	kingpin.Command("version", "show version")
 	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
-	function := kingpin.Flag("function", "Function file path").Default(lambroll.FunctionFilename).String()
+	function := kingpin.Flag("function", "Function file path").Default(lambroll.FindFunctionFilename()).String()
 	colorDefault := "false"
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		colorDefault = "true"
@@ -136,7 +136,7 @@ func _main() int {
 		return 1
 	}
 
-	log.Println("[info] lambroll", Version)
+	log.Printf("[info] lambroll %s with %s", Version, *function)
 	switch command {
 	case "init":
 		err = app.Init(initOption)
