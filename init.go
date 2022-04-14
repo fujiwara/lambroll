@@ -35,7 +35,7 @@ func (app *App) Init(opt InitOption) error {
 				c = &lambda.FunctionConfiguration{
 					FunctionName: opt.FunctionName,
 					MemorySize:   aws.Int64(128),
-					Runtime:      aws.String("nodejs10.x"),
+					Runtime:      aws.String("nodejs14.x"),
 					Timeout:      aws.Int64(3),
 					Handler:      aws.String("index.handler"),
 					Role: aws.String(
@@ -89,9 +89,9 @@ func (app *App) Init(opt InitOption) error {
 		return err
 	}
 
-	log.Printf("[info] creating %s", FunctionFilename)
+	log.Printf("[info] creating %s", FunctionFilenames[0])
 	b, _ := marshalJSON(fn)
-	return app.saveFile(FunctionFilename, b, os.FileMode(0644))
+	return app.saveFile(FunctionFilenames[0], b, os.FileMode(0644))
 }
 
 func download(url, path string) error {

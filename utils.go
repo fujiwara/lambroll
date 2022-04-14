@@ -49,3 +49,12 @@ func unmarshalJSON(src []byte, v interface{}, path string) error {
 	}
 	return nil
 }
+
+func FindFunctionFilename() string {
+	for _, name := range FunctionFilenames {
+		if _, err := os.Stat(name); err == nil {
+			return name
+		}
+	}
+	return FunctionFilenames[0]
+}
