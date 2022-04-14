@@ -308,6 +308,9 @@ function.json is a definition for Lambda function. JSON structure is based from 
     "arm64"
   ],
   "Description": "hello function for {{ must_env `ENV` }}",
+  "EphemeralStorage": {
+    "Size": 1024
+  },
   "Environment": {
     "Variables": {
       "BAR": "baz",
