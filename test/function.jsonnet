@@ -4,6 +4,9 @@
     'arm64',
   ],
   Description: std.extVar('Description'),
+  EphemeralStorage: {
+    Size: 1024
+  },
   Environment: {
     Variables: {
       JSON: '{{ env `JSON` | json_escape }}',

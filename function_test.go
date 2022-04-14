@@ -46,6 +46,9 @@ func TestLoadFunction(t *testing.T) {
 		if len(arch) != 2 || *arch[0] != "x86_64" || *arch[1] != "arm64" {
 			t.Errorf("unexpected Architectures %v", fn.Architectures)
 		}
+		if *fn.EphemeralStorage.Size != 1024 {
+			t.Errorf("unexpected EphemeralStorage %v", fn.EphemeralStorage)
+		}
 		t.Log(fn.String())
 	}
 }

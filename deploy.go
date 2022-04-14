@@ -105,6 +105,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
+		EphemeralStorage:  fn.EphemeralStorage,
 		FunctionName:      fn.FunctionName,
 		FileSystemConfigs: fn.FileSystemConfigs,
 		Handler:           fn.Handler,

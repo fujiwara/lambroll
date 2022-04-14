@@ -215,6 +215,7 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 	fn := &Function{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
+		EphemeralStorage:  c.EphemeralStorage,
 		FunctionName:      c.FunctionName,
 		Handler:           c.Handler,
 		MemorySize:        c.MemorySize,
