@@ -41,27 +41,25 @@ type versionAlias struct {
 }
 
 // Expand expands ExcludeFile contents to Excludes
-func (opt *DeployOption) Expand() error {
-	if opt.ExcludeFile == nil {
-		return nil
-	}
-	b, err := ioutil.ReadFile(*opt.ExcludeFile)
+func expandExcludeFile(file string) ([]string, error) {
+	b, err := ioutil.ReadFile(file)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil
+			return nil, nil
 		}
-		return err
+		return nil, err
 	}
 	lines := bytes.Split(b, []byte{'\n'})
+	excludes := make([]string, 0, len(lines))
 	for _, line := range lines {
 		line = bytes.TrimSpace(line)
 		if len(line) == 0 || bytes.HasPrefix(line, []byte{'#'}) {
 			// skip blank or comment line
 			continue
 		}
-		opt.Excludes = append(opt.Excludes, string(line))
+		excludes = append(excludes, string(line))
 	}
-	return nil
+	return excludes, nil
 }
 
 func (opt *DeployOption) String() string {
@@ -72,9 +70,11 @@ func (opt *DeployOption) String() string {
 // Deploy deployes a new lambda function code
 func (app *App) Deploy(opt DeployOption) error {
 	ctx := context.Background()
-	if err := (&opt).Expand(); err != nil {
-		return errors.Wrap(err, "failed to validate deploy options")
+	excludes, err := expandExcludeFile(*opt.ExcludeFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse exclude-file")
 	}
+	opt.Excludes = append(opt.Excludes, excludes...)
 	log.Printf("[debug] %s", opt.String())
 
 	fn, err := app.loadFunction(*opt.FunctionFilePath)

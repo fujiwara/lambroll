@@ -1,9 +1,13 @@
 package lambroll
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
 	"github.com/kylelemons/godebug/diff"
@@ -13,10 +17,20 @@ import (
 // DiffOption represents options for Diff()
 type DiffOption struct {
 	FunctionFilePath *string
+	Src              *string
+	Excludes         []string
+	CodeSha256       *bool
+	ExcludeFile      *string
 }
 
 // Diff prints diff of function.json compared with latest function
 func (app *App) Diff(opt DiffOption) error {
+	excludes, err := expandExcludeFile(*opt.ExcludeFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse exclude-file")
+	}
+	opt.Excludes = append(opt.Excludes, excludes...)
+
 	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load function")
@@ -28,6 +42,7 @@ func (app *App) Diff(opt DiffOption) error {
 	var code *lambda.FunctionCodeLocation
 
 	var tags Tags
+	var currentCodeSha256 string
 	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: &name,
 	}); err != nil {
@@ -36,6 +51,7 @@ func (app *App) Diff(opt DiffOption) error {
 		latest = res.Configuration
 		code = res.Code
 		tags = res.Tags
+		currentCodeSha256 = *res.Configuration.CodeSha256
 	}
 	latestFunc := newFunctionFrom(latest, code, tags)
 
@@ -51,6 +67,25 @@ func (app *App) Diff(opt DiffOption) error {
 	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
 		return err
 	}
+
+	if aws.BoolValue(opt.CodeSha256) {
+		zipfile, _, err := createZipArchive(*opt.Src, opt.Excludes)
+		if err != nil {
+			return err
+		}
+		h := sha256.New()
+		if _, err := io.Copy(h, zipfile); err != nil {
+			return err
+		}
+		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
+		prefix := "CodeSha256: "
+		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
+			fmt.Println(color.RedString("---" + app.functionArn(name)))
+			fmt.Println(color.GreenString("+++" + "--src=" + *opt.Src))
+			fmt.Println(coloredDiff(ds))
+		}
+	}
+
 	return nil
 }
 
