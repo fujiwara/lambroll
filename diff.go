@@ -42,7 +42,7 @@ func (app *App) Diff(opt DiffOption) error {
 	var code *lambda.FunctionCodeLocation
 
 	var tags Tags
-	var currentCodeSha256 string
+	var currentCodeSha256, packageType string
 	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
 		FunctionName: &name,
 	}); err != nil {
@@ -52,6 +52,7 @@ func (app *App) Diff(opt DiffOption) error {
 		code = res.Code
 		tags = res.Tags
 		currentCodeSha256 = *res.Configuration.CodeSha256
+		packageType = *res.Configuration.PackageType
 	}
 	latestFunc := newFunctionFrom(latest, code, tags)
 
@@ -69,7 +70,10 @@ func (app *App) Diff(opt DiffOption) error {
 	}
 
 	if aws.BoolValue(opt.CodeSha256) {
-		zipfile, _, err := createZipArchive(*opt.Src, opt.Excludes)
+		if strings.ToLower(packageType) != "zip" {
+			return errors.New("code-sha256 is only supported for Zip package type")
+		}
+		zipfile, err := prepareZipfile(*opt.Src, opt.Excludes)
 		if err != nil {
 			return err
 		}

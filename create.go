@@ -14,6 +14,25 @@ import (
 
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
+func prepareZipfile(src string, excludes []string) (*os.File, error) {
+	if fi, err := os.Stat(src); err != nil {
+		return nil, errors.Wrapf(err, "src %s is not found", src)
+	} else if fi.IsDir() {
+		zipfile, _, err := createZipArchive(src, excludes)
+		if err != nil {
+			return nil, err
+		}
+		return zipfile, nil
+	} else if !fi.IsDir() {
+		zipfile, _, err := loadZipArchive(src)
+		if err != nil {
+			return nil, err
+		}
+		return zipfile, nil
+	}
+	return nil, fmt.Errorf("src %s is not found", src)
+}
+
 func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) error {
 	var (
 		zipfile *os.File
@@ -36,20 +55,9 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		return nil
 	}
 
-	src := *opt.Src
-	if fi, err := os.Stat(src); err != nil {
-		return errors.Wrapf(err, "src %s is not found", src)
-	} else if fi.IsDir() {
-		zipfile, info, err = createZipArchive(src, opt.Excludes)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(zipfile.Name())
-	} else if !fi.IsDir() {
-		zipfile, info, err = loadZipArchive(src)
-		if err != nil {
-			return err
-		}
+	zipfile, err := prepareZipfile(*opt.Src, opt.Excludes)
+	if err != nil {
+		return err
 	}
 	defer zipfile.Close()
 
