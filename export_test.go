@@ -1,7 +1,8 @@
 package lambroll
 
 var (
-	CreateZipArchive = createZipArchive
-	LoadZipArchive   = loadZipArchive
-	MergeTags        = mergeTags
+	CreateZipArchive  = createZipArchive
+	ExpandExcludeFile = expandExcludeFile
+	LoadZipArchive    = loadZipArchive
+	MergeTags         = mergeTags
 )
