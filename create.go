@@ -14,31 +14,26 @@ import (
 
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
-func prepareZipfile(src string, excludes []string) (*os.File, error) {
+func prepareZipfile(src string, excludes []string) (*os.File, os.FileInfo, error) {
 	if fi, err := os.Stat(src); err != nil {
-		return nil, errors.Wrapf(err, "src %s is not found", src)
+		return nil, nil, errors.Wrapf(err, "src %s is not found", src)
 	} else if fi.IsDir() {
-		zipfile, _, err := createZipArchive(src, excludes)
+		zipfile, info, err := createZipArchive(src, excludes)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return zipfile, nil
+		return zipfile, info, nil
 	} else if !fi.IsDir() {
-		zipfile, _, err := loadZipArchive(src)
+		zipfile, info, err := loadZipArchive(src)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		return zipfile, nil
+		return zipfile, info, nil
 	}
-	return nil, fmt.Errorf("src %s is not found", src)
+	return nil, nil, fmt.Errorf("src %s is not found", src)
 }
 
 func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) error {
-	var (
-		zipfile *os.File
-		info    os.FileInfo
-	)
-
 	if aws.StringValue(fn.PackageType) == packageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return errors.New("PackageType=Image requires Code.ImageUri in function definition")
@@ -55,7 +50,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		return nil
 	}
 
-	zipfile, err := prepareZipfile(*opt.Src, opt.Excludes)
+	zipfile, info, err := prepareZipfile(*opt.Src, opt.Excludes)
 	if err != nil {
 		return err
 	}

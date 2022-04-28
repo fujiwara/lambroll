@@ -73,7 +73,7 @@ func (app *App) Diff(opt DiffOption) error {
 		if strings.ToLower(packageType) != "zip" {
 			return errors.New("code-sha256 is only supported for Zip package type")
 		}
-		zipfile, err := prepareZipfile(*opt.Src, opt.Excludes)
+		zipfile, _, err := prepareZipfile(*opt.Src, opt.Excludes)
 		if err != nil {
 			return err
 		}
