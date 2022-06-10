@@ -142,7 +142,7 @@ func New(opt *Option) (*App, error) {
 			}
 
 			for name, f := range funcs {
-				prefixedFuncs[prefix + name] = f
+				prefixedFuncs[prefix+name] = f
 			}
 		}
 		loader.Funcs(prefixedFuncs)
@@ -227,6 +227,11 @@ func fillDefaultValues(fn *Function) {
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &lambda.TracingConfig{
 			Mode: aws.String("PassThrough"),
+		}
+	}
+	if fn.EphemeralStorage == nil {
+		fn.EphemeralStorage = &lambda.EphemeralStorage{
+			Size: aws.Int64(512),
 		}
 	}
 	if fn.Timeout == nil {
