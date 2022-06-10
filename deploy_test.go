@@ -16,10 +16,11 @@ func TestDeployOptionExpand(t *testing.T) {
 	opt := lambroll.DeployOption{
 		ExcludeFile: &file,
 	}
-	err := (&opt).Expand()
+	excludes, err := lambroll.ExpandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
 		t.Error("failed to expand", err)
 	}
+	opt.Excludes = append(opt.Excludes, excludes...)
 	if len(opt.Excludes) != len(expectExcludes) {
 		t.Errorf("unexpeted expanded excludes %#v", opt.Excludes)
 	}

@@ -17,9 +17,11 @@ import (
 
 // Archive archives zip
 func (app *App) Archive(opt DeployOption) error {
-	if err := (&opt).Expand(); err != nil {
-		return errors.Wrap(err, "failed to validate deploy options")
+	excludes, err := expandExcludeFile(*opt.ExcludeFile)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse exclude file")
 	}
+	opt.Excludes = append(opt.Excludes, excludes...)
 
 	zipfile, _, err := createZipArchive(*opt.Src, opt.Excludes)
 	if err != nil {

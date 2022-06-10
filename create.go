@@ -14,12 +14,26 @@ import (
 
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
-func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) error {
-	var (
-		zipfile *os.File
-		info    os.FileInfo
-	)
+func prepareZipfile(src string, excludes []string) (*os.File, os.FileInfo, error) {
+	if fi, err := os.Stat(src); err != nil {
+		return nil, nil, errors.Wrapf(err, "src %s is not found", src)
+	} else if fi.IsDir() {
+		zipfile, info, err := createZipArchive(src, excludes)
+		if err != nil {
+			return nil, nil, err
+		}
+		return zipfile, info, nil
+	} else if !fi.IsDir() {
+		zipfile, info, err := loadZipArchive(src)
+		if err != nil {
+			return nil, nil, err
+		}
+		return zipfile, info, nil
+	}
+	return nil, nil, fmt.Errorf("src %s is not found", src)
+}
 
+func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) error {
 	if aws.StringValue(fn.PackageType) == packageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return errors.New("PackageType=Image requires Code.ImageUri in function definition")
@@ -36,20 +50,9 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		return nil
 	}
 
-	src := *opt.Src
-	if fi, err := os.Stat(src); err != nil {
-		return errors.Wrapf(err, "src %s is not found", src)
-	} else if fi.IsDir() {
-		zipfile, info, err = createZipArchive(src, opt.Excludes)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(zipfile.Name())
-	} else if !fi.IsDir() {
-		zipfile, info, err = loadZipArchive(src)
-		if err != nil {
-			return err
-		}
+	zipfile, info, err := prepareZipfile(*opt.Src, opt.Excludes)
+	if err != nil {
+		return err
 	}
 	defer zipfile.Close()
 
