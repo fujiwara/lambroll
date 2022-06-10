@@ -101,7 +101,7 @@ func _main() int {
 	diff := kingpin.Command("diff", "show display diff of function.json compared with latest function")
 	diffOption := lambroll.DiffOption{
 		FunctionFilePath: function,
-		CodeSha256:       diff.Flag("code-sha256", "diff of code sha256").Default("false").Bool(),
+		CodeSha256:       diff.Flag("code", "diff of code sha256").Default("false").Bool(),
 		ExcludeFile:      diff.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 		Src:              diff.Flag("src", "function zip archive or src dir").Default(".").String(),
 	}
