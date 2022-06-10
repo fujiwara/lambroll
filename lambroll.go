@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"text/template"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -128,6 +129,24 @@ func New(opt *Option) (*App, error) {
 		}
 		loader.Funcs(funcs)
 	}
+	if opt.PrefixedTFState != nil {
+		prefixedFuncs := make(template.FuncMap)
+		for prefix, path := range *opt.PrefixedTFState {
+			if prefix == "" {
+				return nil, errors.New("--prefixed-tfstate option cannot have empty key")
+			}
+
+			funcs, err := tfstate.FuncMap(path)
+			if err != nil {
+				return nil, err
+			}
+
+			for name, f := range funcs {
+				prefixedFuncs[prefix+name] = f
+			}
+		}
+		loader.Funcs(prefixedFuncs)
+	}
 
 	app := &App{
 		sess:    sess,
@@ -208,6 +227,11 @@ func fillDefaultValues(fn *Function) {
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &lambda.TracingConfig{
 			Mode: aws.String("PassThrough"),
+		}
+	}
+	if fn.EphemeralStorage == nil {
+		fn.EphemeralStorage = &lambda.EphemeralStorage{
+			Size: aws.Int64(512),
 		}
 	}
 	if fn.Timeout == nil {

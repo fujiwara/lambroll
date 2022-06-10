@@ -46,6 +46,8 @@ jobs:
             --src test/src \
             --endpoint http://127.0.0.1:4566 \
             --tfstate test/terraform.tfstate \
+            --prefixed-tfstate "prefix1_=test/terraform_1.tfstate" \
+            --prefixed-tfstate "prefix2_=test/terraform_2.tfstate" \
             --log-level debug
         env:
           FUNCTION_NAME: hello
@@ -62,6 +64,8 @@ jobs:
             --src test/src \
             --endpoint http://127.0.0.1:4566 \
             --tfstate test/terraform.tfstate \
+            --prefixed-tfstate "prefix1_=test/terraform_1.tfstate" \
+            --prefixed-tfstate "prefix2_=test/terraform_2.tfstate" \
             --log-level debug
         env:
           FUNCTION_NAME: hello

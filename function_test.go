@@ -11,6 +11,10 @@ func TestLoadFunction(t *testing.T) {
 	path := "test/terraform.tfstate"
 	app, err := New(&Option{
 		TFState: &path,
+		PrefixedTFState: &map[string]string{
+			"prefix1_": "test/terraform_1.tfstate",
+			"prefix2_": "test/terraform_2.tfstate",
+		},
 		Envfile: &envfiles,
 		ExtStr: &map[string]string{
 			"Description": "hello function",
@@ -37,6 +41,12 @@ func TestLoadFunction(t *testing.T) {
 			t.Errorf("unexpected fileSystemConfigs %v", *&fn.FileSystemConfigs)
 		}
 		if *fn.Environment.Variables["JSON"] != `{"foo":"bar"}` {
+			t.Errorf("unexpected environment %v", fn.Environment.Variables)
+		}
+		if *fn.Environment.Variables["PREFIXED_TFSTATE_1"] != "arn:aws:iam::123456789012:role/test_lambda_role_1" {
+			t.Errorf("unexpected environment %v", fn.Environment.Variables)
+		}
+		if *fn.Environment.Variables["PREFIXED_TFSTATE_2"] != "arn:aws:iam::123456789012:role/test_lambda_role_2" {
 			t.Errorf("unexpected environment %v", fn.Environment.Variables)
 		}
 		if *fn.VpcConfig.SecurityGroupIds[0] != "sg-01a9b01eab0a3c154" {

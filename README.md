@@ -126,6 +126,8 @@ Flags:
   --profile=""                AWS credential profile name
   --region=""                 AWS region
   --tfstate=""                URL to terraform.tfstate
+  --prefixed-tfstate=PREFIX=URL ...
+                              key value pair of the prefix for template function name and URL to terraform.tfstate
   --endpoint=""               AWS API Lambda Endpoint
   --envfile=ENVFILE ...       environment files
   --ext-str=EXT-STR ...       external string values for Jsonnet
@@ -200,10 +202,12 @@ Flags:
   --profile=""                AWS credential profile name
   --region=""                 AWS region
   --tfstate=""                URL to terraform.tfstate
+  --prefixed-tfstate=PREFIX=URL ...
+                              key value pair of the prefix for template function name and URL to terraform.tfstate
   --endpoint=""               AWS API Lambda Endpoint
   --envfile=ENVFILE ...       environment files
   --src="."                   function zip archive or src dir
-  --exclude-file=".lambdaignore"  
+  --exclude-file=".lambdaignore"
                               exclude file
   --dry-run                   dry run
   --publish                   publish function
@@ -432,6 +436,28 @@ data "aws_iam_role" "lambda" {
       "{{ tfstatef `aws_security_group.internal['%s'].id` (must_env `WORLD`) }}"
     ]
   }
+}
+```
+
+Likewise, if you have AWS resource definitions spread across multiple tfstate files, you can utilize `--prefixed-tfstate` option:
+
+e.g.
+```shell
+lambroll --prefixed-tfstate="my_first_=s3://my-bucket/first.tfstate" --prefixed-tfstate="my_second_=s3://my-bucket/second.tfstate" ...
+```
+
+which then exposes additional template functions available like:
+
+```json
+{
+  "Description": "hello function",
+  "Environment": {
+    "Variables": {
+      "FIRST_VALUE": "{{ my_first_tfstate `data.aws_iam_role.lambda.arn` }}",
+      "SECOND_VALUE": "{{ my_second_tfstate `data.aws_iam_role.lambda.arn` }}"
+    }
+  },
+  "rest of the parameters": "..."
 }
 ```
 

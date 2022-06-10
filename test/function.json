@@ -9,7 +9,9 @@
     },
     "Environment": {
         "Variables": {
-            "JSON": "{{ env `JSON` | json_escape }}"
+            "JSON": "{{ env `JSON` | json_escape }}",
+            "PREFIXED_TFSTATE_1": "{{ prefix1_tfstate `data.aws_iam_role.lambda.arn` }}",
+            "PREFIXED_TFSTATE_2": "{{ prefix2_tfstate `data.aws_iam_role.lambda.arn` }}"
         }
     },
     "FunctionName": "{{ must_env `FUNCTION_NAME` }}",

@@ -30,13 +30,14 @@ func _main() int {
 	colorOpt := kingpin.Flag("color", "enable colored output").Default(colorDefault).Bool()
 
 	opt := lambroll.Option{
-		Profile:  kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
-		Region:   kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
-		TFState:  kingpin.Flag("tfstate", "URL to terraform.tfstate").Default("").String(),
-		Endpoint: kingpin.Flag("endpoint", "AWS API Lambda Endpoint").Default("").String(),
-		Envfile:  kingpin.Flag("envfile", "environment files").Strings(),
-		ExtStr:   kingpin.Flag("ext-str", "external string values for Jsonnet").StringMap(),
-		ExtCode:  kingpin.Flag("ext-code", "external code values for Jsonnet").StringMap(),
+		Profile:         kingpin.Flag("profile", "AWS credential profile name").Default(os.Getenv("AWS_PROFILE")).String(),
+		Region:          kingpin.Flag("region", "AWS region").Default(os.Getenv("AWS_REGION")).String(),
+		TFState:         kingpin.Flag("tfstate", "URL to terraform.tfstate").Default("").String(),
+		PrefixedTFState: kingpin.Flag("prefixed-tfstate", "key value pair of the prefix for template function name and URL to terraform.tfstate").PlaceHolder("PREFIX=URL").StringMap(),
+		Endpoint:        kingpin.Flag("endpoint", "AWS API Lambda Endpoint").Default("").String(),
+		Envfile:         kingpin.Flag("envfile", "environment files").Strings(),
+		ExtStr:          kingpin.Flag("ext-str", "external string values for Jsonnet").StringMap(),
+		ExtCode:         kingpin.Flag("ext-code", "external code values for Jsonnet").StringMap(),
 	}
 
 	init := kingpin.Command("init", "init function.json")
