@@ -96,6 +96,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
+	fillDefaultValues(fn)
 
 	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
