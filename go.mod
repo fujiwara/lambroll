@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/Songmu/prompter v0.5.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aws/aws-sdk-go v1.43.37
+	github.com/aws/aws-sdk-go v1.44.143
 	github.com/fatih/color v1.13.0
 	github.com/fujiwara/logutils v1.1.0
 	github.com/fujiwara/tfstate-lookup v0.4.2
