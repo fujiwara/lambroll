@@ -3,7 +3,7 @@ module github.com/fujiwara/lambroll
 go 1.15
 
 require (
-	github.com/Songmu/prompter v0.5.0
+	github.com/Songmu/prompter v0.5.1
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.44.147
 	github.com/fatih/color v1.13.0
