@@ -253,6 +253,9 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 		DeadLetterConfig:  c.DeadLetterConfig,
 		FileSystemConfigs: c.FileSystemConfigs,
 		KMSKeyArn:         c.KMSKeyArn,
+		SnapStart: &lambda.SnapStart{
+			ApplyOn: c.SnapStart.ApplyOn,
+		},
 	}
 	if e := c.Environment; e != nil {
 		fn.Environment = &lambda.Environment{

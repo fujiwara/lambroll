@@ -119,6 +119,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		TracingConfig:     fn.TracingConfig,
 		VpcConfig:         fn.VpcConfig,
 		ImageConfig:       fn.ImageConfig,
+		SnapStart:         fn.SnapStart,
 	}
 	if env := fn.Environment; env == nil || env.Variables == nil {
 		confIn.Environment = &lambda.Environment{
