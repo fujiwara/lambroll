@@ -3,6 +3,9 @@ package lambroll
 import (
 	"os"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/service/lambda"
 )
 
 func TestLoadFunction(t *testing.T) {
@@ -60,5 +63,44 @@ func TestLoadFunction(t *testing.T) {
 			t.Errorf("unexpected EphemeralStorage %v", fn.EphemeralStorage)
 		}
 		t.Log(fn.String())
+	}
+}
+
+func TestNewFunction(t *testing.T) {
+	conf := &lambda.FunctionConfiguration{
+		FunctionName: aws.String("hello"),
+		MemorySize:   aws.Int64(128),
+		Runtime:      aws.String("nodejs14.x"),
+		Timeout:      aws.Int64(3),
+		Handler:      aws.String("index.handler"),
+		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+	}
+	tags := map[string]*string{
+		"foo": aws.String("bar"),
+	}
+	fn := newFunctionFrom(conf, nil, tags)
+	if *fn.FunctionName != "hello" {
+		t.Errorf("unexpected function name got %s", *fn.FunctionName)
+	}
+	if *fn.MemorySize != 128 {
+		t.Errorf("unexpected memory size got %d", *fn.MemorySize)
+	}
+	if *fn.Runtime != "nodejs14.x" {
+		t.Errorf("unexpected runtime got %s", *fn.Runtime)
+	}
+	if *fn.Timeout != 3 {
+		t.Errorf("unexpected timeout got %d", *fn.Timeout)
+	}
+	if *fn.Handler != "index.handler" {
+		t.Errorf("unexpected handler got %s", *fn.Handler)
+	}
+	if *fn.Role != "arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME" {
+		t.Errorf("unexpected role got %s", *fn.Role)
+	}
+	if *fn.Tags["foo"] != "bar" {
+		t.Errorf("unexpected tags got %v", fn.Tags)
+	}
+	if fn.SnapStart != nil {
+		t.Errorf("unexpected snap start got %v", fn.SnapStart)
 	}
 }
