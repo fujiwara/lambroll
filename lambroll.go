@@ -253,10 +253,9 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 		DeadLetterConfig:  c.DeadLetterConfig,
 		FileSystemConfigs: c.FileSystemConfigs,
 		KMSKeyArn:         c.KMSKeyArn,
-		SnapStart: &lambda.SnapStart{
-			ApplyOn: c.SnapStart.ApplyOn,
-		},
+		SnapStart:         newSnapStart(c.SnapStart),
 	}
+
 	if e := c.Environment; e != nil {
 		fn.Environment = &lambda.Environment{
 			Variables: e.Variables,
@@ -288,6 +287,15 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 	fn.Tags = tags
 
 	return fn
+}
+
+func newSnapStart(s *lambda.SnapStartResponse) *lambda.SnapStart {
+	if s == nil {
+		return nil
+	}
+	return &lambda.SnapStart{
+		ApplyOn: s.ApplyOn,
+	}
 }
 
 func exportEnvFile(file string) error {
