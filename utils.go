@@ -34,6 +34,18 @@ func marshalJSON(s interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func marshalAny(s interface{}) (interface{}, error) {
+	b, err := marshalJSON(s)
+	if err != nil {
+		return nil, err
+	}
+	var res interface{}
+	if err := json.NewDecoder(bytes.NewReader(b)).Decode(&res); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
 func unmarshalJSON(src []byte, v interface{}, path string) error {
 	strict := json.NewDecoder(bytes.NewReader(src))
 	strict.DisallowUnknownFields()

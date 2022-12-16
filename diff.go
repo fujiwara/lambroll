@@ -7,9 +7,11 @@ import (
 	"io"
 	"strings"
 
+	"github.com/aereal/jsondiff"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
+	"github.com/itchyny/gojq"
 	"github.com/kylelemons/godebug/diff"
 	"github.com/pkg/errors"
 )
@@ -21,6 +23,7 @@ type DiffOption struct {
 	Excludes         []string
 	CodeSha256       *bool
 	ExcludeFile      *string
+	Ignores          *[]string
 }
 
 // Diff prints diff of function.json compared with latest function
@@ -56,13 +59,24 @@ func (app *App) Diff(opt DiffOption) error {
 	}
 	latestFunc := newFunctionFrom(latest, code, tags)
 
-	latestJSON, _ := marshalJSON(latestFunc)
-	newJSON, _ := marshalJSON(newFunc)
-
-	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-		fmt.Println(color.RedString("---" + app.functionArn(name)))
-		fmt.Println(color.GreenString("+++" + *opt.FunctionFilePath))
-		fmt.Println(coloredDiff(ds))
+	opts := []jsondiff.Option{}
+	for _, ignore := range *opt.Ignores {
+		if p, err := gojq.Parse(ignore); err != nil {
+			return errors.Wrapf(err, "failed to parse ignore query: %s", ignore)
+		} else {
+			opts = append(opts, jsondiff.Ignore(p))
+		}
+	}
+	from, _ := marshalAny(latestFunc)
+	to, _ := marshalAny(newFunc)
+	if diff, err := jsondiff.Diff(
+		&jsondiff.Input{Name: app.functionArn(name), X: from},
+		&jsondiff.Input{Name: *opt.FunctionFilePath, X: to},
+		opts...,
+	); err != nil {
+		return errors.Wrap(err, "failed to make diff")
+	} else {
+		fmt.Println(diff)
 	}
 
 	if err := validateUpdateFunction(latest, code, newFunc); err != nil {

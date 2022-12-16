@@ -104,6 +104,7 @@ func _main() int {
 		CodeSha256:       diff.Flag("code", "diff of code sha256").Default("false").Bool(),
 		ExcludeFile:      diff.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 		Src:              diff.Flag("src", "function zip archive or src dir").Default(".").String(),
+		Ignores:          diff.Flag("ignore", "ignore elements jq queries").Strings(),
 	}
 
 	versions := kingpin.Command("versions", "manage function versions")
