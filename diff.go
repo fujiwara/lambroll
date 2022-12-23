@@ -23,7 +23,7 @@ type DiffOption struct {
 	Excludes         []string
 	CodeSha256       *bool
 	ExcludeFile      *string
-	Ignores          *[]string
+	Ignore           *string
 }
 
 // Diff prints diff of function.json compared with latest function
@@ -60,13 +60,14 @@ func (app *App) Diff(opt DiffOption) error {
 	latestFunc := newFunctionFrom(latest, code, tags)
 
 	opts := []jsondiff.Option{}
-	for _, ignore := range *opt.Ignores {
+	if ignore := aws.StringValue(opt.Ignore); ignore != "" {
 		if p, err := gojq.Parse(ignore); err != nil {
 			return errors.Wrapf(err, "failed to parse ignore query: %s", ignore)
 		} else {
 			opts = append(opts, jsondiff.Ignore(p))
 		}
 	}
+
 	from, _ := marshalAny(latestFunc)
 	to, _ := marshalAny(newFunc)
 	if diff, err := jsondiff.Diff(
@@ -76,7 +77,7 @@ func (app *App) Diff(opt DiffOption) error {
 	); err != nil {
 		return errors.Wrap(err, "failed to make diff")
 	} else {
-		fmt.Println(diff)
+		fmt.Print(coloredDiff(diff))
 	}
 
 	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
@@ -98,8 +99,8 @@ func (app *App) Diff(opt DiffOption) error {
 		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		prefix := "CodeSha256: "
 		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
-			fmt.Println(color.RedString("---" + app.functionArn(name)))
-			fmt.Println(color.GreenString("+++" + "--src=" + *opt.Src))
+			fmt.Println(color.RedString("--- " + app.functionArn(name)))
+			fmt.Println(color.GreenString("+++ " + "--src=" + *opt.Src))
 			fmt.Println(coloredDiff(ds))
 		}
 	}
