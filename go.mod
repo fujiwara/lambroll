@@ -20,3 +20,5 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shogo82148/go-retry v1.1.0
 )
+
+replace github.com/aereal/jsondiff => ../../aereal/jsondiff

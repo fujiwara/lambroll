@@ -8,9 +8,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/aereal/jsondiff"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
 )
 
@@ -26,6 +28,7 @@ type DeployOption struct {
 	DryRun           *bool
 	SkipArchive      *bool
 	KeepVersions     *int
+	Ignore           *string
 }
 
 func (opt DeployOption) label() string {
@@ -97,6 +100,22 @@ func (app *App) Deploy(opt DeployOption) error {
 		return err
 	}
 	fillDefaultValues(fn)
+
+	if ignore := aws.StringValue(opt.Ignore); ignore != "" {
+		q, err := gojq.Parse(ignore)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse ignore query")
+		}
+		q = jsondiff.WithUpdate(q)
+		fnAny, _ := marshalAny(fn)
+		fnAny, err = jsondiff.ModifyValue(q, fnAny)
+		if err != nil {
+			return errors.Wrap(err, "failed to modify function")
+		}
+		src, _ := json.Marshal(fnAny)
+		fn = &Function{}
+		unmarshalJSON(src, &fn, *opt.FunctionFilePath)
+	}
 
 	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
