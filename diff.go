@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
 	"github.com/itchyny/gojq"
-	"github.com/kylelemons/godebug/diff"
 	"github.com/pkg/errors"
 )
 
@@ -98,10 +97,12 @@ func (app *App) Diff(opt DiffOption) error {
 		}
 		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		prefix := "CodeSha256: "
-		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
+		if currentCodeSha256 != newCodeSha256 {
 			fmt.Println(color.RedString("--- " + app.functionArn(name)))
 			fmt.Println(color.GreenString("+++ " + "--src=" + *opt.Src))
-			fmt.Println(coloredDiff(ds))
+			fmt.Println("@@ @@")
+			fmt.Println(color.RedString("-" + prefix + currentCodeSha256))
+			fmt.Println(color.GreenString("+" + prefix + newCodeSha256))
 		}
 	}
 
