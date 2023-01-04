@@ -76,8 +76,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Songmu/prompter v0.5.0 h1:uf60xlFItY5nW+rlLJ2XIUfaUReo4gUEeftuUeHpio8=
 github.com/Songmu/prompter v0.5.0/go.mod h1:S4Eg25l60kPlnfB2ttFVpvBKYw7RKJexzB3gzpAansY=
-github.com/aereal/jsondiff v0.2.3 h1:OldK7tcBQudPQm/wIIUVW7dErBcLEJHR23uo+hwNOXU=
-github.com/aereal/jsondiff v0.2.3/go.mod h1:a5oayUivaiGHWcodFYZmy0km36ZbSfYtjuVMfKUQdbM=
+github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1 h1:PrNsETLYKHeiniM9hCru9topK9bOiPjxl5xdYKLQoNo=
+github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1/go.mod h1:a5oayUivaiGHWcodFYZmy0km36ZbSfYtjuVMfKUQdbM=
 github.com/alecthomas/go-thrift v0.0.0-20170109061633-7914173639b2/go.mod h1:CxCgO+NdpMdi9SsTlGbc0W+/UNxO3I0AabOEJZ3w61w=
 github.com/alecthomas/kingpin v2.2.6+incompatible h1:5svnBTFgJjZvGKyYBtMB0+m5wvrbUHiqye8wRJMlnYI=
 github.com/alecthomas/kingpin v2.2.6+incompatible/go.mod h1:59OFYbFVLKQKq+mqrL6Rw5bR0c3ACQaawgXx0QYndlE=

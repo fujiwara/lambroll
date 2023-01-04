@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/Songmu/prompter v0.5.0
-	github.com/aereal/jsondiff v0.2.3
+	github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.44.147
 	github.com/fatih/color v1.13.0
@@ -20,5 +20,3 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/shogo82148/go-retry v1.1.0
 )
-
-replace github.com/aereal/jsondiff => ../../aereal/jsondiff
