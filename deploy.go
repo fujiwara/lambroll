@@ -215,7 +215,7 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		res, err := app.lambda.UpdateFunctionCode(in)
+		res, err := app.lambda.UpdateFunctionCodeWithContext(ctx, in)
 		if err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
 				switch aerr.Code() {
@@ -223,6 +223,7 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 					log.Println("[debug] retrying", aerr.Message())
 					continue
 				}
+				return nil, errors.Wrap(err, "failed to update function code")
 			} else {
 				return nil, errors.Wrap(err, "failed to update function code")
 			}
