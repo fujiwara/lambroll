@@ -237,6 +237,11 @@ func fillDefaultValues(fn *Function) {
 	if fn.Timeout == nil {
 		fn.Timeout = aws.Int64(3)
 	}
+	if fn.SnapStart == nil {
+		fn.SnapStart = &lambda.SnapStart{
+			ApplyOn: aws.String("None"),
+		}
+	}
 }
 
 func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeLocation, tags Tags) *Function {
