@@ -181,19 +181,7 @@ usage: lambroll init --function-name=FUNCTION-NAME [<flags>]
 init function.json
 
 Flags:
-  --help                         Show context-sensitive help (also try --help-long and --help-man).
-  --log-level=info               log level (trace, debug, info, warn, error)
-  --function="function.json"     Function file path
-  --color                        enable colored output
-  --profile=""                   AWS credential profile name
-  --region=""                    AWS region
-  --tfstate=""                   URL to terraform.tfstate
-  --prefixed-tfstate=PREFIX=URL ...
-                                 key value pair of the prefix for template function name and URL to terraform.tfstate
-  --endpoint=""                  AWS API Lambda Endpoint
-  --envfile=ENVFILE ...          environment files
-  --ext-str=EXT-STR ...          external string values for Jsonnet
-  --ext-code=EXT-CODE ...        external code values for Jsonnet
+  (common flags snipped)
   --function-name=FUNCTION-NAME  Function name for initialize
   --download                     Download function.zip
 ```
@@ -208,19 +196,7 @@ usage: lambroll deploy [<flags>]
 deploy or create function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
-  --color                     enable colored output
-  --profile=""                AWS credential profile name
-  --region=""                 AWS region
-  --tfstate=""                URL to terraform.tfstate
-  --prefixed-tfstate=PREFIX=URL ...
-                              key value pair of the prefix for template function name and URL to terraform.tfstate
-  --endpoint=""               AWS API Lambda Endpoint
-  --envfile=ENVFILE ...       environment files
-  --ext-str=EXT-STR ...       external string values for Jsonnet
-  --ext-code=EXT-CODE ...     external code values for Jsonnet
+  (common flags snipped)
   --src="."                   function zip archive or src dir
   --exclude-file=".lambdaignore"
                               exclude file
@@ -265,19 +241,7 @@ usage: lambroll rollback [<flags>]
 rollback function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
-  --color                     enable colored output
-  --profile=""                AWS credential profile name
-  --region=""                 AWS region
-  --tfstate=""                URL to terraform.tfstate
-  --prefixed-tfstate=PREFIX=URL ...
-                              key value pair of the prefix for template function name and URL to terraform.tfstate
-  --endpoint=""               AWS API Lambda Endpoint
-  --envfile=ENVFILE ...       environment files
-  --ext-str=EXT-STR ...       external string values for Jsonnet
-  --ext-code=EXT-CODE ...     external code values for Jsonnet
+  (common flags snipped)
   --delete-version            Delete rolled back version
   --dry-run                   dry run
 ```
@@ -298,19 +262,7 @@ usage: lambroll invoke [<flags>]
 invoke function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
-  --color                     enable colored output
-  --profile=""                AWS credential profile name
-  --region=""                 AWS region
-  --tfstate=""                URL to terraform.tfstate
-  --prefixed-tfstate=PREFIX=URL ...
-                              key value pair of the prefix for template function name and URL to terraform.tfstate
-  --endpoint=""               AWS API Lambda Endpoint
-  --envfile=ENVFILE ...       environment files
-  --ext-str=EXT-STR ...       external string values for Jsonnet
-  --ext-code=EXT-CODE ...     external code values for Jsonnet
+  (common flags snipped)
   --async                     invocation type async
   --log-tail                  output tail of log to STDERR
   --qualifier=QUALIFIER       version or alias to invoke
