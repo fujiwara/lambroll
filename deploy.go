@@ -191,19 +191,19 @@ func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.Upda
 
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		if res, err := app.lambda.UpdateFunctionConfigurationWithContext(ctx, in); err != nil {
+		res, err := app.lambda.UpdateFunctionConfigurationWithContext(ctx, in)
+		if err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
 				switch aerr.Code() {
 				case lambda.ErrCodeResourceConflictException:
 					log.Println("[debug] retrying", aerr.Message())
 					continue
 				}
-				return nil, errors.Wrap(err, "failed to update function configuration")
 			}
-		} else {
-			log.Println("[info] updated function configuration successfully")
-			return res, nil
+			return nil, errors.Wrap(err, "failed to update function configuration")
 		}
+		log.Println("[info] updated function configuration successfully")
+		return res, nil
 	}
 	return nil, errors.New("failed to update function configuration (max retries reached)")
 }
@@ -223,10 +223,8 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 					log.Println("[debug] retrying", aerr.Message())
 					continue
 				}
-				return nil, errors.Wrap(err, "failed to update function code")
-			} else {
-				return nil, errors.Wrap(err, "failed to update function code")
 			}
+			return nil, errors.Wrap(err, "failed to update function code")
 		}
 		log.Println("[info] updated function code successfully")
 		return res, nil
