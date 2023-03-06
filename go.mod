@@ -7,7 +7,7 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.44.147
 	github.com/fatih/color v1.13.0
-	github.com/fujiwara/logutils v1.1.0
+	github.com/fujiwara/logutils v1.1.2
 	github.com/fujiwara/tfstate-lookup v0.4.2
 	github.com/go-test/deep v1.0.7
 	github.com/google/go-jsonnet v0.17.0
