@@ -231,7 +231,7 @@ func fillDefaultValues(fn *Function) {
 	}
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &lambda.TracingConfig{
-			Mode: aws.String("PassThrough"),
+			Mode: aws.String(lambda.TracingModePassThrough),
 		}
 	}
 	if fn.EphemeralStorage == nil {
