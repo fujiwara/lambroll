@@ -2,6 +2,7 @@ package lambroll_test
 
 import (
 	"archive/zip"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -9,11 +10,37 @@ import (
 	"github.com/fujiwara/lambroll"
 )
 
+type zipTestSuite struct {
+	WorkingDir string
+	SrcDir     string
+}
+
+func (s zipTestSuite) String() string {
+	return fmt.Sprintf("%s_src_%s", s.WorkingDir, s.SrcDir)
+}
+
+var createZipArchives = []zipTestSuite{
+	{".", "test/src"},
+	{"test/src/dir", "../"},
+}
+
 func TestCreateZipArchive(t *testing.T) {
+	for _, s := range createZipArchives {
+		t.Run(s.String(), func(t *testing.T) {
+			testCreateZipArchive(t, s)
+		})
+	}
+}
+
+func testCreateZipArchive(t *testing.T, s zipTestSuite) {
+	cwd, _ := os.Getwd()
+	os.Chdir(s.WorkingDir)
+	defer os.Chdir(cwd)
+
 	excludes := []string{}
 	excludes = append(excludes, lambroll.DefaultExcludes...)
 	excludes = append(excludes, []string{"*.bin", "skip/*"}...)
-	r, info, err := lambroll.CreateZipArchive("test/src", excludes)
+	r, info, err := lambroll.CreateZipArchive(s.SrcDir, excludes)
 	if err != nil {
 		t.Error("faile to CreateZipArchive", err)
 	}
