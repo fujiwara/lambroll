@@ -126,6 +126,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
 		EphemeralStorage:  fn.EphemeralStorage,
+		Environment:       fn.Environment,
 		FunctionName:      fn.FunctionName,
 		FileSystemConfigs: fn.FileSystemConfigs,
 		Handler:           fn.Handler,
@@ -140,14 +141,6 @@ func (app *App) Deploy(opt DeployOption) error {
 		ImageConfig:       fn.ImageConfig,
 		SnapStart:         fn.SnapStart,
 	}
-	if env := fn.Environment; env == nil || env.Variables == nil {
-		confIn.Environment = &lambda.Environment{
-			Variables: map[string]*string{}, // set empty variables explicitly
-		}
-	} else {
-		confIn.Environment = env
-	}
-
 	log.Printf("[debug]\n%s", confIn.String())
 
 	var newerVersion string

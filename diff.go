@@ -57,6 +57,7 @@ func (app *App) Diff(opt DiffOption) error {
 		packageType = *res.Configuration.PackageType
 	}
 	latestFunc := newFunctionFrom(latest, code, tags)
+	fillDefaultValues(latestFunc)
 
 	opts := []jsondiff.Option{}
 	if ignore := aws.StringValue(opt.Ignore); ignore != "" {
