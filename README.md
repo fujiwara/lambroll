@@ -119,10 +119,10 @@ $ lambroll deploy
 usage: lambroll [<flags>] <command> [<args> ...]
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long
-                              and --help-man).
+  --help                      Show context-sensitive help (also try --help-long and --help-man).
   --log-level=info            log level (trace, debug, info, warn, error)
   --function="function.json"  Function file path
+  --color                     enable colored output
   --profile=""                AWS credential profile name
   --region=""                 AWS region
   --tfstate=""                URL to terraform.tfstate
@@ -164,7 +164,7 @@ Commands:
   logs [<flags>]
     tail logs using `aws logs tail` (aws-cli v2 required)
 
-  diff
+  diff [<flags>]
     show display diff of function.json compared with latest function
 
   versions [<flags>]
@@ -181,6 +181,7 @@ usage: lambroll init --function-name=FUNCTION-NAME [<flags>]
 init function.json
 
 Flags:
+  (common flags snipped)
   --function-name=FUNCTION-NAME  Function name for initialize
   --download                     Download function.zip
 ```
@@ -195,17 +196,7 @@ usage: lambroll deploy [<flags>]
 deploy or create function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long
-                              and --help-man).
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
-  --profile=""                AWS credential profile name
-  --region=""                 AWS region
-  --tfstate=""                URL to terraform.tfstate
-  --prefixed-tfstate=PREFIX=URL ...
-                              key value pair of the prefix for template function name and URL to terraform.tfstate
-  --endpoint=""               AWS API Lambda Endpoint
-  --envfile=ENVFILE ...       environment files
+  (common flags snipped)
   --src="."                   function zip archive or src dir
   --exclude-file=".lambdaignore"
                               exclude file
@@ -213,8 +204,8 @@ Flags:
   --publish                   publish function
   --alias="current"           alias name for publish
   --alias-to-latest           set alias to unpublished $LATEST version
-  --skip-archive              skip to create zip archive. requires Code.S3Bucket
-                              and Code.S3Key in function definition
+  --skip-archive              skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition
+  --keep-versions=0           Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).
 ```
 
 `deploy` works as below.
@@ -250,10 +241,7 @@ usage: lambroll rollback [<flags>]
 rollback function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --region="ap-northeast-1"   AWS region
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
+  (common flags snipped)
   --delete-version            Delete rolled back version
   --dry-run                   dry run
 ```
@@ -274,10 +262,7 @@ usage: lambroll invoke [<flags>]
 invoke function
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --region="ap-northeast-1"   AWS region
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
+  (common flags snipped)
   --async                     invocation type async
   --log-tail                  output tail of log to STDERR
   --qualifier=QUALIFIER       version or alias to invoke
