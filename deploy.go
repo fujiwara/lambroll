@@ -8,9 +8,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/aereal/jsondiff"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/lambda"
+	"github.com/itchyny/gojq"
 	"github.com/pkg/errors"
 )
 
@@ -26,6 +28,7 @@ type DeployOption struct {
 	DryRun           *bool
 	SkipArchive      *bool
 	KeepVersions     *int
+	Ignore           *string
 }
 
 func (opt DeployOption) label() string {
@@ -98,6 +101,22 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	fillDefaultValues(fn)
 
+	if ignore := aws.StringValue(opt.Ignore); ignore != "" {
+		q, err := gojq.Parse(ignore)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse ignore query")
+		}
+		q = jsondiff.WithUpdate(q)
+		fnAny, _ := marshalAny(fn)
+		fnAny, err = jsondiff.ModifyValue(q, fnAny)
+		if err != nil {
+			return errors.Wrap(err, "failed to modify function")
+		}
+		src, _ := json.Marshal(fnAny)
+		fn = &Function{}
+		unmarshalJSON(src, &fn, *opt.FunctionFilePath)
+	}
+
 	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
 		return errors.Wrap(err, "failed to prepare function code for deploy")
 	}
@@ -107,6 +126,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
 		EphemeralStorage:  fn.EphemeralStorage,
+		Environment:       fn.Environment,
 		FunctionName:      fn.FunctionName,
 		FileSystemConfigs: fn.FileSystemConfigs,
 		Handler:           fn.Handler,
@@ -121,14 +141,6 @@ func (app *App) Deploy(opt DeployOption) error {
 		ImageConfig:       fn.ImageConfig,
 		SnapStart:         fn.SnapStart,
 	}
-	if env := fn.Environment; env == nil || env.Variables == nil {
-		confIn.Environment = &lambda.Environment{
-			Variables: map[string]*string{}, // set empty variables explicitly
-		}
-	} else {
-		confIn.Environment = env
-	}
-
 	log.Printf("[debug]\n%s", confIn.String())
 
 	var newerVersion string

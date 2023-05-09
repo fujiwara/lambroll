@@ -221,12 +221,17 @@ func fillDefaultValues(fn *Function) {
 	if fn.Description == nil {
 		fn.Description = aws.String("")
 	}
+	if fn.Environment == nil || fn.Environment.Variables == nil {
+		fn.Environment = &lambda.Environment{
+			Variables: make(map[string]*string),
+		}
+	}
 	if fn.MemorySize == nil {
 		fn.MemorySize = aws.Int64(128)
 	}
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &lambda.TracingConfig{
-			Mode: aws.String("PassThrough"),
+			Mode: aws.String(lambda.TracingModePassThrough),
 		}
 	}
 	if fn.EphemeralStorage == nil {

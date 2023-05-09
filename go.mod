@@ -4,7 +4,7 @@ go 1.15
 
 require (
 	github.com/Songmu/prompter v0.5.0
-	github.com/aereal/jsondiff v0.2.3
+	github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.44.147
 	github.com/fatih/color v1.13.0
@@ -15,7 +15,6 @@ require (
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
 	github.com/itchyny/gojq v0.12.8
 	github.com/kayac/go-config v0.6.0
-	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
