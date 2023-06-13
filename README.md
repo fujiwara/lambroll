@@ -316,7 +316,7 @@ function.json is a definition for Lambda function. JSON structure is based from 
   "Handler": "index.js",
   "MemorySize": 128,
   "Role": "arn:aws:iam::123456789012:role/hello_lambda_function",
-  "Runtime": "nodejs14.x",
+  "Runtime": "nodejs18.x",
   "Tags": {
     "Env": "dev"
   },
