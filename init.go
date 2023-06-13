@@ -35,7 +35,7 @@ func (app *App) Init(opt InitOption) error {
 				c = &lambda.FunctionConfiguration{
 					FunctionName: opt.FunctionName,
 					MemorySize:   aws.Int64(128),
-					Runtime:      aws.String("nodejs14.x"),
+					Runtime:      aws.String("nodejs18.x"),
 					Timeout:      aws.Int64(3),
 					Handler:      aws.String("index.handler"),
 					Role: aws.String(
