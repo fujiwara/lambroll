@@ -70,7 +70,7 @@ func TestNewFunction(t *testing.T) {
 	conf := &lambda.FunctionConfiguration{
 		FunctionName: aws.String("hello"),
 		MemorySize:   aws.Int64(128),
-		Runtime:      aws.String("nodejs14.x"),
+		Runtime:      aws.String("nodejs18.x"),
 		Timeout:      aws.Int64(3),
 		Handler:      aws.String("index.handler"),
 		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
@@ -85,7 +85,7 @@ func TestNewFunction(t *testing.T) {
 	if *fn.MemorySize != 128 {
 		t.Errorf("unexpected memory size got %d", *fn.MemorySize)
 	}
-	if *fn.Runtime != "nodejs14.x" {
+	if *fn.Runtime != "nodejs18.x" {
 		t.Errorf("unexpected runtime got %s", *fn.Runtime)
 	}
 	if *fn.Timeout != 3 {
