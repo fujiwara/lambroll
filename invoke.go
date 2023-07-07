@@ -2,6 +2,7 @@ package lambroll
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,10 +10,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/mattn/go-isatty"
-	"github.com/pkg/errors"
+
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdatypesv2 "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // InvokeOption represents option for Invoke()
@@ -25,18 +26,20 @@ type InvokeOption struct {
 
 // Invoke invokes function
 func (app *App) Invoke(opt InvokeOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	ctx := context.TODO()
+	fn, err := app.loadFunctionV2(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
-	var invocationType, logType *string
+	var invocationType lambdatypesv2.InvocationType
+	var logType lambdatypesv2.LogType
 	if *opt.Async {
-		invocationType = aws.String("Event")
+		invocationType = lambdatypesv2.InvocationTypeEvent
 	} else {
-		invocationType = aws.String("RequestResponse")
+		invocationType = lambdatypesv2.InvocationTypeRequestResponse
 	}
 	if *opt.LogTail {
-		logType = aws.String("Tail")
+		logType = lambdatypesv2.LogTypeTail
 	}
 
 	if isatty.IsTerminal(os.Stdin.Fd()) {
@@ -54,10 +57,10 @@ PAYLOAD:
 			if err == io.EOF {
 				break
 			}
-			return errors.Wrap(err, "failed to decode payload as JSON")
+			return fmt.Errorf("failed to decode payload as JSON: %w", err)
 		}
 		b, _ := json.Marshal(payload)
-		in := &lambda.InvokeInput{
+		in := &lambdav2.InvokeInput{
 			FunctionName:   fn.FunctionName,
 			InvocationType: invocationType,
 			LogType:        logType,
@@ -66,8 +69,8 @@ PAYLOAD:
 		if len(*opt.Qualifier) > 0 {
 			in.Qualifier = opt.Qualifier
 		}
-		log.Println("[debug] invoking function", in.String())
-		res, err := app.lambda.Invoke(in)
+		log.Println("[debug] invoking function", in)
+		res, err := app.lambdav2.Invoke(ctx, in)
 		if err != nil {
 			log.Println("[error] failed to invoke function", err.Error())
 			continue PAYLOAD
@@ -76,7 +79,7 @@ PAYLOAD:
 		stdout.Write([]byte("\n"))
 		stdout.Flush()
 
-		log.Printf("[info] StatusCode:%d", *res.StatusCode)
+		log.Printf("[info] StatusCode:%d", res.StatusCode)
 		if res.ExecutedVersion != nil {
 			log.Printf("[info] ExecutionVersion:%s", *res.ExecutedVersion)
 		}
