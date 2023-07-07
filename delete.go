@@ -1,10 +1,11 @@
 package lambroll
 
 import (
+	"context"
+	"fmt"
 	"log"
 
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/pkg/errors"
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 // DeleteOption represents options for Delete()
@@ -22,9 +23,10 @@ func (opt DeleteOption) label() string {
 
 // Delete deletes function
 func (app *App) Delete(opt DeleteOption) error {
+	ctx := context.TODO()
 	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 
 	log.Println("[info] deleting function", *fn.FunctionName, opt.label())
@@ -32,11 +34,11 @@ func (app *App) Delete(opt DeleteOption) error {
 	if *opt.DryRun {
 		return nil
 	}
-	_, err = app.lambda.DeleteFunction(&lambda.DeleteFunctionInput{
+	_, err = app.lambdav2.DeleteFunction(ctx, &lambdav2.DeleteFunctionInput{
 		FunctionName: fn.FunctionName,
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to delete function")
+		return fmt.Errorf("failed to delete function: %w", err)
 	}
 
 	return nil
