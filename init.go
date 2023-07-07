@@ -1,6 +1,8 @@
 package lambroll
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -8,10 +10,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/pkg/errors"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // InitOption represents options for Init()
@@ -22,55 +23,53 @@ type InitOption struct {
 
 // Init initializes function.json
 func (app *App) Init(opt InitOption) error {
-	res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+	ctx := context.TODO()
+	res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
 		FunctionName: opt.FunctionName,
 	})
-	var c *lambda.FunctionConfiguration
+	var c *lambdav2types.FunctionConfiguration
 	exists := true
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case lambda.ErrCodeResourceNotFoundException:
-				log.Printf("[info] function %s is not found", *opt.FunctionName)
-				c = &lambda.FunctionConfiguration{
-					FunctionName: opt.FunctionName,
-					MemorySize:   aws.Int64(128),
-					Runtime:      aws.String("nodejs18.x"),
-					Timeout:      aws.Int64(3),
-					Handler:      aws.String("index.handler"),
-					Role: aws.String(
-						fmt.Sprintf(
-							"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
-							app.AWSAccountID(),
-						),
+		var nfe *lambdav2types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			log.Printf("[info] function %s is not found", *opt.FunctionName)
+			c = &lambdav2types.FunctionConfiguration{
+				FunctionName: opt.FunctionName,
+				MemorySize:   awsv2.Int32(128),
+				Runtime:      lambdav2types.RuntimeNodejs18x,
+				Timeout:      awsv2.Int32(3),
+				Handler:      awsv2.String("index.handler"),
+				Role: awsv2.String(
+					fmt.Sprintf(
+						"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
+						app.AWSAccountID(),
 					),
-				}
-				exists = false
-			default:
+				),
 			}
+			exists = false
 		}
 		if c == nil {
-			return errors.Wrap(err, "failed to GetFunction"+*opt.FunctionName)
+			return fmt.Errorf("failed to GetFunction %s: %w", *opt.FunctionName, err)
 		}
 	} else {
 		log.Printf("[info] function %s found", *opt.FunctionName)
 		c = res.Configuration
 	}
 
-	var tags Tags
+	var tags TagsV2
 	if exists {
 		arn := app.functionArn(*c.FunctionName)
 		log.Printf("[debug] listing tags of %s", arn)
-		res, err := app.lambda.ListTags(&lambda.ListTagsInput{
-			Resource: aws.String(arn),
+		res, err := app.lambdav2.ListTags(ctx, &lambdav2.ListTagsInput{
+			Resource: awsv2.String(arn),
 		})
 		if err != nil {
-			return errors.Wrap(err, "faled to list tags")
+			return fmt.Errorf("faled to list tags: %w", err)
 		}
 		tags = res.Tags
 	}
 
-	fn := newFunctionFrom(c, res.Code, tags)
+	fn := newFunctionFromV2(c, res.Code, tags)
 
 	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
@@ -90,19 +89,19 @@ func (app *App) Init(opt InitOption) error {
 	}
 
 	log.Printf("[info] creating %s", FunctionFilenames[0])
-	b, _ := marshalJSON(fn)
+	b, _ := marshalJSONV2(fn)
 	return app.saveFile(FunctionFilenames[0], b, os.FileMode(0644))
 }
 
 func download(url, path string) error {
 	resp, err := http.Get(url)
 	if err != nil {
-		return errors.Wrapf(err, "failed to get %s", url)
+		return fmt.Errorf("failed to get %s: %w", url, err)
 	}
 	defer resp.Body.Close()
 	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, os.FileMode(0644))
 	if err != nil {
-		return errors.Wrapf(err, "failed to open file %s", path)
+		return fmt.Errorf("failed to open file %s: %w", path, err)
 	}
 	_, err = io.Copy(f, resp.Body)
 	return err
