@@ -34,6 +34,10 @@ func marshalJSON(s interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
+func marshalJSONV2(s interface{}) ([]byte, error) {
+	return json.MarshalIndent(s, "", "  ")
+}
+
 func unmarshalJSON(src []byte, v interface{}, path string) error {
 	strict := json.NewDecoder(bytes.NewReader(src))
 	strict.DisallowUnknownFields()

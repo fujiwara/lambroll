@@ -153,7 +153,7 @@ func newAwsV2Config(ctx context.Context, opt *Option) (awsv2.Config, error) {
 		optFuncs = append(optFuncs, configv2.WithEndpointResolverWithOptions(customResolver))
 	}
 	if opt.Profile != nil && *opt.Profile != "" {
-		optFuncs = append(optFuncs, configv2.WithSharedConfigProfile("test-account"))
+		optFuncs = append(optFuncs, configv2.WithSharedConfigProfile(*opt.Profile))
 	}
 	return configv2.LoadDefaultConfig(ctx, optFuncs...)
 }
@@ -393,7 +393,7 @@ func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2typ
 
 func fillDefaultValuesV2(fn *FunctionV2) {
 	if len(fn.Architectures) == 0 {
-		fn.Architectures = lambdav2types.ArchitectureX8664.Values()
+		fn.Architectures = []lambdav2types.Architecture{lambdav2types.ArchitectureX8664}
 	}
 	if fn.Description == nil {
 		fn.Description = awsv2.String("")

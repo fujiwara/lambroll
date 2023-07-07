@@ -61,8 +61,8 @@ func (app *App) Diff(opt DiffOption) error {
 	}
 	latestFunc := newFunctionFromV2(latest, code, tags)
 
-	latestJSON, _ := marshalJSON(latestFunc)
-	newJSON, _ := marshalJSON(newFunc)
+	latestJSON, _ := marshalJSONV2(latestFunc)
+	newJSON, _ := marshalJSONV2(newFunc)
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
 		fmt.Println(color.RedString("---" + app.functionArn(name)))
