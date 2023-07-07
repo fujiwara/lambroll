@@ -26,6 +26,8 @@ import (
 	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"
+
+	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 const versionLatest = "$LATEST"
@@ -40,8 +42,12 @@ var retryPolicy = retry.Policy{
 // Function represents configuration of Lambda function
 type Function = lambda.CreateFunctionInput
 
+type FunctionV2 = lambdav2.CreateFunctionInput
+
 // Tags represents tags of function
 type Tags = map[string]*string
+
+type TagsV2 = map[string]string
 
 func (app *App) functionArn(name string) string {
 	return fmt.Sprintf(
@@ -270,6 +276,41 @@ func (app *App) loadFunction(path string) (*Function, error) {
 	return &fn, nil
 }
 
+func (app *App) loadFunctionV2(path string) (*FunctionV2, error) {
+	var (
+		src []byte
+		err error
+	)
+	switch filepath.Ext(path) {
+	case ".jsonnet":
+		vm := jsonnet.MakeVM()
+		for k, v := range app.extStr {
+			vm.ExtVar(k, v)
+		}
+		for k, v := range app.extCode {
+			vm.ExtCode(k, v)
+		}
+		jsonStr, err := vm.EvaluateFile(path)
+		if err != nil {
+			return nil, err
+		}
+		src, err = app.loader.ReadWithEnvBytes([]byte(jsonStr))
+		if err != nil {
+			return nil, err
+		}
+	default:
+		src, err = app.loader.ReadWithEnv(path)
+		if err != nil {
+			return nil, err
+		}
+	}
+	var fn FunctionV2
+	if err := unmarshalJSON(src, &fn, path); err != nil {
+		return nil, errors.Wrapf(err, "failed to load %s", path)
+	}
+	return &fn, nil
+}
+
 func fillDefaultValues(fn *Function) {
 	if len(fn.Architectures) == 0 {
 		fn.Architectures = []*string{aws.String("x86_64")}
@@ -296,6 +337,86 @@ func fillDefaultValues(fn *Function) {
 	if fn.SnapStart == nil {
 		fn.SnapStart = &lambda.SnapStart{
 			ApplyOn: aws.String("None"),
+		}
+	}
+}
+
+func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2types.FunctionCodeLocation, tags TagsV2) *FunctionV2 {
+	fn := &FunctionV2{
+		Architectures:     c.Architectures,
+		Description:       c.Description,
+		EphemeralStorage:  c.EphemeralStorage,
+		FunctionName:      c.FunctionName,
+		Handler:           c.Handler,
+		MemorySize:        c.MemorySize,
+		Role:              c.Role,
+		Runtime:           c.Runtime,
+		Timeout:           c.Timeout,
+		DeadLetterConfig:  c.DeadLetterConfig,
+		FileSystemConfigs: c.FileSystemConfigs,
+		KMSKeyArn:         c.KMSKeyArn,
+		SnapStart:         newSnapStartV2(c.SnapStart),
+	}
+
+	if e := c.Environment; e != nil {
+		fn.Environment = &lambdav2types.Environment{
+			Variables: e.Variables,
+		}
+	}
+	for _, layer := range c.Layers {
+		fn.Layers = append(fn.Layers, *layer.Arn)
+	}
+	if t := c.TracingConfig; t != nil {
+		fn.TracingConfig = &lambdav2types.TracingConfig{
+			Mode: t.Mode,
+		}
+	}
+	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
+		fn.VpcConfig = &lambdav2types.VpcConfig{
+			SubnetIds:        v.SubnetIds,
+			SecurityGroupIds: v.SecurityGroupIds,
+		}
+	}
+
+	if (code != nil && awsv2.ToString(code.RepositoryType) == "ECR") || fn.PackageType == lambdav2types.PackageTypeImage {
+		log.Printf("[debug] Image URL=%s", *code.ImageUri)
+		fn.PackageType = lambdav2types.PackageTypeImage
+		fn.Code = &lambdav2types.FunctionCode{
+			ImageUri: code.ImageUri,
+		}
+	}
+
+	fn.Tags = tags
+
+	return fn
+}
+
+func fillDefaultValuesV2(fn *FunctionV2) {
+	if len(fn.Architectures) == 0 {
+		fn.Architectures = lambdav2types.ArchitectureX8664.Values()
+	}
+	if fn.Description == nil {
+		fn.Description = awsv2.String("")
+	}
+	if fn.MemorySize == nil {
+		fn.MemorySize = awsv2.Int32(128)
+	}
+	if fn.TracingConfig == nil {
+		fn.TracingConfig = &lambdav2types.TracingConfig{
+			Mode: lambdav2types.TracingModePassThrough,
+		}
+	}
+	if fn.EphemeralStorage == nil {
+		fn.EphemeralStorage = &lambdav2types.EphemeralStorage{
+			Size: awsv2.Int32(512),
+		}
+	}
+	if fn.Timeout == nil {
+		fn.Timeout = awsv2.Int32(3)
+	}
+	if fn.SnapStart == nil {
+		fn.SnapStart = &lambdav2types.SnapStart{
+			ApplyOn: lambdav2types.SnapStartApplyOnNone,
 		}
 	}
 }
@@ -359,6 +480,15 @@ func newSnapStart(s *lambda.SnapStartResponse) *lambda.SnapStart {
 	}
 }
 
+func newSnapStartV2(s *lambdav2types.SnapStartResponse) *lambdav2types.SnapStart {
+	if s == nil {
+		return nil
+	}
+	return &lambdav2types.SnapStart{
+		ApplyOn: s.ApplyOn,
+	}
+}
+
 func exportEnvFile(file string) error {
 	if file == "" {
 		return nil
@@ -395,6 +525,28 @@ func validateUpdateFunction(currentConf *lambda.FunctionConfiguration, currentCo
 
 	// current=Image
 	if currentCode != nil && currentCode.ImageUri != nil || aws.StringValue(currentConf.PackageType) == packageTypeImage {
+		// new=Zip
+		if newCode == nil || newCode.ImageUri == nil {
+			return errCannotUpdateImageAndZip
+		}
+	}
+
+	return nil
+}
+
+func validateUpdateFunctionV2(currentConf *lambdav2types.FunctionConfiguration, currentCode *lambdav2types.FunctionCodeLocation, newFn *lambdav2.CreateFunctionInput) error {
+	newCode := newFn.Code
+
+	// new=Image
+	if newCode != nil && newCode.ImageUri != nil || newFn.PackageType == packageTypeImage {
+		// current=Zip
+		if currentCode == nil || currentCode.ImageUri == nil {
+			return errCannotUpdateImageAndZip
+		}
+	}
+
+	// current=Image
+	if currentCode != nil && currentCode.ImageUri != nil || currentConf.PackageType == lambdav2types.PackageTypeImage {
 		// new=Zip
 		if newCode == nil || newCode.ImageUri == nil {
 			return errCannotUpdateImageAndZip

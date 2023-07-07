@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"context"
 	"os"
 	"testing"
 
@@ -12,7 +13,7 @@ func TestLoadFunction(t *testing.T) {
 	os.Setenv("FUNCTION_NAME", "test")
 	envfiles := []string{"test/env"}
 	path := "test/terraform.tfstate"
-	app, err := New(&Option{
+	app, err := New(context.TODO(), &Option{
 		TFState: &path,
 		PrefixedTFState: &map[string]string{
 			"prefix1_": "test/terraform_1.tfstate",
