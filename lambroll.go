@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -19,6 +20,12 @@ import (
 	"github.com/kayac/go-config"
 	"github.com/pkg/errors"
 	"github.com/shogo82148/go-retry"
+
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	configv2 "github.com/aws/aws-sdk-go-v2/config"
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
+	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
 const versionLatest = "$LATEST"
@@ -81,18 +88,14 @@ type App struct {
 	profile   string
 	loader    *config.Loader
 
+	awsv2Config awsv2.Config
+	lambdav2    *lambdav2.Client
+
 	extStr  map[string]string
 	extCode map[string]string
 }
 
-// New creates an application
-func New(opt *Option) (*App, error) {
-	for _, envfile := range *opt.Envfile {
-		if err := exportEnvFile(envfile); err != nil {
-			return nil, err
-		}
-	}
-
+func newAwsV1Session(opt *Option) (*session.Session, error) {
 	awsCfg := &aws.Config{}
 	if opt.Region != nil && *opt.Region != "" {
 		awsCfg.Region = aws.String(*opt.Region)
@@ -114,12 +117,62 @@ func New(opt *Option) (*App, error) {
 		Config:            *awsCfg,
 		SharedConfigState: session.SharedConfigEnable,
 	}
-	var profile string
 	if opt.Profile != nil && *opt.Profile != "" {
 		sessOpt.Profile = *opt.Profile
-		profile = *opt.Profile
 	}
 	sess := session.Must(session.NewSessionWithOptions(sessOpt))
+	return sess, nil
+}
+
+func newAwsV2Config(ctx context.Context, opt *Option) (awsv2.Config, error) {
+	var region string
+	if opt.Region != nil && *opt.Region != "" {
+		region = awsv2.ToString(opt.Region)
+	}
+	optFuncs := []func(*configv2.LoadOptions) error{
+		configv2.WithRegion(region),
+	}
+	if opt.Endpoint != nil && *opt.Endpoint != "" {
+		customResolver := awsv2.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (awsv2.Endpoint, error) {
+			if service == lambdav2.ServiceID || service == stsv2.ServiceID || service == s3v2.ServiceID {
+				return awsv2.Endpoint{
+					PartitionID:   "aws",
+					URL:           *opt.Endpoint,
+					SigningRegion: region,
+				}, nil
+			}
+			// returning EndpointNotFoundError will allow the service to fallback to it's default resolution
+			return awsv2.Endpoint{}, &awsv2.EndpointNotFoundError{}
+		})
+		optFuncs = append(optFuncs, configv2.WithEndpointResolverWithOptions(customResolver))
+	}
+	if opt.Profile != nil && *opt.Profile != "" {
+		optFuncs = append(optFuncs, configv2.WithSharedConfigProfile("test-account"))
+	}
+	return configv2.LoadDefaultConfig(ctx, optFuncs...)
+}
+
+// New creates an application
+func New(ctx context.Context, opt *Option) (*App, error) {
+	for _, envfile := range *opt.Envfile {
+		if err := exportEnvFile(envfile); err != nil {
+			return nil, err
+		}
+	}
+
+	sess, err := newAwsV1Session(opt)
+	if err != nil {
+		return nil, err
+	}
+	v2cfg, err := newAwsV2Config(ctx, opt)
+	if err != nil {
+		return nil, err
+	}
+
+	var profile string
+	if opt.Profile != nil && *opt.Profile != "" {
+		profile = *opt.Profile
+	}
 
 	loader := config.New()
 	if opt.TFState != nil && *opt.TFState != "" {
@@ -153,6 +206,9 @@ func New(opt *Option) (*App, error) {
 		lambda:  lambda.New(sess),
 		profile: profile,
 		loader:  loader,
+
+		awsv2Config: v2cfg,
+		lambdav2:    lambdav2.NewFromConfig(v2cfg),
 	}
 	if opt.ExtStr != nil {
 		app.extStr = *opt.ExtStr

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -134,7 +135,7 @@ func _main() int {
 	}
 	log.SetOutput(filter)
 
-	app, err := lambroll.New(&opt)
+	app, err := lambroll.New(context.TODO(), &opt)
 	if err != nil {
 		log.Println("[error]", err)
 		return 1

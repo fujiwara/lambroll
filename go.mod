@@ -6,6 +6,11 @@ require (
 	github.com/Songmu/prompter v0.5.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/aws/aws-sdk-go v1.44.147
+	github.com/aws/aws-sdk-go-v2 v1.18.1
+	github.com/aws/aws-sdk-go-v2/config v1.18.27
+	github.com/aws/aws-sdk-go-v2/service/lambda v1.37.0
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.36.0
+	github.com/aws/aws-sdk-go-v2/service/sts v1.19.2
 	github.com/fatih/color v1.13.0
 	github.com/fujiwara/logutils v1.1.0
 	github.com/fujiwara/tfstate-lookup v0.4.2
