@@ -59,7 +59,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 	if fn.Code != nil {
 		if bucket, key := fn.Code.S3Bucket, fn.Code.S3Key; bucket != nil && key != nil {
 			log.Printf("[info] uploading function %d bytes to s3://%s/%s", info.Size(), *bucket, *key)
-			versionID, err := app.uploadFunctionToS3(zipfile, *bucket, *key)
+			versionID, err := app.uploadFunctionToS3(context.TODO(), zipfile, *bucket, *key)
 			if err != nil {
 				errors.Wrapf(err, "failed to upload function zip to s3://%s/%s", *bucket, *key)
 			}
