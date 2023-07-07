@@ -2,15 +2,18 @@ package lambroll
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
+
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // VersionsOption represents options for Versions()
@@ -65,6 +68,7 @@ func (v versionsOutput) TSV() string {
 
 // Versions manages the versions of a Lambda function
 func (app *App) Versions(opt VersionsOption) error {
+	ctx := context.TODO()
 	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to load function")
@@ -77,7 +81,7 @@ func (app *App) Versions(opt VersionsOption) error {
 	aliases := make(map[string][]string)
 	var nextAliasMarker *string
 	for {
-		res, err := app.lambda.ListAliases(&lambda.ListAliasesInput{
+		res, err := app.lambdav2.ListAliases(ctx, &lambdav2.ListAliasesInput{
 			FunctionName: &name,
 			Marker:       nextAliasMarker,
 		})
@@ -98,10 +102,10 @@ func (app *App) Versions(opt VersionsOption) error {
 		}
 	}
 
-	var versions []*lambda.FunctionConfiguration
+	var versions []lambdav2types.FunctionConfiguration
 	var nextMarker *string
 	for {
-		res, err := app.lambda.ListVersionsByFunction(&lambda.ListVersionsByFunctionInput{
+		res, err := app.lambdav2.ListVersionsByFunction(ctx, &lambdav2.ListVersionsByFunctionInput{
 			FunctionName: &name,
 			Marker:       nextMarker,
 		})
@@ -116,7 +120,7 @@ func (app *App) Versions(opt VersionsOption) error {
 
 	vo := make(versionsOutputs, 0, len(versions))
 	for _, v := range versions {
-		if aws.StringValue(v.Version) == versionLatest {
+		if awsv2.ToString(v.Version) == versionLatest {
 			continue
 		}
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
