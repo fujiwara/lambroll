@@ -6,9 +6,8 @@ import (
 	"log"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/pkg/errors"
 )
 
 // ListOption represents options for List()
@@ -33,7 +32,7 @@ func (app *App) List(opt ListOption) error {
 				Resource: aws.String(arn),
 			})
 			if err != nil {
-				return errors.Wrap(err, "faled to list tags")
+				return fmt.Errorf("faled to list tags: %w", err)
 			}
 			b, _ := marshalJSONV2(newFunctionFromV2(&c, nil, res.Tags))
 			os.Stdout.Write(b)

@@ -4,14 +4,15 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // DeployOption represens an option for Deploy()
@@ -72,38 +73,36 @@ func (app *App) Deploy(opt DeployOption) error {
 	ctx := context.Background()
 	excludes, err := expandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse exclude-file")
+		return fmt.Errorf("failed to parse exclude-file: %w", err)
 	}
 	opt.Excludes = append(opt.Excludes, excludes...)
 	log.Printf("[debug] %s", opt.String())
 
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunctionV2(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 
 	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
-	if current, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+	if current, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
 		FunctionName: fn.FunctionName,
 	}); err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case lambda.ErrCodeResourceNotFoundException:
-				return app.create(opt, fn)
-			}
+		var nfe *lambdav2types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			return app.create(opt, fn)
 		}
 		return err
-	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
+	} else if err := validateUpdateFunctionV2(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
-	fillDefaultValues(fn)
+	fillDefaultValuesV2(fn)
 
 	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
-		return errors.Wrap(err, "failed to prepare function code for deploy")
+		return fmt.Errorf("failed to prepare function code for deploy: %w", err)
 	}
 
 	log.Println("[info] updating function configuration", opt.label())
-	confIn := &lambda.UpdateFunctionConfigurationInput{
+	confIn := &lambdav2.UpdateFunctionConfigurationInput{
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
 		EphemeralStorage:  fn.EphemeralStorage,
@@ -122,19 +121,19 @@ func (app *App) Deploy(opt DeployOption) error {
 		SnapStart:         fn.SnapStart,
 	}
 	if env := fn.Environment; env == nil || env.Variables == nil {
-		confIn.Environment = &lambda.Environment{
-			Variables: map[string]*string{}, // set empty variables explicitly
+		confIn.Environment = &lambdav2types.Environment{
+			Variables: map[string]string{}, // set empty variables explicitly
 		}
 	} else {
 		confIn.Environment = env
 	}
 
-	log.Printf("[debug]\n%s", confIn.String())
+	// log.Printf("[debug]\n%s", confIn.String())
 
 	var newerVersion string
 	if !*opt.DryRun {
-		if _, err := app.updateFunctionConfiguration(ctx, confIn); err != nil {
-			return errors.Wrap(err, "failed to update function configuration")
+		if err := app.updateFunctionConfiguration(ctx, confIn); err != nil {
+			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
 	}
 	if err := app.updateTags(fn, opt); err != nil {
@@ -142,7 +141,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 
 	log.Println("[info] updating function code", opt.label())
-	codeIn := &lambda.UpdateFunctionCodeInput{
+	codeIn := &lambdav2.UpdateFunctionCodeInput{
 		Architectures:   fn.Architectures,
 		FunctionName:    fn.FunctionName,
 		ZipFile:         fn.Code.ZipFile,
@@ -152,11 +151,10 @@ func (app *App) Deploy(opt DeployOption) error {
 		ImageUri:        fn.Code.ImageUri,
 	}
 	if *opt.DryRun {
-		codeIn.DryRun = aws.Bool(true)
+		codeIn.DryRun = true
 	} else {
-		codeIn.Publish = opt.Publish
+		codeIn.Publish = *opt.Publish
 	}
-	log.Printf("[debug]\n%s", codeIn.String())
 
 	res, err := app.updateFunctionCode(ctx, codeIn)
 	if err != nil {
@@ -184,132 +182,125 @@ func (app *App) Deploy(opt DeployOption) error {
 	return nil
 }
 
-func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.UpdateFunctionConfigurationInput) (*lambda.FunctionConfiguration, error) {
+func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambdav2.UpdateFunctionConfigurationInput) error {
 	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
-		return nil, err
+		return err
 	}
 
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		res, err := app.lambda.UpdateFunctionConfigurationWithContext(ctx, in)
+		_, err := app.lambdav2.UpdateFunctionConfiguration(ctx, in)
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				case lambda.ErrCodeResourceConflictException:
-					log.Println("[debug] retrying", aerr.Message())
-					continue
-				}
+			var rce *lambdav2types.ResourceConflictException
+			if errors.As(err, &rce) {
+				log.Println("[debug] retrying", rce.Error())
+				continue
 			}
-			return nil, errors.Wrap(err, "failed to update function configuration")
+			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
 		log.Println("[info] updated function configuration successfully")
-		return res, nil
+		return nil
 	}
-	return nil, errors.New("failed to update function configuration (max retries reached)")
+	return fmt.Errorf("failed to update function configuration (max retries reached)")
 }
 
-func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.FunctionConfiguration, error) {
+func (app *App) updateFunctionCode(ctx context.Context, in *lambdav2.UpdateFunctionCodeInput) (*lambdav2.UpdateFunctionCodeOutput, error) {
 	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
 		return nil, err
 	}
 
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		res, err := app.lambda.UpdateFunctionCodeWithContext(ctx, in)
+		res, err := app.lambdav2.UpdateFunctionCode(ctx, in)
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				case lambda.ErrCodeResourceConflictException:
-					log.Println("[debug] retrying", aerr.Message())
-					continue
-				}
+			var rce *lambdav2types.ResourceConflictException
+			if errors.As(err, &rce) {
+				log.Println("[debug] retrying", err)
+				continue
 			}
-			return nil, errors.Wrap(err, "failed to update function code")
+			return nil, fmt.Errorf("failed to update function code: %w", err)
 		}
 		log.Println("[info] updated function code successfully")
 		return res, nil
 	}
-	return nil, errors.New("failed to update function code (max retries reached)")
+	return nil, fmt.Errorf("failed to update function code (max retries reached)")
 }
 
 func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name string) error {
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+		res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
 			FunctionName: aws.String(name),
 		})
 		if err != nil {
 			log.Println("[warn] failed to get function, retrying", err)
 			continue
 		} else {
-			state := aws.StringValue(res.Configuration.State)
-			last := aws.StringValue(res.Configuration.LastUpdateStatus)
+			state := res.Configuration.State
+			last := res.Configuration.LastUpdateStatus
 			log.Printf("[info] State:%s LastUpdateStatus:%s", state, last)
-			if last == lambda.LastUpdateStatusSuccessful {
+			if last == lambdav2types.LastUpdateStatusSuccessful {
 				return nil
 			}
-			log.Printf("[info] waiting for LastUpdateStatus %s", lambda.LastUpdateStatusSuccessful)
+			log.Printf("[info] waiting for LastUpdateStatus %s", lambdav2types.LastUpdateStatusSuccessful)
 		}
 	}
-	return errors.New("max retries reached")
+	return fmt.Errorf("max retries reached")
 }
 
 func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
+	ctx := context.TODO()
 	for _, v := range vs {
 		log.Printf("[info] updating alias set %s to version %s", v.Name, v.Version)
-		alias, err := app.lambda.UpdateAlias(&lambda.UpdateAliasInput{
+		_, err := app.lambdav2.UpdateAlias(ctx, &lambdav2.UpdateAliasInput{
 			FunctionName:    aws.String(functionName),
 			FunctionVersion: aws.String(v.Version),
 			Name:            aws.String(v.Name),
 		})
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				case lambda.ErrCodeResourceNotFoundException:
-					log.Printf("[info] alias %s is not found. creating alias", v.Name)
-					alias, err = app.lambda.CreateAlias(&lambda.CreateAliasInput{
-						FunctionName:    aws.String(functionName),
-						FunctionVersion: aws.String(v.Version),
-						Name:            aws.String(v.Name),
-					})
+			var nfe *lambdav2types.ResourceNotFoundException
+			if errors.As(err, &nfe) {
+				log.Printf("[info] alias %s is not found. creating alias", v.Name)
+				_, err := app.lambdav2.CreateAlias(ctx, &lambdav2.CreateAliasInput{
+					FunctionName:    aws.String(functionName),
+					FunctionVersion: aws.String(v.Version),
+					Name:            aws.String(v.Name),
+				})
+				if err != nil {
+					return fmt.Errorf("failed to create alias: %w", err)
 				}
-			}
-			if err != nil {
-				return errors.Wrap(err, "failed to update alias")
+			} else {
+				return fmt.Errorf("failed to update alias: %w", err)
 			}
 		}
 		log.Println("[info] alias updated")
-		log.Printf("[debug]\n%s", alias.String())
 	}
 	return nil
 }
 
 func (app *App) deleteVersions(functionName string, keepVersions int) error {
+	ctx := context.TODO()
 	if keepVersions <= 0 {
 		log.Printf("[info] specify --keep-versions")
 		return nil
 	}
 
-	params := &lambda.ListVersionsByFunctionInput{
+	params := &lambdav2.ListVersionsByFunctionInput{
 		FunctionName: aws.String(functionName),
 	}
 
 	// versions will be set asc order, like 1 to N
-	versions := []*lambda.FunctionConfiguration{}
-
+	versions := []lambdav2types.FunctionConfiguration{}
 	for {
-		req, resp := app.lambda.ListVersionsByFunctionRequest(params)
-		if err := req.Send(); err != nil {
-			return err
+		res, err := app.lambdav2.ListVersionsByFunction(ctx, params)
+		if err != nil {
+			return fmt.Errorf("failed to list versions: %w", err)
 		}
-
-		versions = append(versions, resp.Versions...)
-
-		if resp.NextMarker != nil {
-			params.Marker = resp.NextMarker
+		versions = append(versions, res.Versions...)
+		if res.NextMarker != nil {
+			params.Marker = res.NextMarker
 			continue
 		}
-
 		break
 	}
 
@@ -323,12 +314,12 @@ func (app *App) deleteVersions(functionName string, keepVersions int) error {
 		}
 
 		log.Printf("[info] deleting function version: %s", *v.Version)
-		_, err := app.lambda.DeleteFunction(&lambda.DeleteFunctionInput{
+		_, err := app.lambdav2.DeleteFunction(ctx, &lambdav2.DeleteFunctionInput{
 			FunctionName: aws.String(functionName),
 			Qualifier:    v.Version,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to delete version")
+			return fmt.Errorf("failed to delete version: %w", err)
 		}
 	}
 
