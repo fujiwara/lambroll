@@ -9,16 +9,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-jsonnet"
 	"github.com/hashicorp/go-envparse"
 	"github.com/kayac/go-config"
-	"github.com/pkg/errors"
 	"github.com/shogo82148/go-retry"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
@@ -40,7 +34,7 @@ var retryPolicy = retry.Policy{
 }
 
 // Function represents configuration of Lambda function
-type Function = lambda.CreateFunctionInput
+//type Function = lambda.CreateFunctionInput
 
 type FunctionV2 = lambdav2.CreateFunctionInput
 
@@ -52,7 +46,7 @@ type TagsV2 = map[string]string
 func (app *App) functionArn(name string) string {
 	return fmt.Sprintf(
 		"arn:aws:lambda:%s:%s:function:%s",
-		*app.sess.Config.Region,
+		app.awsv2Config.Region,
 		app.AWSAccountID(),
 		name,
 	)
@@ -88,8 +82,6 @@ var (
 
 // App represents lambroll application
 type App struct {
-	sess      *session.Session
-	lambda    *lambda.Lambda
 	accountID string
 	profile   string
 	loader    *config.Loader
@@ -99,35 +91,6 @@ type App struct {
 
 	extStr  map[string]string
 	extCode map[string]string
-}
-
-func newAwsV1Session(opt *Option) (*session.Session, error) {
-	awsCfg := &aws.Config{}
-	if opt.Region != nil && *opt.Region != "" {
-		awsCfg.Region = aws.String(*opt.Region)
-	}
-	if opt.Endpoint != nil && *opt.Endpoint != "" {
-		customResolverFunc := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
-			switch service {
-			case endpoints.S3ServiceID, endpoints.LambdaServiceID, endpoints.StsServiceID:
-				return endpoints.ResolvedEndpoint{
-					URL: *opt.Endpoint,
-				}, nil
-			default:
-				return endpoints.DefaultResolver().EndpointFor(service, region, optFns...)
-			}
-		}
-		awsCfg.EndpointResolver = endpoints.ResolverFunc(customResolverFunc)
-	}
-	sessOpt := session.Options{
-		Config:            *awsCfg,
-		SharedConfigState: session.SharedConfigEnable,
-	}
-	if opt.Profile != nil && *opt.Profile != "" {
-		sessOpt.Profile = *opt.Profile
-	}
-	sess := session.Must(session.NewSessionWithOptions(sessOpt))
-	return sess, nil
 }
 
 func newAwsV2Config(ctx context.Context, opt *Option) (awsv2.Config, error) {
@@ -166,10 +129,6 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		}
 	}
 
-	sess, err := newAwsV1Session(opt)
-	if err != nil {
-		return nil, err
-	}
 	v2cfg, err := newAwsV2Config(ctx, opt)
 	if err != nil {
 		return nil, err
@@ -192,7 +151,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		prefixedFuncs := make(template.FuncMap)
 		for prefix, path := range *opt.PrefixedTFState {
 			if prefix == "" {
-				return nil, errors.New("--prefixed-tfstate option cannot have empty key")
+				return nil, fmt.Errorf("--prefixed-tfstate option cannot have empty key")
 			}
 
 			funcs, err := tfstate.FuncMap(path)
@@ -208,8 +167,6 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 	}
 
 	app := &App{
-		sess:    sess,
-		lambda:  lambda.New(sess),
 		profile: profile,
 		loader:  loader,
 
@@ -228,52 +185,18 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 
 // AWSAccountID returns AWS account ID in current session
 func (app *App) AWSAccountID() string {
+	ctx := context.TODO()
 	if app.accountID != "" {
 		return app.accountID
 	}
-	svc := sts.New(app.sess)
-	r, err := svc.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	svc := stsv2.NewFromConfig(app.awsv2Config)
+	r, err := svc.GetCallerIdentity(ctx, &stsv2.GetCallerIdentityInput{})
 	if err != nil {
 		log.Println("[warn] failed to get caller identity", err)
 		return ""
 	}
 	app.accountID = *r.Account
 	return app.accountID
-}
-
-func (app *App) loadFunction(path string) (*Function, error) {
-	var (
-		src []byte
-		err error
-	)
-	switch filepath.Ext(path) {
-	case ".jsonnet":
-		vm := jsonnet.MakeVM()
-		for k, v := range app.extStr {
-			vm.ExtVar(k, v)
-		}
-		for k, v := range app.extCode {
-			vm.ExtCode(k, v)
-		}
-		jsonStr, err := vm.EvaluateFile(path)
-		if err != nil {
-			return nil, err
-		}
-		src, err = app.loader.ReadWithEnvBytes([]byte(jsonStr))
-		if err != nil {
-			return nil, err
-		}
-	default:
-		src, err = app.loader.ReadWithEnv(path)
-		if err != nil {
-			return nil, err
-		}
-	}
-	var fn Function
-	if err := unmarshalJSON(src, &fn, path); err != nil {
-		return nil, errors.Wrapf(err, "failed to load %s", path)
-	}
-	return &fn, nil
 }
 
 func (app *App) loadFunctionV2(path string) (*FunctionV2, error) {
@@ -306,39 +229,9 @@ func (app *App) loadFunctionV2(path string) (*FunctionV2, error) {
 	}
 	var fn FunctionV2
 	if err := unmarshalJSON(src, &fn, path); err != nil {
-		return nil, errors.Wrapf(err, "failed to load %s", path)
+		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 	return &fn, nil
-}
-
-func fillDefaultValues(fn *Function) {
-	if len(fn.Architectures) == 0 {
-		fn.Architectures = []*string{aws.String("x86_64")}
-	}
-	if fn.Description == nil {
-		fn.Description = aws.String("")
-	}
-	if fn.MemorySize == nil {
-		fn.MemorySize = aws.Int64(128)
-	}
-	if fn.TracingConfig == nil {
-		fn.TracingConfig = &lambda.TracingConfig{
-			Mode: aws.String("PassThrough"),
-		}
-	}
-	if fn.EphemeralStorage == nil {
-		fn.EphemeralStorage = &lambda.EphemeralStorage{
-			Size: aws.Int64(512),
-		}
-	}
-	if fn.Timeout == nil {
-		fn.Timeout = aws.Int64(3)
-	}
-	if fn.SnapStart == nil {
-		fn.SnapStart = &lambda.SnapStart{
-			ApplyOn: aws.String("None"),
-		}
-	}
 }
 
 func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2types.FunctionCodeLocation, tags TagsV2) *FunctionV2 {
@@ -421,65 +314,6 @@ func fillDefaultValuesV2(fn *FunctionV2) {
 	}
 }
 
-func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeLocation, tags Tags) *Function {
-	fn := &Function{
-		Architectures:     c.Architectures,
-		Description:       c.Description,
-		EphemeralStorage:  c.EphemeralStorage,
-		FunctionName:      c.FunctionName,
-		Handler:           c.Handler,
-		MemorySize:        c.MemorySize,
-		Role:              c.Role,
-		Runtime:           c.Runtime,
-		Timeout:           c.Timeout,
-		DeadLetterConfig:  c.DeadLetterConfig,
-		FileSystemConfigs: c.FileSystemConfigs,
-		KMSKeyArn:         c.KMSKeyArn,
-		SnapStart:         newSnapStart(c.SnapStart),
-	}
-
-	if e := c.Environment; e != nil {
-		fn.Environment = &lambda.Environment{
-			Variables: e.Variables,
-		}
-	}
-	for _, layer := range c.Layers {
-		fn.Layers = append(fn.Layers, layer.Arn)
-	}
-	if t := c.TracingConfig; t != nil {
-		fn.TracingConfig = &lambda.TracingConfig{
-			Mode: t.Mode,
-		}
-	}
-	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
-		fn.VpcConfig = &lambda.VpcConfig{
-			SubnetIds:        v.SubnetIds,
-			SecurityGroupIds: v.SecurityGroupIds,
-		}
-	}
-
-	if (code != nil && aws.StringValue(code.RepositoryType) == "ECR") || aws.StringValue(fn.PackageType) == packageTypeImage {
-		log.Printf("[debug] Image URL=%s", *code.ImageUri)
-		fn.PackageType = aws.String(packageTypeImage)
-		fn.Code = &lambda.FunctionCode{
-			ImageUri: code.ImageUri,
-		}
-	}
-
-	fn.Tags = tags
-
-	return fn
-}
-
-func newSnapStart(s *lambda.SnapStartResponse) *lambda.SnapStart {
-	if s == nil {
-		return nil
-	}
-	return &lambda.SnapStart{
-		ApplyOn: s.ApplyOn,
-	}
-}
-
 func newSnapStartV2(s *lambdav2types.SnapStartResponse) *lambdav2types.SnapStart {
 	if s == nil {
 		return nil
@@ -510,29 +344,7 @@ func exportEnvFile(file string) error {
 	return nil
 }
 
-var errCannotUpdateImageAndZip = errors.New("cannot update function code between Image and Zip")
-
-func validateUpdateFunction(currentConf *lambda.FunctionConfiguration, currentCode *lambda.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
-	newCode := newFn.Code
-
-	// new=Image
-	if newCode != nil && newCode.ImageUri != nil || aws.StringValue(newFn.PackageType) == packageTypeImage {
-		// current=Zip
-		if currentCode == nil || currentCode.ImageUri == nil {
-			return errCannotUpdateImageAndZip
-		}
-	}
-
-	// current=Image
-	if currentCode != nil && currentCode.ImageUri != nil || aws.StringValue(currentConf.PackageType) == packageTypeImage {
-		// new=Zip
-		if newCode == nil || newCode.ImageUri == nil {
-			return errCannotUpdateImageAndZip
-		}
-	}
-
-	return nil
-}
+var errCannotUpdateImageAndZip = fmt.Errorf("cannot update function code between Image and Zip")
 
 func validateUpdateFunctionV2(currentConf *lambdav2types.FunctionConfiguration, currentCode *lambdav2types.FunctionCodeLocation, newFn *lambdav2.CreateFunctionInput) error {
 	newCode := newFn.Code

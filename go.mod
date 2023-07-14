@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/Songmu/prompter v0.5.0
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/aws/aws-sdk-go v1.44.147
+	github.com/aws/aws-sdk-go v1.44.147 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.18.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.27
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.37.0
@@ -21,6 +21,5 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/olekukonko/tablewriter v0.0.5
-	github.com/pkg/errors v0.9.1
 	github.com/shogo82148/go-retry v1.1.0
 )

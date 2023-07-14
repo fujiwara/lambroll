@@ -10,7 +10,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/kylelemons/godebug/diff"
-	"github.com/pkg/errors"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -31,13 +30,13 @@ func (app *App) Diff(opt DiffOption) error {
 	ctx := context.TODO()
 	excludes, err := expandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse exclude-file")
+		return fmt.Errorf("failed to parse exclude-file: %w", err)
 	}
 	opt.Excludes = append(opt.Excludes, excludes...)
 
 	newFunc, err := app.loadFunctionV2(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 	fillDefaultValuesV2(newFunc)
 	name := *newFunc.FunctionName
@@ -51,7 +50,7 @@ func (app *App) Diff(opt DiffOption) error {
 	if res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
 		FunctionName: &name,
 	}); err != nil {
-		return errors.Wrapf(err, "failed to GetFunction %s", name)
+		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
 		latest = res.Configuration
 		code = res.Code
@@ -76,7 +75,7 @@ func (app *App) Diff(opt DiffOption) error {
 
 	if awsv2.ToBool(opt.CodeSha256) {
 		if packageType != lambdav2types.PackageTypeZip {
-			return errors.New("code-sha256 is only supported for Zip package type")
+			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
 		zipfile, _, err := prepareZipfile(*opt.Src, opt.Excludes)
 		if err != nil {

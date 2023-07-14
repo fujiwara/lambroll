@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/errors"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -69,9 +68,9 @@ func (v versionsOutput) TSV() string {
 // Versions manages the versions of a Lambda function
 func (app *App) Versions(opt VersionsOption) error {
 	ctx := context.TODO()
-	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
+	newFunc, err := app.loadFunctionV2(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 	name := *newFunc.FunctionName
 	if *opt.Delete {
@@ -86,7 +85,7 @@ func (app *App) Versions(opt VersionsOption) error {
 			Marker:       nextAliasMarker,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list aliases")
+			return fmt.Errorf("failed to list aliases: %w", err)
 		}
 		for _, alias := range res.Aliases {
 			aliases[*alias.FunctionVersion] = append(aliases[*alias.FunctionVersion], *alias.Name)
@@ -110,7 +109,7 @@ func (app *App) Versions(opt VersionsOption) error {
 			Marker:       nextMarker,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list versions")
+			return fmt.Errorf("failed to list versions: %w", err)
 		}
 		versions = append(versions, res.Versions...)
 		if nextMarker = res.NextMarker; nextMarker == nil {
@@ -125,7 +124,7 @@ func (app *App) Versions(opt VersionsOption) error {
 		}
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse last modified")
+			return fmt.Errorf("failed to parse last modified: %w", err)
 		}
 		vo = append(vo, versionsOutput{
 			Version:      *v.Version,
