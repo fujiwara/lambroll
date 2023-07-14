@@ -1,14 +1,16 @@
 package lambroll
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // RollbackOption represents option for Rollback()
@@ -27,25 +29,26 @@ func (opt RollbackOption) label() string {
 
 // Rollback rollbacks function
 func (app *App) Rollback(opt RollbackOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	ctx := context.TODO()
+	fn, err := app.loadFunctionV2(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 
 	log.Printf("[info] starting rollback function %s", *fn.FunctionName)
 
-	res, err := app.lambda.GetAlias(&lambda.GetAliasInput{
+	res, err := app.lambdav2.GetAlias(ctx, &lambdav2.GetAliasInput{
 		FunctionName: fn.FunctionName,
 		Name:         aws.String(CurrentAliasName),
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to get alias")
+		return fmt.Errorf("failed to get alias: %w", err)
 	}
 
 	currentVersion := *res.FunctionVersion
 	cv, err := strconv.ParseInt(currentVersion, 10, 64)
 	if err != nil {
-		return errors.Wrapf(err, "failed to pase %s as int", currentVersion)
+		return fmt.Errorf("failed to pase %s as int: %w", currentVersion, err)
 	}
 
 	var prevVersion string
@@ -53,19 +56,18 @@ VERSIONS:
 	for v := cv - 1; v > 0; v-- {
 		log.Printf("[debug] get function version %d", v)
 		vs := strconv.FormatInt(v, 10)
-		res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+		res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
 			FunctionName: fn.FunctionName,
 			Qualifier:    aws.String(vs),
 		})
 		if err != nil {
-			if aerr, ok := err.(awserr.Error); ok {
-				switch aerr.Code() {
-				case lambda.ErrCodeResourceNotFoundException:
-					log.Printf("[debug] version %s not found", vs)
-					continue VERSIONS
-				}
+			var nfe *lambdav2types.ResourceNotFoundException
+			if errors.As(err, &nfe) {
+				log.Printf("[debug] version %s not found", vs)
+				continue VERSIONS
+			} else {
+				return fmt.Errorf("failed to get function: %w", err)
 			}
-			return errors.Wrap(err, "failed to get function")
 		}
 		prevVersion = *res.Configuration.Version
 		break
@@ -91,14 +93,15 @@ VERSIONS:
 }
 
 func (app *App) deleteFunctionVersion(functionName, version string) error {
+	ctx := context.TODO()
 	for {
 		log.Printf("[debug] checking aliased version")
-		res, err := app.lambda.GetAlias(&lambda.GetAliasInput{
+		res, err := app.lambdav2.GetAlias(ctx, &lambdav2.GetAliasInput{
 			FunctionName: aws.String(functionName),
 			Name:         aws.String(CurrentAliasName),
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to get alias")
+			return fmt.Errorf("failed to get alias: %w", err)
 		}
 		if *res.FunctionVersion == version {
 			log.Printf("[debug] version %s still has alias %s, retrying", version, CurrentAliasName)
@@ -108,12 +111,12 @@ func (app *App) deleteFunctionVersion(functionName, version string) error {
 		break
 	}
 	log.Printf("[info] deleting function version %s", version)
-	_, err := app.lambda.DeleteFunction(&lambda.DeleteFunctionInput{
+	_, err := app.lambdav2.DeleteFunction(ctx, &lambdav2.DeleteFunctionInput{
 		FunctionName: aws.String(functionName),
 		Qualifier:    aws.String(version),
 	})
 	if err != nil {
-		return errors.Wrap(err, "failed to delete version")
+		return fmt.Errorf("failed to delete version: %w", err)
 	}
 	return nil
 }
