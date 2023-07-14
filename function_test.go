@@ -31,7 +31,7 @@ func TestLoadFunction(t *testing.T) {
 		t.Error(err)
 	}
 	for _, f := range []string{"test/function.json", "test/function.jsonnet"} {
-		fn, err := app.loadFunction(f)
+		fn, err := app.loadFunctionV2(f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -44,26 +44,26 @@ func TestLoadFunction(t *testing.T) {
 		if *fn.FileSystemConfigs[0].Arn != "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a" {
 			t.Errorf("unexpected fileSystemConfigs %v", *&fn.FileSystemConfigs)
 		}
-		if *fn.Environment.Variables["JSON"] != `{"foo":"bar"}` {
+		if fn.Environment.Variables["JSON"] != `{"foo":"bar"}` {
 			t.Errorf("unexpected environment %v", fn.Environment.Variables)
 		}
-		if *fn.Environment.Variables["PREFIXED_TFSTATE_1"] != "arn:aws:iam::123456789012:role/test_lambda_role_1" {
+		if fn.Environment.Variables["PREFIXED_TFSTATE_1"] != "arn:aws:iam::123456789012:role/test_lambda_role_1" {
 			t.Errorf("unexpected environment %v", fn.Environment.Variables)
 		}
-		if *fn.Environment.Variables["PREFIXED_TFSTATE_2"] != "arn:aws:iam::123456789012:role/test_lambda_role_2" {
+		if fn.Environment.Variables["PREFIXED_TFSTATE_2"] != "arn:aws:iam::123456789012:role/test_lambda_role_2" {
 			t.Errorf("unexpected environment %v", fn.Environment.Variables)
 		}
-		if *fn.VpcConfig.SecurityGroupIds[0] != "sg-01a9b01eab0a3c154" {
+		if fn.VpcConfig.SecurityGroupIds[0] != "sg-01a9b01eab0a3c154" {
 			t.Errorf("unexpected SecurityGroupIds %v", fn.VpcConfig.SecurityGroupIds)
 		}
 		arch := fn.Architectures
-		if len(arch) != 2 || *arch[0] != "x86_64" || *arch[1] != "arm64" {
+		if len(arch) != 2 || arch[0] != "x86_64" || arch[1] != "arm64" {
 			t.Errorf("unexpected Architectures %v", fn.Architectures)
 		}
 		if *fn.EphemeralStorage.Size != 1024 {
 			t.Errorf("unexpected EphemeralStorage %v", fn.EphemeralStorage)
 		}
-		t.Log(fn.String())
+		t.Log(fn)
 	}
 }
 
