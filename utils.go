@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/Songmu/prompter"
-	"github.com/aws/aws-sdk-go/private/protocol/json/jsonutil"
 )
 
 func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
@@ -23,19 +22,20 @@ func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
 	return ioutil.WriteFile(path, b, mode)
 }
 
-func marshalJSON(s interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	b, err := jsonutil.BuildJSON(s)
+func marshalJSONV2(s interface{}) ([]byte, error) {
+	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	json.Indent(&buf, b, "", "  ")
-	buf.WriteString("\n")
-	return buf.Bytes(), nil
-}
-
-func marshalJSONV2(s interface{}) ([]byte, error) {
-	return json.MarshalIndent(s, "", "  ")
+	x := make(map[string]interface{})
+	if err := json.Unmarshal(b, &x); err != nil {
+		return nil, err
+	}
+	if b, err := json.MarshalIndent(omitEmptyValues(x), "", "  "); err != nil {
+		return nil, err
+	} else {
+		return append(b, '\n'), nil
+	}
 }
 
 func unmarshalJSON(src []byte, v interface{}, path string) error {
