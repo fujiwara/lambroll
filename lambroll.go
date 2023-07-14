@@ -141,7 +141,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 
 	loader := config.New()
 	if opt.TFState != nil && *opt.TFState != "" {
-		funcs, err := tfstate.FuncMap(*opt.TFState)
+		funcs, err := tfstate.FuncMap(ctx, *opt.TFState)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +154,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 				return nil, fmt.Errorf("--prefixed-tfstate option cannot have empty key")
 			}
 
-			funcs, err := tfstate.FuncMap(path)
+			funcs, err := tfstate.FuncMap(ctx, path)
 			if err != nil {
 				return nil, err
 			}
