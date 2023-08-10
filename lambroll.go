@@ -266,6 +266,13 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 			Variables: e.Variables,
 		}
 	}
+	if i := c.ImageConfigResponse.ImageConfig; i != nil {
+		fn.ImageConfig = &lambda.ImageConfig{
+			Command:          i.Command,
+			EntryPoint:       i.EntryPoint,
+			WorkingDirectory: i.WorkingDirectory,
+		}
+	}
 	for _, layer := range c.Layers {
 		fn.Layers = append(fn.Layers, layer.Arn)
 	}
