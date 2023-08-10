@@ -1,5 +1,10 @@
 package lambroll
 
+import (
+	"encoding/json"
+	"log"
+)
+
 func isEmptyValue(value interface{}) bool {
 	switch v := value.(type) {
 	case nil:
@@ -47,4 +52,13 @@ func omitEmptyValues(data interface{}) interface{} {
 		}
 	}
 	return nil
+}
+
+func ToJSONString(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		log.Println("[warn] failed to marshal json:", err)
+		return ""
+	}
+	return string(b)
 }

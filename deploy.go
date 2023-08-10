@@ -128,7 +128,7 @@ func (app *App) Deploy(opt DeployOption) error {
 		confIn.Environment = env
 	}
 
-	// log.Printf("[debug]\n%s", confIn.String())
+	log.Printf("[debug]\n%s", ToJSONString(confIn))
 
 	var newerVersion string
 	if !*opt.DryRun {
