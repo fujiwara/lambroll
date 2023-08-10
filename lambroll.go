@@ -256,6 +256,15 @@ func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2typ
 			Variables: e.Variables,
 		}
 	}
+	if i := c.ImageConfigResponse; i != nil {
+		if ic := i.ImageConfig; ic != nil {
+			fn.ImageConfig = &lambdav2types.ImageConfig{
+				Command:          i.ImageConfig.Command,
+				EntryPoint:       i.ImageConfig.EntryPoint,
+				WorkingDirectory: i.ImageConfig.WorkingDirectory,
+			}
+		}
+	}
 	for _, layer := range c.Layers {
 		fn.Layers = append(fn.Layers, *layer.Arn)
 	}

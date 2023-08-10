@@ -40,6 +40,10 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *FunctionV2) e
 		}
 		// deploy docker image. no need to preprare
 		log.Printf("[info] using docker image %s", *fn.Code.ImageUri)
+
+		if fn.ImageConfig == nil {
+			fn.ImageConfig = &lambdav2types.ImageConfig{} // reset explicitly
+		}
 		return nil
 	}
 
