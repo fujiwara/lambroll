@@ -42,7 +42,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 		log.Printf("[info] using docker image %s", *fn.Code.ImageUri)
 
 		if fn.ImageConfig == nil {
-			fn.ImageConfig = &lambda.ImageConfig{} // reset implicitly
+			fn.ImageConfig = &lambda.ImageConfig{} // reset explicitly
 		}
 		return nil
 	}
