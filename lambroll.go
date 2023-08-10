@@ -266,11 +266,11 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 			Variables: e.Variables,
 		}
 	}
-	if i := c.ImageConfigResponse.ImageConfig; i != nil {
+	if i := c.ImageConfigResponse; i != nil {
 		fn.ImageConfig = &lambda.ImageConfig{
-			Command:          i.Command,
-			EntryPoint:       i.EntryPoint,
-			WorkingDirectory: i.WorkingDirectory,
+			Command:          i.ImageConfig.Command,
+			EntryPoint:       i.ImageConfig.EntryPoint,
+			WorkingDirectory: i.ImageConfig.WorkingDirectory,
 		}
 	}
 	for _, layer := range c.Layers {
