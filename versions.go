@@ -62,12 +62,12 @@ func (vo versionsOutputs) Table() string {
 }
 
 func (v versionsOutput) TSV() string {
-	return fmt.Sprintf("%s\t%s\t%s\t%s\n",
+	return strings.Join([]string{
 		v.Version,
 		v.LastModified.Local().Format(time.RFC3339),
 		strings.Join(v.Aliases, ","),
 		v.Runtime,
-	)
+	}, "\t") + "\n"
 }
 
 // Versions manages the versions of a Lambda function
