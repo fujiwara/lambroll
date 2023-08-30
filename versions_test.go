@@ -33,6 +33,7 @@ func TestVersionsJSON(t *testing.T) {
 }
 
 func TestVersionsTSV(t *testing.T) {
+	t.Setenv("TZ", "UTC+9")
 	expectedTSV := "1\t2023-08-30T12:34:56+09:00\t\tgo1.x\n" +
 		"2\t2023-08-30T12:34:56+09:00\tcurrent,latest\tpython3.8\n"
 
@@ -42,6 +43,7 @@ func TestVersionsTSV(t *testing.T) {
 }
 
 func TestVersionsTable(t *testing.T) {
+	t.Setenv("TZ", "UTC+9")
 	tableOutput := TestVersionsOutputs.Table()
 	expectedOutput := `
 +---------+---------------------------+----------------+-----------+
