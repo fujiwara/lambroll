@@ -27,6 +27,7 @@ type versionsOutput struct {
 	Version      string    `json:"Version"`
 	Aliases      []string  `json:"Aliases,omitempty"`
 	LastModified time.Time `json:"LastModified"`
+	Runtime      string    `json:"Runtime"`
 }
 
 type versionsOutputs []versionsOutput
@@ -49,20 +50,26 @@ func (vo versionsOutputs) TSV() string {
 func (vo versionsOutputs) Table() string {
 	buf := new(strings.Builder)
 	w := tablewriter.NewWriter(buf)
-	w.SetHeader([]string{"Version", "Last Modified", "Aliases"})
+	w.SetHeader([]string{"Version", "Last Modified", "Aliases", "Runtime"})
 	for _, v := range vo {
-		w.Append([]string{v.Version, v.LastModified.Local().Format(time.RFC3339), strings.Join(v.Aliases, ",")})
+		w.Append([]string{
+			v.Version,
+			v.LastModified.Local().Format(time.RFC3339),
+			strings.Join(v.Aliases, ","),
+			v.Runtime,
+		})
 	}
 	w.Render()
 	return buf.String()
 }
 
 func (v versionsOutput) TSV() string {
-	return fmt.Sprintf("%s\t%s\t%s\n",
+	return strings.Join([]string{
 		v.Version,
 		v.LastModified.Local().Format(time.RFC3339),
 		strings.Join(v.Aliases, ","),
-	)
+		v.Runtime,
+	}, "\t") + "\n"
 }
 
 // Versions manages the versions of a Lambda function
@@ -130,6 +137,7 @@ func (app *App) Versions(opt VersionsOption) error {
 			Version:      *v.Version,
 			Aliases:      aliases[*v.Version],
 			LastModified: lm,
+			Runtime:      string(v.Runtime),
 		})
 	}
 
