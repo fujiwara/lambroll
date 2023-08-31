@@ -6,3 +6,6 @@ var (
 	LoadZipArchive    = loadZipArchive
 	MergeTags         = mergeTags
 )
+
+type VersionsOutput = versionsOutput
+type VersionsOutputs = versionsOutputs
