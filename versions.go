@@ -25,6 +25,7 @@ type versionsOutput struct {
 	Version      string    `json:"Version"`
 	Aliases      []string  `json:"Aliases,omitempty"`
 	LastModified time.Time `json:"LastModified"`
+	PackageType  string    `json:"PackageType"`
 	Runtime      string    `json:"Runtime"`
 }
 
@@ -48,12 +49,13 @@ func (vo versionsOutputs) TSV() string {
 func (vo versionsOutputs) Table() string {
 	buf := new(strings.Builder)
 	w := tablewriter.NewWriter(buf)
-	w.SetHeader([]string{"Version", "Last Modified", "Aliases", "Runtime"})
+	w.SetHeader([]string{"Version", "Last Modified", "Aliases", "Package Type", "Runtime"})
 	for _, v := range vo {
 		w.Append([]string{
 			v.Version,
 			v.LastModified.Local().Format(time.RFC3339),
 			strings.Join(v.Aliases, ","),
+			v.PackageType,
 			v.Runtime,
 		})
 	}
@@ -66,6 +68,7 @@ func (v versionsOutput) TSV() string {
 		v.Version,
 		v.LastModified.Local().Format(time.RFC3339),
 		strings.Join(v.Aliases, ","),
+		v.PackageType,
 		v.Runtime,
 	}, "\t") + "\n"
 }
@@ -134,7 +137,8 @@ func (app *App) Versions(opt VersionsOption) error {
 			Version:      *v.Version,
 			Aliases:      aliases[*v.Version],
 			LastModified: lm,
-			Runtime:      *v.Runtime,
+			PackageType:  aws.StringValue(v.PackageType),
+			Runtime:      aws.StringValue(v.Runtime),
 		})
 	}
 

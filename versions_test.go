@@ -13,8 +13,8 @@ import (
 var TestFixedTime = time.Date(2023, 8, 30, 12, 34, 56, 0, time.FixedZone("Asia/Tokyo", 9*60*60))
 
 var TestVersionsOutputs = lambroll.VersionsOutputs{
-	{Version: "1", LastModified: TestFixedTime, Runtime: "go1.x"},
-	{Version: "2", LastModified: TestFixedTime, Runtime: "python3.8", Aliases: []string{"current", "latest"}},
+	{Version: "1", LastModified: TestFixedTime, PackageType: "Zip", Runtime: "provided.al2"},
+	{Version: "2", LastModified: TestFixedTime, PackageType: "Image", Runtime: "", Aliases: []string{"current", "latest"}},
 }
 
 func TestVersionsJSON(t *testing.T) {
@@ -34,8 +34,8 @@ func TestVersionsJSON(t *testing.T) {
 
 func TestVersionsTSV(t *testing.T) {
 	t.Setenv("TZ", "UTC+9")
-	expectedTSV := "1\t2023-08-30T12:34:56+09:00\t\tgo1.x\n" +
-		"2\t2023-08-30T12:34:56+09:00\tcurrent,latest\tpython3.8\n"
+	expectedTSV := "1\t2023-08-30T12:34:56+09:00\t\tZip\tprovided.al2\n" +
+		"2\t2023-08-30T12:34:56+09:00\tcurrent,latest\tImage\t\n"
 
 	if d := cmp.Diff(TestVersionsOutputs.TSV(), expectedTSV); d != "" {
 		t.Errorf("TSV mismatch: diff:%s", d)
@@ -46,12 +46,12 @@ func TestVersionsTable(t *testing.T) {
 	t.Setenv("TZ", "UTC+9")
 	tableOutput := TestVersionsOutputs.Table()
 	expectedOutput := `
-+---------+---------------------------+----------------+-----------+
-| VERSION |       LAST MODIFIED       |    ALIASES     |  RUNTIME  |
-+---------+---------------------------+----------------+-----------+
-|       1 | 2023-08-30T12:34:56+09:00 |                | go1.x     |
-|       2 | 2023-08-30T12:34:56+09:00 | current,latest | python3.8 |
-+---------+---------------------------+----------------+-----------+
++---------+---------------------------+----------------+--------------+--------------+
+| VERSION |       LAST MODIFIED       |    ALIASES     | PACKAGE TYPE |   RUNTIME    |
++---------+---------------------------+----------------+--------------+--------------+
+|       1 | 2023-08-30T12:34:56+09:00 |                | Zip          | provided.al2 |
+|       2 | 2023-08-30T12:34:56+09:00 | current,latest | Image        |              |
++---------+---------------------------+----------------+--------------+--------------+
 `
 	expectedOutput = expectedOutput[1:] // remove first newline
 
