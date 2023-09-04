@@ -2,6 +2,7 @@ package lambroll_test
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ var TestFixedTime = time.Date(2023, 8, 30, 12, 34, 56, 0, time.FixedZone("Asia/T
 var TestVersionsOutputs = lambroll.VersionsOutputs{
 	{Version: "1", LastModified: TestFixedTime, PackageType: "Zip", Runtime: "provided.al2"},
 	{Version: "2", LastModified: TestFixedTime, PackageType: "Image", Runtime: "", Aliases: []string{"current", "latest"}},
+	{Version: "$LATEST", LastModified: TestFixedTime, PackageType: "Zip", Runtime: "provided.al2"},
 }
 
 func TestVersionsJSON(t *testing.T) {
@@ -34,8 +36,12 @@ func TestVersionsJSON(t *testing.T) {
 
 func TestVersionsTSV(t *testing.T) {
 	t.Setenv("TZ", "UTC+9")
-	expectedTSV := "1\t2023-08-30T12:34:56+09:00\t\tZip\tprovided.al2\n" +
-		"2\t2023-08-30T12:34:56+09:00\tcurrent,latest\tImage\t\n"
+	expectedTSV := strings.Join([]string{
+		"1\t2023-08-30T12:34:56+09:00\t\tZip\tprovided.al2",
+		"2\t2023-08-30T12:34:56+09:00\tcurrent,latest\tImage\t",
+		"$LATEST\t2023-08-30T12:34:56+09:00\t\tZip\tprovided.al2",
+	}, "\n")
+	expectedTSV += "\n"
 
 	if d := cmp.Diff(TestVersionsOutputs.TSV(), expectedTSV); d != "" {
 		t.Errorf("TSV mismatch: diff:%s", d)
@@ -51,6 +57,7 @@ func TestVersionsTable(t *testing.T) {
 +---------+---------------------------+----------------+--------------+--------------+
 |       1 | 2023-08-30T12:34:56+09:00 |                | Zip          | provided.al2 |
 |       2 | 2023-08-30T12:34:56+09:00 | current,latest | Image        |              |
+| $LATEST | 2023-08-30T12:34:56+09:00 |                | Zip          | provided.al2 |
 +---------+---------------------------+----------------+--------------+--------------+
 `
 	expectedOutput = expectedOutput[1:] // remove first newline
