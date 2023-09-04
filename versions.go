@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -125,10 +127,20 @@ func (app *App) Versions(opt VersionsOption) error {
 	}
 
 	vo := make(versionsOutputs, 0, len(versions))
-	for _, v := range versions {
-		if aws.StringValue(v.Version) == versionLatest {
-			continue
+	// sort by version asc
+	sort.Slice(versions, func(i, j int) bool {
+		iv, _ := strconv.Atoi(*versions[i].Version)
+		if *versions[i].Version == "$LATEST" {
+			iv = 2147483647 // max int32
 		}
+		jv, _ := strconv.Atoi(*versions[j].Version)
+		if *versions[j].Version == "$LATEST" {
+			jv = 2147483647 // max int32
+		}
+		return iv < jv
+	})
+
+	for _, v := range versions {
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
 		if err != nil {
 			return errors.Wrap(err, "failed to parse last modified")
