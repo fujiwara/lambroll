@@ -132,7 +132,10 @@ func (app *App) Deploy(opt DeployOption) error {
 
 	var newerVersion string
 	if !*opt.DryRun {
-		if err := app.updateFunctionConfiguration(ctx, confIn); err != nil {
+		proc := func(ctx context.Context) error {
+			return app.updateFunctionConfiguration(ctx, confIn)
+		}
+		if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function configuration", proc); err != nil {
 			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
 	}
@@ -140,7 +143,6 @@ func (app *App) Deploy(opt DeployOption) error {
 		return err
 	}
 
-	log.Println("[info] updating function code", opt.label())
 	codeIn := &lambdav2.UpdateFunctionCodeInput{
 		Architectures:   fn.Architectures,
 		FunctionName:    fn.FunctionName,
@@ -156,8 +158,14 @@ func (app *App) Deploy(opt DeployOption) error {
 		codeIn.Publish = *opt.Publish
 	}
 
-	res, err := app.updateFunctionCode(ctx, codeIn)
-	if err != nil {
+	var res *lambdav2.UpdateFunctionCodeOutput
+	proc := func(ctx context.Context) error {
+		var err error
+		// set res outside of this function
+		res, err = app.updateFunctionCode(ctx, codeIn)
+		return err
+	}
+	if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function code", proc); err != nil {
 		return err
 	}
 	if res.Version != nil {
@@ -183,10 +191,6 @@ func (app *App) Deploy(opt DeployOption) error {
 }
 
 func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambdav2.UpdateFunctionConfigurationInput) error {
-	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
-		return err
-	}
-
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
 		_, err := app.lambdav2.UpdateFunctionConfiguration(ctx, in)
@@ -198,17 +202,12 @@ func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambdav2.Up
 			}
 			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
-		log.Println("[info] updated function configuration successfully")
 		return nil
 	}
 	return fmt.Errorf("failed to update function configuration (max retries reached)")
 }
 
 func (app *App) updateFunctionCode(ctx context.Context, in *lambdav2.UpdateFunctionCodeInput) (*lambdav2.UpdateFunctionCodeOutput, error) {
-	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
-		return nil, err
-	}
-
 	var res *lambdav2.UpdateFunctionCodeOutput
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
@@ -222,20 +221,25 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambdav2.UpdateFunct
 			}
 			return nil, fmt.Errorf("failed to update function code: %w", err)
 		}
-		log.Println("[info] update function code request was accepted")
 		break
 	}
-
-	if !retrier.Continue() {
-		return nil, fmt.Errorf("failed to update function code (max retries reached)")
-	}
-
-	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
-		return nil, err
-	}
-	log.Println("[info] updated function code successfully")
-
 	return res, nil
+}
+
+func (app *App) ensureLastUpdateStatusSuccessful(ctx context.Context, name string, msg string, code func(ctx context.Context) error) error {
+	log.Println("[info]", msg, "...")
+	if err := app.waitForLastUpdateStatusSuccessful(ctx, name); err != nil {
+		return err
+	}
+	if err := code(ctx); err != nil {
+		return err
+	}
+	log.Println("[info]", msg, "accepted. waiting for LastUpdateStatus to be successful.")
+	if err := app.waitForLastUpdateStatusSuccessful(ctx, name); err != nil {
+		return err
+	}
+	log.Println("[info]", msg, "successfully")
+	return nil
 }
 
 func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name string) error {
