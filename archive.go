@@ -10,10 +10,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/fujiwara/lambroll/wildcard"
-
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 // Archive archives zip
@@ -131,12 +130,12 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 }
 
 func (app *App) uploadFunctionToS3(ctx context.Context, f *os.File, bucket, key string) (string, error) {
-	svc := s3v2.NewFromConfig(app.awsv2Config)
+	svc := s3.NewFromConfig(app.awsConfig)
 	log.Printf("[debug] PutObjcet to s3://%s/%s", bucket, key)
 	// TODO multipart upload
-	res, err := svc.PutObject(ctx, &s3v2.PutObjectInput{
-		Bucket: awsv2.String(bucket),
-		Key:    awsv2.String(key),
+	res, err := svc.PutObject(ctx, &s3.PutObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    aws.String(key),
 		Body:   f,
 	})
 	if err != nil {

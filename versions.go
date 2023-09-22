@@ -10,7 +10,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -126,7 +126,7 @@ func (app *App) Versions(opt VersionsOption) error {
 
 	vo := make(versionsOutputs, 0, len(versions))
 	for _, v := range versions {
-		if awsv2.ToString(v.Version) == versionLatest {
+		if aws.ToString(v.Version) == versionLatest {
 			continue
 		}
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)

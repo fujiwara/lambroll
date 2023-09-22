@@ -27,7 +27,7 @@ func (app *App) Logs(opt LogsOption) error {
 	command := []string{
 		"aws",
 		"--profile", app.profile,
-		"--region", app.awsv2Config.Region,
+		"--region", app.awsConfig.Region,
 		"logs",
 		"tail",
 		logGroup,

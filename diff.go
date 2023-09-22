@@ -11,7 +11,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/kylelemons/godebug/diff"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -73,7 +73,7 @@ func (app *App) Diff(opt DiffOption) error {
 		return err
 	}
 
-	if awsv2.ToBool(opt.CodeSha256) {
+	if aws.ToBool(opt.CodeSha256) {
 		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}

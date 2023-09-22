@@ -10,7 +10,7 @@ import (
 	"os"
 	"strings"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -35,11 +35,11 @@ func (app *App) Init(opt InitOption) error {
 			log.Printf("[info] function %s is not found", *opt.FunctionName)
 			c = &types.FunctionConfiguration{
 				FunctionName: opt.FunctionName,
-				MemorySize:   awsv2.Int32(128),
+				MemorySize:   aws.Int32(128),
 				Runtime:      types.RuntimeNodejs18x,
-				Timeout:      awsv2.Int32(3),
-				Handler:      awsv2.String("index.handler"),
-				Role: awsv2.String(
+				Timeout:      aws.Int32(3),
+				Handler:      aws.String("index.handler"),
+				Role: aws.String(
 					fmt.Sprintf(
 						"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
 						app.AWSAccountID(),
@@ -61,7 +61,7 @@ func (app *App) Init(opt InitOption) error {
 		arn := app.functionArn(*c.FunctionName)
 		log.Printf("[debug] listing tags of %s", arn)
 		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
-			Resource: awsv2.String(arn),
+			Resource: aws.String(arn),
 		})
 		if err != nil {
 			return fmt.Errorf("faled to list tags: %w", err)

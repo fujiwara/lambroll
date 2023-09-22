@@ -9,19 +9,17 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-jsonnet"
 	"github.com/hashicorp/go-envparse"
 	"github.com/kayac/go-config"
 	"github.com/shogo82148/go-retry"
-
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	configv2 "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/lambda"
-	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
-	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"
-
-	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 const versionLatest = "$LATEST"
@@ -46,7 +44,7 @@ type TagsV2 = map[string]string
 func (app *App) functionArn(name string) string {
 	return fmt.Sprintf(
 		"arn:aws:lambda:%s:%s:function:%s",
-		app.awsv2Config.Region,
+		app.awsConfig.Region,
 		app.AWSAccountID(),
 		name,
 	)
@@ -86,39 +84,39 @@ type App struct {
 	profile   string
 	loader    *config.Loader
 
-	awsv2Config awsv2.Config
+	awsConfig aws.Config
 	lambda    *lambda.Client
 
 	extStr  map[string]string
 	extCode map[string]string
 }
 
-func newAwsV2Config(ctx context.Context, opt *Option) (awsv2.Config, error) {
+func newAwsV2Config(ctx context.Context, opt *Option) (aws.Config, error) {
 	var region string
 	if opt.Region != nil && *opt.Region != "" {
-		region = awsv2.ToString(opt.Region)
+		region = aws.ToString(opt.Region)
 	}
-	optFuncs := []func(*configv2.LoadOptions) error{
-		configv2.WithRegion(region),
+	optFuncs := []func(*awsconfig.LoadOptions) error{
+		awsconfig.WithRegion(region),
 	}
 	if opt.Endpoint != nil && *opt.Endpoint != "" {
-		customResolver := awsv2.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (awsv2.Endpoint, error) {
-			if service == lambda.ServiceID || service == stsv2.ServiceID || service == s3v2.ServiceID {
-				return awsv2.Endpoint{
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+			if service == lambda.ServiceID || service == sts.ServiceID || service == s3.ServiceID {
+				return aws.Endpoint{
 					PartitionID:   "aws",
 					URL:           *opt.Endpoint,
 					SigningRegion: region,
 				}, nil
 			}
 			// returning EndpointNotFoundError will allow the service to fallback to it's default resolution
-			return awsv2.Endpoint{}, &awsv2.EndpointNotFoundError{}
+			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
 		})
-		optFuncs = append(optFuncs, configv2.WithEndpointResolverWithOptions(customResolver))
+		optFuncs = append(optFuncs, awsconfig.WithEndpointResolverWithOptions(customResolver))
 	}
 	if opt.Profile != nil && *opt.Profile != "" {
-		optFuncs = append(optFuncs, configv2.WithSharedConfigProfile(*opt.Profile))
+		optFuncs = append(optFuncs, awsconfig.WithSharedConfigProfile(*opt.Profile))
 	}
-	return configv2.LoadDefaultConfig(ctx, optFuncs...)
+	return awsconfig.LoadDefaultConfig(ctx, optFuncs...)
 }
 
 // New creates an application
@@ -170,7 +168,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		profile: profile,
 		loader:  loader,
 
-		awsv2Config: v2cfg,
+		awsConfig: v2cfg,
 		lambda:    lambda.NewFromConfig(v2cfg),
 	}
 	if opt.ExtStr != nil {
@@ -189,8 +187,8 @@ func (app *App) AWSAccountID() string {
 	if app.accountID != "" {
 		return app.accountID
 	}
-	svc := stsv2.NewFromConfig(app.awsv2Config)
-	r, err := svc.GetCallerIdentity(ctx, &stsv2.GetCallerIdentityInput{})
+	svc := sts.NewFromConfig(app.awsConfig)
+	r, err := svc.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
 		log.Println("[warn] failed to get caller identity", err)
 		return ""
@@ -280,7 +278,7 @@ func newFunctionFromV2(c *types.FunctionConfiguration, code *types.FunctionCodeL
 		}
 	}
 
-	if (code != nil && awsv2.ToString(code.RepositoryType) == "ECR") || fn.PackageType == types.PackageTypeImage {
+	if (code != nil && aws.ToString(code.RepositoryType) == "ECR") || fn.PackageType == types.PackageTypeImage {
 		log.Printf("[debug] Image URL=%s", *code.ImageUri)
 		fn.PackageType = types.PackageTypeImage
 		fn.Code = &types.FunctionCode{
@@ -298,10 +296,10 @@ func fillDefaultValuesV2(fn *FunctionV2) {
 		fn.Architectures = []types.Architecture{types.ArchitectureX8664}
 	}
 	if fn.Description == nil {
-		fn.Description = awsv2.String("")
+		fn.Description = aws.String("")
 	}
 	if fn.MemorySize == nil {
-		fn.MemorySize = awsv2.Int32(128)
+		fn.MemorySize = aws.Int32(128)
 	}
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &types.TracingConfig{
@@ -310,11 +308,11 @@ func fillDefaultValuesV2(fn *FunctionV2) {
 	}
 	if fn.EphemeralStorage == nil {
 		fn.EphemeralStorage = &types.EphemeralStorage{
-			Size: awsv2.Int32(512),
+			Size: aws.Int32(512),
 		}
 	}
 	if fn.Timeout == nil {
-		fn.Timeout = awsv2.Int32(3)
+		fn.Timeout = aws.Int32(3)
 	}
 	if fn.SnapStart == nil {
 		fn.SnapStart = &types.SnapStart{
