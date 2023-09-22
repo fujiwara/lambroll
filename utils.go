@@ -53,11 +53,18 @@ func unmarshalJSON(src []byte, v interface{}, path string) error {
 	return nil
 }
 
-func FindFunctionFilename() string {
-	for _, name := range FunctionFilenames {
-		if _, err := os.Stat(name); err == nil {
-			return name
+func FindFunctionFile(preffered string) (string, error) {
+	if preffered != "" {
+		if _, err := os.Stat(preffered); err == nil {
+			return preffered, nil
+		} else {
+			return "", err
 		}
 	}
-	return FunctionFilenames[0]
+	for _, name := range DefaultFunctionFilenames {
+		if _, err := os.Stat(name); err == nil {
+			return name, nil
+		}
+	}
+	return "", fmt.Errorf("function file (%s) not found", strings.Join(DefaultFunctionFilenames, "or"))
 }

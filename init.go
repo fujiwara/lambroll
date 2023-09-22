@@ -87,9 +87,9 @@ func (app *App) Init(ctx context.Context, opt InitOption) error {
 		return err
 	}
 
-	log.Printf("[info] creating %s", FunctionFilenames[0])
+	log.Printf("[info] creating %s", DefaultFunctionFilenames[0])
 	b, _ := marshalJSON(fn)
-	return app.saveFile(FunctionFilenames[0], b, os.FileMode(0644))
+	return app.saveFile(DefaultFunctionFilenames[0], b, os.FileMode(0644))
 }
 
 func download(url, path string) error {

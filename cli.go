@@ -13,7 +13,7 @@ import (
 )
 
 type Option struct {
-	Function string `help:"Function file path" default:"function.json"`
+	Function string `help:"Function file path"`
 	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:"trace,debug,info,warn,error"`
 	Color    bool   `help:"enable colored output" default:"false"`
 
@@ -101,6 +101,7 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 	if err != nil {
 		return err
 	}
+	log.Printf("[info] lambroll %s with %s", Version, app.functionFilePath)
 	switch sub {
 	case "init":
 		return app.Init(ctx, *opts.Init)
