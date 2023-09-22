@@ -209,9 +209,11 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambdav2.UpdateFunct
 		return nil, err
 	}
 
+	var res *lambdav2.UpdateFunctionCodeOutput
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		res, err := app.lambdav2.UpdateFunctionCode(ctx, in)
+		var err error
+		res, err = app.lambdav2.UpdateFunctionCode(ctx, in)
 		if err != nil {
 			var rce *lambdav2types.ResourceConflictException
 			if errors.As(err, &rce) {
@@ -220,10 +222,20 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambdav2.UpdateFunct
 			}
 			return nil, fmt.Errorf("failed to update function code: %w", err)
 		}
-		log.Println("[info] updated function code successfully")
-		return res, nil
+		log.Println("[info] update function code request was accepted")
+		break
 	}
-	return nil, fmt.Errorf("failed to update function code (max retries reached)")
+
+	if !retrier.Continue() {
+		return nil, fmt.Errorf("failed to update function code (max retries reached)")
+	}
+
+	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
+		return nil, err
+	}
+	log.Println("[info] updated function code successfully")
+
+	return res, nil
 }
 
 func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name string) error {
