@@ -2,15 +2,17 @@ package lambroll
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/errors"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // VersionsOption represents options for Versions()
@@ -71,25 +73,25 @@ func (v versionsOutput) TSV() string {
 }
 
 // Versions manages the versions of a Lambda function
-func (app *App) Versions(opt VersionsOption) error {
+func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
 	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 	name := *newFunc.FunctionName
 	if *opt.Delete {
-		return app.deleteVersions(name, *opt.KeepVersions)
+		return app.deleteVersions(ctx, name, *opt.KeepVersions)
 	}
 
 	aliases := make(map[string][]string)
 	var nextAliasMarker *string
 	for {
-		res, err := app.lambda.ListAliases(&lambda.ListAliasesInput{
+		res, err := app.lambda.ListAliases(ctx, &lambda.ListAliasesInput{
 			FunctionName: &name,
 			Marker:       nextAliasMarker,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list aliases")
+			return fmt.Errorf("failed to list aliases: %w", err)
 		}
 		for _, alias := range res.Aliases {
 			aliases[*alias.FunctionVersion] = append(aliases[*alias.FunctionVersion], *alias.Name)
@@ -105,15 +107,15 @@ func (app *App) Versions(opt VersionsOption) error {
 		}
 	}
 
-	var versions []*lambda.FunctionConfiguration
+	var versions []types.FunctionConfiguration
 	var nextMarker *string
 	for {
-		res, err := app.lambda.ListVersionsByFunction(&lambda.ListVersionsByFunctionInput{
+		res, err := app.lambda.ListVersionsByFunction(ctx, &lambda.ListVersionsByFunctionInput{
 			FunctionName: &name,
 			Marker:       nextMarker,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list versions")
+			return fmt.Errorf("failed to list versions: %w", err)
 		}
 		versions = append(versions, res.Versions...)
 		if nextMarker = res.NextMarker; nextMarker == nil {
@@ -123,18 +125,18 @@ func (app *App) Versions(opt VersionsOption) error {
 
 	vo := make(versionsOutputs, 0, len(versions))
 	for _, v := range versions {
-		if aws.StringValue(v.Version) == versionLatest {
+		if aws.ToString(v.Version) == versionLatest {
 			continue
 		}
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse last modified")
+			return fmt.Errorf("failed to parse last modified: %w", err)
 		}
 		vo = append(vo, versionsOutput{
 			Version:      *v.Version,
 			Aliases:      aliases[*v.Version],
 			LastModified: lm,
-			Runtime:      *v.Runtime,
+			Runtime:      string(v.Runtime),
 		})
 	}
 

@@ -2,24 +2,24 @@ package lambroll
 
 import (
 	"archive/zip"
+	"context"
+	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/fujiwara/lambroll/wildcard"
-	"github.com/pkg/errors"
 )
 
 // Archive archives zip
-func (app *App) Archive(opt DeployOption) error {
+func (app *App) Archive(ctx context.Context, opt DeployOption) error {
 	excludes, err := expandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to parse exclude file")
+		return fmt.Errorf("failed to parse exclude file: %w", err)
 	}
 	opt.Excludes = append(opt.Excludes, excludes...)
 
@@ -36,7 +36,7 @@ func loadZipArchive(src string) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] reading zip archive from %s", src)
 	r, err := zip.OpenReader(src)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to open zip file %s", src)
+		return nil, nil, fmt.Errorf("failed to open zip file %s: %w", src, err)
 	}
 	for _, f := range r.File {
 		header := f.FileHeader
@@ -50,7 +50,7 @@ func loadZipArchive(src string) (*os.File, os.FileInfo, error) {
 	r.Close()
 	info, err := os.Stat(src)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to stat %s", src)
+		return nil, nil, fmt.Errorf("failed to stat %s: %w", src, err)
 	}
 	log.Printf("[info] zip archive %d bytes", info.Size())
 	fh, err := os.Open(src)
@@ -60,9 +60,9 @@ func loadZipArchive(src string) (*os.File, os.FileInfo, error) {
 // createZipArchive creates a zip archive
 func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] creating zip archive from %s", src)
-	tmpfile, err := ioutil.TempFile("", "archive")
+	tmpfile, err := os.CreateTemp("", "archive")
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to open tempFile")
+		return nil, nil, fmt.Errorf("failed to open tempFile: %w", err)
 	}
 	w := zip.NewWriter(tmpfile)
 	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
@@ -83,7 +83,7 @@ func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, err
 		return addToZip(w, path, relpath, info)
 	})
 	if err := w.Close(); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create zip archive")
+		return nil, nil, fmt.Errorf("failed to create zip archive: %w", err)
 	}
 	tmpfile.Seek(0, os.SEEK_SET)
 	stat, _ := tmpfile.Stat()
@@ -129,11 +129,11 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 	return err
 }
 
-func (app *App) uploadFunctionToS3(f *os.File, bucket, key string) (string, error) {
-	svc := s3.New(app.sess)
+func (app *App) uploadFunctionToS3(ctx context.Context, f *os.File, bucket, key string) (string, error) {
+	svc := s3.NewFromConfig(app.awsConfig)
 	log.Printf("[debug] PutObjcet to s3://%s/%s", bucket, key)
 	// TODO multipart upload
-	res, err := svc.PutObject(&s3.PutObjectInput{
+	res, err := svc.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Body:   f,

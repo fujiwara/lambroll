@@ -7,8 +7,8 @@ import (
 	"github.com/go-test/deep"
 )
 
-type tags = map[string]*string
-type keys = []*string
+type tags = map[string]string
+type keys = []string
 type tagsTestCase struct {
 	oldTags    tags
 	newTags    tags
@@ -21,28 +21,28 @@ func s(s string) *string {
 }
 
 var mergeTagsCase = []tagsTestCase{
-	tagsTestCase{
-		oldTags:    tags{"Foo": s("FOO"), "Bar": s("BAR"), "Tee": s("TEE")},
-		newTags:    tags{"Foo": s("FOO"), "Baz": s("BAZ"), "Tee": s("TEEEE")},
-		setTags:    tags{"Baz": s("BAZ"), "Tee": s("TEEEE")},
-		removeKeys: keys{s("Bar")},
+	{
+		oldTags:    tags{"Foo": "FOO", "Bar": "BAR", "Tee": "TEE"},
+		newTags:    tags{"Foo": "FOO", "Baz": "BAZ", "Tee": "TEEEE"},
+		setTags:    tags{"Baz": "BAZ", "Tee": "TEEEE"},
+		removeKeys: keys{"Bar"},
 	},
-	tagsTestCase{
+	{
 		oldTags:    tags{},
-		newTags:    tags{"Foo": s("FOO"), "Bar": s("BAR")},
-		setTags:    tags{"Foo": s("FOO"), "Bar": s("BAR")},
+		newTags:    tags{"Foo": "FOO", "Bar": "BAR"},
+		setTags:    tags{"Foo": "FOO", "Bar": "BAR"},
 		removeKeys: keys{},
 	},
-	tagsTestCase{
-		oldTags:    tags{"Foo": s("Foo"), "Bar": s("Bar")},
-		newTags:    tags{"Bar": s("Bar")},
+	{
+		oldTags:    tags{"Foo": "Foo", "Bar": "Bar"},
+		newTags:    tags{"Bar": "Bar"},
 		setTags:    tags{},
-		removeKeys: keys{s("Foo")},
+		removeKeys: keys{"Foo"},
 	},
-	tagsTestCase{
-		oldTags:    tags{"A": s("A")},
-		newTags:    tags{"A": s("B")},
-		setTags:    tags{"A": s("B")},
+	{
+		oldTags:    tags{"A": "A"},
+		newTags:    tags{"A": "B"},
+		setTags:    tags{"A": "B"},
 		removeKeys: keys{},
 	},
 }

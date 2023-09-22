@@ -1,13 +1,13 @@
 package lambroll
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
-
-	"github.com/pkg/errors"
 )
 
 type LogsOption struct {
@@ -18,17 +18,17 @@ type LogsOption struct {
 	FilterPattern    *string
 }
 
-func (app *App) Logs(opt LogsOption) error {
+func (app *App) Logs(ctx context.Context, opt LogsOption) error {
 	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 
 	logGroup := "/aws/lambda/" + *fn.FunctionName
 	command := []string{
 		"aws",
 		"--profile", app.profile,
-		"--region", *app.sess.Config.Region,
+		"--region", app.awsConfig.Region,
 		"logs",
 		"tail",
 		logGroup,
@@ -51,7 +51,7 @@ func (app *App) Logs(opt LogsOption) error {
 	}
 	log.Println("[debug] invoking command", strings.Join(command, " "))
 	if err := syscall.Exec(bin, command, os.Environ()); err != nil {
-		return errors.Wrap(err, "failed to invoke aws logs tail")
+		return fmt.Errorf("failed to invoke aws logs tail: %w", err)
 	}
 	return nil
 }
