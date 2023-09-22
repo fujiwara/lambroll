@@ -14,31 +14,16 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-/*
-	deployOption := lambroll.DeployOption{
-		FunctionFilePath: function,
-		Src:              deploy.Flag("src", "function zip archive or src dir").Default(".").String(),
-		ExcludeFile:      deploy.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
-		DryRun:           deploy.Flag("dry-run", "dry run").Bool(),
-		Publish:          deploy.Flag("publish", "publish function").Default("true").Bool(),
-		AliasName:        deploy.Flag("alias", "alias name for publish").Default(lambroll.CurrentAliasName).String(),
-		AliasToLatest:    deploy.Flag("alias-to-latest", "set alias to unpublished $LATEST version").Default("false").Bool(),
-		SkipArchive:      deploy.Flag("skip-archive", "skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition").Default("false").Bool(),
-		KeepVersions:     deploy.Flag("keep-versions", "Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).").Default("0").Int(),
-	}
-*/
-
 // DeployOption represens an option for Deploy()
 type DeployOption struct {
-	FunctionFilePath *string `help:"function definition file path"`
-	Src              string  `help:"function zip archive or src dir" default:"."`
-	ExcludeFile      string  `help:"exclude file" default:".lambdaignore"`
-	Publish          bool    `help:"publish function" default:"true"`
-	AliasName        string  `help:"alias name for publish" default:"current"`
-	AliasToLatest    bool    `help:"set alias to unpublished $LATEST version" default:"false"`
-	DryRun           bool    `help:"dry run" default:"false"`
-	SkipArchive      bool    `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
-	KeepVersions     int     `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
+	Src           string `help:"function zip archive or src dir" default:"."`
+	ExcludeFile   string `help:"exclude file" default:".lambdaignore"`
+	Publish       bool   `help:"publish function" default:"true"`
+	AliasName     string `help:"alias name for publish" default:"current"`
+	AliasToLatest bool   `help:"set alias to unpublished $LATEST version" default:"false"`
+	DryRun        bool   `help:"dry run" default:"false"`
+	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
+	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
 
 	excludes []string
 }
@@ -91,7 +76,7 @@ func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
 	opt.excludes = append(opt.excludes, excludes...)
 	log.Printf("[debug] %s", opt.String())
 
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}

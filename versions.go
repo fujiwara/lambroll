@@ -17,10 +17,9 @@ import (
 
 // VersionsOption represents options for Versions()
 type VersionsOption struct {
-	FunctionFilePath *string
-	Output           string `default:"table" enum:"table,json,tsv" help:"output format"`
-	Delete           bool   `default:"false" help:"delete older versions"`
-	KeepVersions     int    `default:"0" help:"Number of latest versions to keep. Older versions will be deleted with --delete."`
+	Output       string `default:"table" enum:"table,json,tsv" help:"output format"`
+	Delete       bool   `default:"false" help:"delete older versions"`
+	KeepVersions int    `default:"0" help:"Number of latest versions to keep. Older versions will be deleted with --delete."`
 }
 
 type versionsOutput struct {
@@ -74,7 +73,7 @@ func (v versionsOutput) TSV() string {
 
 // Versions manages the versions of a Lambda function
 func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
-	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
+	newFunc, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}

@@ -15,13 +15,12 @@ import (
 
 // RollbackOption represents option for Rollback()
 type RollbackOption struct {
-	FunctionFilePath *string
-	DryRun           *bool
-	DeleteVersion    *bool
+	DryRun        bool `default:"false" help:"dry run"`
+	DeleteVersion bool `default:"false" help:"delete rolled back version"`
 }
 
 func (opt RollbackOption) label() string {
-	if *opt.DryRun {
+	if opt.DryRun {
 		return "**DRY RUN**"
 	}
 	return ""
@@ -29,7 +28,7 @@ func (opt RollbackOption) label() string {
 
 // Rollback rollbacks function
 func (app *App) Rollback(ctx context.Context, opt RollbackOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
@@ -76,7 +75,7 @@ VERSIONS:
 	}
 
 	log.Printf("[info] rollbacking function version %s to %s %s", currentVersion, prevVersion, opt.label())
-	if *opt.DryRun {
+	if opt.DryRun {
 		return nil
 	}
 	err = app.updateAliases(ctx, *fn.FunctionName, versionAlias{Version: prevVersion, Name: CurrentAliasName})
@@ -84,7 +83,7 @@ VERSIONS:
 		return err
 	}
 
-	if !*opt.DeleteVersion {
+	if !opt.DeleteVersion {
 		return nil
 	}
 

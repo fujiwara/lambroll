@@ -17,8 +17,8 @@ import (
 
 // InitOption represents options for Init()
 type InitOption struct {
-	FunctionName *string
-	DownloadZip  *bool
+	FunctionName *string `help:"Function name for init" required:"true" default:""`
+	DownloadZip  bool    `help:"Download function.zip" default:"false"`
 }
 
 // Init initializes function.json
@@ -70,7 +70,7 @@ func (app *App) Init(ctx context.Context, opt InitOption) error {
 
 	fn := newFunctionFrom(c, res.Code, tags)
 
-	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
+	if opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
 		if err := download(*res.Code.Location, FunctionZipFilename); err != nil {
 			return err

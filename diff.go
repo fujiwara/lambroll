@@ -11,29 +11,28 @@ import (
 	"github.com/fatih/color"
 	"github.com/kylelemons/godebug/diff"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	FunctionFilePath *string
-	Src              *string
-	Excludes         []string
-	CodeSha256       *bool
-	ExcludeFile      *string
+	Src         string `help:"function zip archive or src dir" default:"."`
+	CodeSha256  bool   `help:"diff of code sha256" default:"false"`
+	ExcludeFile string `help:"exclude file" default:".lambrollignore"`
+
+	excludes []string
 }
 
 // Diff prints diff of function.json compared with latest function
 func (app *App) Diff(ctx context.Context, opt DiffOption) error {
-	excludes, err := expandExcludeFile(*opt.ExcludeFile)
+	excludes, err := expandExcludeFile(opt.ExcludeFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse exclude-file: %w", err)
 	}
-	opt.Excludes = append(opt.Excludes, excludes...)
+	opt.excludes = append(opt.excludes, excludes...)
 
-	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
+	newFunc, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
@@ -64,7 +63,7 @@ func (app *App) Diff(ctx context.Context, opt DiffOption) error {
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
 		fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
-		fmt.Println(color.GreenString("+++" + *opt.FunctionFilePath))
+		fmt.Println(color.GreenString("+++" + app.functionFilePath))
 		fmt.Println(coloredDiff(ds))
 	}
 
@@ -72,11 +71,11 @@ func (app *App) Diff(ctx context.Context, opt DiffOption) error {
 		return err
 	}
 
-	if aws.ToBool(opt.CodeSha256) {
+	if opt.CodeSha256 {
 		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
-		zipfile, _, err := prepareZipfile(*opt.Src, opt.Excludes)
+		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes)
 		if err != nil {
 			return err
 		}
@@ -88,7 +87,7 @@ func (app *App) Diff(ctx context.Context, opt DiffOption) error {
 		prefix := "CodeSha256: "
 		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
 			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
-			fmt.Println(color.GreenString("+++" + "--src=" + *opt.Src))
+			fmt.Println(color.GreenString("+++" + "--src=" + opt.Src))
 			fmt.Println(coloredDiff(ds))
 		}
 	}

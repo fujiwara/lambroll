@@ -105,25 +105,18 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 	case "list":
 		return app.List(ctx, *opts.List)
 	case "deploy":
-		opts.Deploy.FunctionFilePath = &opts.Function
 		return app.Deploy(ctx, *opts.Deploy)
 	case "invoke":
-		opts.Invoke.FunctionFilePath = &opts.Function
 		return app.Invoke(ctx, *opts.Invoke)
 	case "logs":
-		opts.Logs.FunctionFilePath = &opts.Function
 		return app.Logs(ctx, *opts.Logs)
 	case "versions":
-		opts.Versions.FunctionFilePath = &opts.Function
 		return app.Versions(ctx, *opts.Versions)
 	case "archive":
-		opts.Archive.FunctionFilePath = &opts.Function
 		return app.Archive(ctx, *opts.Archive)
 	case "rollback":
-		opts.Rollback.FunctionFilePath = &opts.Function
 		return app.Rollback(ctx, *opts.Rollback)
 	case "diff":
-		opts.Diff.FunctionFilePath = &opts.Function
 		return app.Diff(ctx, *opts.Diff)
 	default:
 		usage()

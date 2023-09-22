@@ -2,24 +2,38 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"log"
 	"os"
+	"os/signal"
 
-	"github.com/alecthomas/kingpin"
-	"github.com/fatih/color"
 	"github.com/fujiwara/lambroll"
-	"github.com/fujiwara/logutils"
-	"github.com/mattn/go-isatty"
+	"golang.org/x/sys/unix"
 )
 
 // Version number
 var Version = "current"
 
 func main() {
-	os.Exit(_main())
+	os.Exit(_mainv2())
 }
 
+func _mainv2() int {
+	lambroll.Version = Version
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, unix.SIGTERM)
+	defer stop()
+
+	exitCode, err := lambroll.CLI(ctx, lambroll.ParseCLI)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.Println("[warn] Interrupted")
+		} else {
+			log.Printf("[error] FAILED. %s", err)
+		}
+	}
+	return exitCode
+}
+/*
 func _main() int {
 	kingpin.Command("version", "show version")
 	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
@@ -173,3 +187,4 @@ func _main() int {
 	log.Println("[info] completed")
 	return 0
 }
+*/
