@@ -3,7 +3,7 @@ package lambroll
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 
@@ -82,7 +82,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *FunctionV2) e
 		if s := info.Size(); s > directUploadThreshold {
 			return fmt.Errorf("cannot use a zip file for update function directly. Too large file %d bytes. Please define Code.S3Bucket and Code.S3Key in function.json", s)
 		}
-		b, err := ioutil.ReadAll(zipfile)
+		b, err := io.ReadAll(zipfile)
 		if err != nil {
 			return fmt.Errorf("failed to read zipfile content: %w", err)
 		}
