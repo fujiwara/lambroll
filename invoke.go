@@ -12,8 +12,8 @@ import (
 
 	"github.com/mattn/go-isatty"
 
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdatypesv2 "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	typesv2 "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // InvokeOption represents option for Invoke()
@@ -31,15 +31,15 @@ func (app *App) Invoke(opt InvokeOption) error {
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
-	var invocationType lambdatypesv2.InvocationType
-	var logType lambdatypesv2.LogType
+	var invocationType typesv2.InvocationType
+	var logType typesv2.LogType
 	if *opt.Async {
-		invocationType = lambdatypesv2.InvocationTypeEvent
+		invocationType = typesv2.InvocationTypeEvent
 	} else {
-		invocationType = lambdatypesv2.InvocationTypeRequestResponse
+		invocationType = typesv2.InvocationTypeRequestResponse
 	}
 	if *opt.LogTail {
-		logType = lambdatypesv2.LogTypeTail
+		logType = typesv2.LogTypeTail
 	}
 
 	if isatty.IsTerminal(os.Stdin.Fd()) {
@@ -60,7 +60,7 @@ PAYLOAD:
 			return fmt.Errorf("failed to decode payload as JSON: %w", err)
 		}
 		b, _ := json.Marshal(payload)
-		in := &lambdav2.InvokeInput{
+		in := &lambda.InvokeInput{
 			FunctionName:   fn.FunctionName,
 			InvocationType: invocationType,
 			LogType:        logType,
@@ -70,7 +70,7 @@ PAYLOAD:
 			in.Qualifier = opt.Qualifier
 		}
 		log.Println("[debug] invoking function", in)
-		res, err := app.lambdav2.Invoke(ctx, in)
+		res, err := app.lambda.Invoke(ctx, in)
 		if err != nil {
 			log.Println("[error] failed to invoke function", err.Error())
 			continue PAYLOAD

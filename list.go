@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 // ListOption represents options for List()
@@ -19,7 +19,7 @@ func (app *App) List(opt ListOption) error {
 	ctx := context.TODO()
 	var marker *string
 	for {
-		res, err := app.lambdav2.ListFunctions(ctx, &lambdav2.ListFunctionsInput{
+		res, err := app.lambda.ListFunctions(ctx, &lambda.ListFunctionsInput{
 			MaxItems: aws.Int32(50),
 		})
 		if err != nil {
@@ -28,7 +28,7 @@ func (app *App) List(opt ListOption) error {
 		for _, c := range res.Functions {
 			arn := app.functionArn(*c.FunctionName)
 			log.Printf("[debug] listing tags of %s", arn)
-			res, err := app.lambdav2.ListTags(ctx, &lambdav2.ListTagsInput{
+			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				Resource: aws.String(arn),
 			})
 			if err != nil {

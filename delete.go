@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log"
 
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 // DeleteOption represents options for Delete()
@@ -34,7 +34,7 @@ func (app *App) Delete(opt DeleteOption) error {
 	if *opt.DryRun {
 		return nil
 	}
-	_, err = app.lambdav2.DeleteFunction(ctx, &lambdav2.DeleteFunctionInput{
+	_, err = app.lambda.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 		FunctionName: fn.FunctionName,
 	})
 	if err != nil {

@@ -17,11 +17,11 @@ import (
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	s3v2 "github.com/aws/aws-sdk-go-v2/service/s3"
 	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"
 
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 const versionLatest = "$LATEST"
@@ -36,7 +36,7 @@ var retryPolicy = retry.Policy{
 // Function represents configuration of Lambda function
 //type Function = lambda.CreateFunctionInput
 
-type FunctionV2 = lambdav2.CreateFunctionInput
+type FunctionV2 = lambda.CreateFunctionInput
 
 // Tags represents tags of function
 type Tags = map[string]*string
@@ -87,7 +87,7 @@ type App struct {
 	loader    *config.Loader
 
 	awsv2Config awsv2.Config
-	lambdav2    *lambdav2.Client
+	lambda    *lambda.Client
 
 	extStr  map[string]string
 	extCode map[string]string
@@ -103,7 +103,7 @@ func newAwsV2Config(ctx context.Context, opt *Option) (awsv2.Config, error) {
 	}
 	if opt.Endpoint != nil && *opt.Endpoint != "" {
 		customResolver := awsv2.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (awsv2.Endpoint, error) {
-			if service == lambdav2.ServiceID || service == stsv2.ServiceID || service == s3v2.ServiceID {
+			if service == lambda.ServiceID || service == stsv2.ServiceID || service == s3v2.ServiceID {
 				return awsv2.Endpoint{
 					PartitionID:   "aws",
 					URL:           *opt.Endpoint,
@@ -171,7 +171,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		loader:  loader,
 
 		awsv2Config: v2cfg,
-		lambdav2:    lambdav2.NewFromConfig(v2cfg),
+		lambda:    lambda.NewFromConfig(v2cfg),
 	}
 	if opt.ExtStr != nil {
 		app.extStr = *opt.ExtStr
@@ -234,7 +234,7 @@ func (app *App) loadFunctionV2(path string) (*FunctionV2, error) {
 	return &fn, nil
 }
 
-func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2types.FunctionCodeLocation, tags TagsV2) *FunctionV2 {
+func newFunctionFromV2(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags TagsV2) *FunctionV2 {
 	fn := &FunctionV2{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
@@ -252,13 +252,13 @@ func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2typ
 	}
 
 	if e := c.Environment; e != nil {
-		fn.Environment = &lambdav2types.Environment{
+		fn.Environment = &types.Environment{
 			Variables: e.Variables,
 		}
 	}
 	if i := c.ImageConfigResponse; i != nil {
 		if ic := i.ImageConfig; ic != nil {
-			fn.ImageConfig = &lambdav2types.ImageConfig{
+			fn.ImageConfig = &types.ImageConfig{
 				Command:          i.ImageConfig.Command,
 				EntryPoint:       i.ImageConfig.EntryPoint,
 				WorkingDirectory: i.ImageConfig.WorkingDirectory,
@@ -269,21 +269,21 @@ func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2typ
 		fn.Layers = append(fn.Layers, *layer.Arn)
 	}
 	if t := c.TracingConfig; t != nil {
-		fn.TracingConfig = &lambdav2types.TracingConfig{
+		fn.TracingConfig = &types.TracingConfig{
 			Mode: t.Mode,
 		}
 	}
 	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
-		fn.VpcConfig = &lambdav2types.VpcConfig{
+		fn.VpcConfig = &types.VpcConfig{
 			SubnetIds:        v.SubnetIds,
 			SecurityGroupIds: v.SecurityGroupIds,
 		}
 	}
 
-	if (code != nil && awsv2.ToString(code.RepositoryType) == "ECR") || fn.PackageType == lambdav2types.PackageTypeImage {
+	if (code != nil && awsv2.ToString(code.RepositoryType) == "ECR") || fn.PackageType == types.PackageTypeImage {
 		log.Printf("[debug] Image URL=%s", *code.ImageUri)
-		fn.PackageType = lambdav2types.PackageTypeImage
-		fn.Code = &lambdav2types.FunctionCode{
+		fn.PackageType = types.PackageTypeImage
+		fn.Code = &types.FunctionCode{
 			ImageUri: code.ImageUri,
 		}
 	}
@@ -295,7 +295,7 @@ func newFunctionFromV2(c *lambdav2types.FunctionConfiguration, code *lambdav2typ
 
 func fillDefaultValuesV2(fn *FunctionV2) {
 	if len(fn.Architectures) == 0 {
-		fn.Architectures = []lambdav2types.Architecture{lambdav2types.ArchitectureX8664}
+		fn.Architectures = []types.Architecture{types.ArchitectureX8664}
 	}
 	if fn.Description == nil {
 		fn.Description = awsv2.String("")
@@ -304,12 +304,12 @@ func fillDefaultValuesV2(fn *FunctionV2) {
 		fn.MemorySize = awsv2.Int32(128)
 	}
 	if fn.TracingConfig == nil {
-		fn.TracingConfig = &lambdav2types.TracingConfig{
-			Mode: lambdav2types.TracingModePassThrough,
+		fn.TracingConfig = &types.TracingConfig{
+			Mode: types.TracingModePassThrough,
 		}
 	}
 	if fn.EphemeralStorage == nil {
-		fn.EphemeralStorage = &lambdav2types.EphemeralStorage{
+		fn.EphemeralStorage = &types.EphemeralStorage{
 			Size: awsv2.Int32(512),
 		}
 	}
@@ -317,17 +317,17 @@ func fillDefaultValuesV2(fn *FunctionV2) {
 		fn.Timeout = awsv2.Int32(3)
 	}
 	if fn.SnapStart == nil {
-		fn.SnapStart = &lambdav2types.SnapStart{
-			ApplyOn: lambdav2types.SnapStartApplyOnNone,
+		fn.SnapStart = &types.SnapStart{
+			ApplyOn: types.SnapStartApplyOnNone,
 		}
 	}
 }
 
-func newSnapStartV2(s *lambdav2types.SnapStartResponse) *lambdav2types.SnapStart {
+func newSnapStartV2(s *types.SnapStartResponse) *types.SnapStart {
 	if s == nil {
 		return nil
 	}
-	return &lambdav2types.SnapStart{
+	return &types.SnapStart{
 		ApplyOn: s.ApplyOn,
 	}
 }
@@ -355,7 +355,7 @@ func exportEnvFile(file string) error {
 
 var errCannotUpdateImageAndZip = fmt.Errorf("cannot update function code between Image and Zip")
 
-func validateUpdateFunctionV2(currentConf *lambdav2types.FunctionConfiguration, currentCode *lambdav2types.FunctionCodeLocation, newFn *lambdav2.CreateFunctionInput) error {
+func validateUpdateFunctionV2(currentConf *types.FunctionConfiguration, currentCode *types.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
 	newCode := newFn.Code
 
 	// new=Image
@@ -367,7 +367,7 @@ func validateUpdateFunctionV2(currentConf *lambdav2types.FunctionConfiguration, 
 	}
 
 	// current=Image
-	if currentCode != nil && currentCode.ImageUri != nil || currentConf.PackageType == lambdav2types.PackageTypeImage {
+	if currentCode != nil && currentCode.ImageUri != nil || currentConf.PackageType == types.PackageTypeImage {
 		// new=Zip
 		if newCode == nil || newCode.ImageUri == nil {
 			return errCannotUpdateImageAndZip

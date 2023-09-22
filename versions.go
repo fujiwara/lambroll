@@ -11,8 +11,8 @@ import (
 	"github.com/olekukonko/tablewriter"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // VersionsOption represents options for Versions()
@@ -87,7 +87,7 @@ func (app *App) Versions(opt VersionsOption) error {
 	aliases := make(map[string][]string)
 	var nextAliasMarker *string
 	for {
-		res, err := app.lambdav2.ListAliases(ctx, &lambdav2.ListAliasesInput{
+		res, err := app.lambda.ListAliases(ctx, &lambda.ListAliasesInput{
 			FunctionName: &name,
 			Marker:       nextAliasMarker,
 		})
@@ -108,10 +108,10 @@ func (app *App) Versions(opt VersionsOption) error {
 		}
 	}
 
-	var versions []lambdav2types.FunctionConfiguration
+	var versions []types.FunctionConfiguration
 	var nextMarker *string
 	for {
-		res, err := app.lambdav2.ListVersionsByFunction(ctx, &lambdav2.ListVersionsByFunctionInput{
+		res, err := app.lambda.ListVersionsByFunction(ctx, &lambda.ListVersionsByFunctionInput{
 			FunctionName: &name,
 			Marker:       nextMarker,
 		})

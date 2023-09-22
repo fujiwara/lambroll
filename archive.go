@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -62,7 +61,7 @@ func loadZipArchive(src string) (*os.File, os.FileInfo, error) {
 // createZipArchive creates a zip archive
 func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] creating zip archive from %s", src)
-	tmpfile, err := ioutil.TempFile("", "archive")
+	tmpfile, err := os.CreateTemp("", "archive")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open tempFile: %w", err)
 	}

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -19,7 +18,7 @@ func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
 			return nil
 		}
 	}
-	return ioutil.WriteFile(path, b, mode)
+	return os.WriteFile(path, b, mode)
 }
 
 func marshalJSONV2(s interface{}) ([]byte, error) {

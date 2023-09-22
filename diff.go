@@ -12,8 +12,8 @@ import (
 	"github.com/kylelemons/godebug/diff"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // DiffOption represents options for Diff()
@@ -41,13 +41,13 @@ func (app *App) Diff(opt DiffOption) error {
 	fillDefaultValuesV2(newFunc)
 	name := *newFunc.FunctionName
 
-	var latest *lambdav2types.FunctionConfiguration
-	var code *lambdav2types.FunctionCodeLocation
+	var latest *types.FunctionConfiguration
+	var code *types.FunctionCodeLocation
 
 	var tags TagsV2
 	var currentCodeSha256 string
-	var packageType lambdav2types.PackageType
-	if res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
+	var packageType types.PackageType
+	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &name,
 	}); err != nil {
 		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
@@ -74,7 +74,7 @@ func (app *App) Diff(opt DiffOption) error {
 	}
 
 	if awsv2.ToBool(opt.CodeSha256) {
-		if packageType != lambdav2types.PackageTypeZip {
+		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
 		zipfile, _, err := prepareZipfile(*opt.Src, opt.Excludes)

@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // RollbackOption represents option for Rollback()
@@ -37,7 +37,7 @@ func (app *App) Rollback(opt RollbackOption) error {
 
 	log.Printf("[info] starting rollback function %s", *fn.FunctionName)
 
-	res, err := app.lambdav2.GetAlias(ctx, &lambdav2.GetAliasInput{
+	res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{
 		FunctionName: fn.FunctionName,
 		Name:         aws.String(CurrentAliasName),
 	})
@@ -56,12 +56,12 @@ VERSIONS:
 	for v := cv - 1; v > 0; v-- {
 		log.Printf("[debug] get function version %d", v)
 		vs := strconv.FormatInt(v, 10)
-		res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
+		res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 			FunctionName: fn.FunctionName,
 			Qualifier:    aws.String(vs),
 		})
 		if err != nil {
-			var nfe *lambdav2types.ResourceNotFoundException
+			var nfe *types.ResourceNotFoundException
 			if errors.As(err, &nfe) {
 				log.Printf("[debug] version %s not found", vs)
 				continue VERSIONS
@@ -96,7 +96,7 @@ func (app *App) deleteFunctionVersion(functionName, version string) error {
 	ctx := context.TODO()
 	for {
 		log.Printf("[debug] checking aliased version")
-		res, err := app.lambdav2.GetAlias(ctx, &lambdav2.GetAliasInput{
+		res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{
 			FunctionName: aws.String(functionName),
 			Name:         aws.String(CurrentAliasName),
 		})
@@ -111,7 +111,7 @@ func (app *App) deleteFunctionVersion(functionName, version string) error {
 		break
 	}
 	log.Printf("[info] deleting function version %s", version)
-	_, err := app.lambdav2.DeleteFunction(ctx, &lambdav2.DeleteFunctionInput{
+	_, err := app.lambda.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 		FunctionName: aws.String(functionName),
 		Qualifier:    aws.String(version),
 	})

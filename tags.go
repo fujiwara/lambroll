@@ -7,8 +7,8 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 func (app *App) updateTags(fn *FunctionV2, opt DeployOption) error {
@@ -18,13 +18,13 @@ func (app *App) updateTags(fn *FunctionV2, opt DeployOption) error {
 		return nil
 	}
 	arn := app.functionArn(*fn.FunctionName)
-	tags, err := app.lambdav2.ListTags(ctx, &lambdav2.ListTagsInput{
+	tags, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 		Resource: aws.String(arn),
 	})
 	if err != nil {
-		var nfe *lambdav2types.ResourceNotFoundException
+		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			tags, err = &lambdav2.ListTagsOutput{}, nil
+			tags, err = &lambda.ListTagsOutput{}, nil
 		} else {
 			return fmt.Errorf("failed to list tags of %s: %w", arn, err)
 		}
@@ -41,7 +41,7 @@ func (app *App) updateTags(fn *FunctionV2, opt DeployOption) error {
 	if n := len(setTags); n > 0 {
 		log.Printf("[info] setting %d tags %s", n, opt.label())
 		if !*opt.DryRun {
-			_, err = app.lambdav2.TagResource(ctx, &lambdav2.TagResourceInput{
+			_, err = app.lambda.TagResource(ctx, &lambda.TagResourceInput{
 				Resource: aws.String(arn),
 				Tags:     setTags,
 			})
@@ -54,7 +54,7 @@ func (app *App) updateTags(fn *FunctionV2, opt DeployOption) error {
 	if n := len(removeTagKeys); n > 0 {
 		log.Printf("[info] removing %d tags %s", n, opt.label())
 		if !*opt.DryRun {
-			_, err = app.lambdav2.UntagResource(ctx, &lambdav2.UntagResourceInput{
+			_, err = app.lambda.UntagResource(ctx, &lambda.UntagResourceInput{
 				Resource: aws.String(arn),
 				TagKeys:  removeTagKeys,
 			})

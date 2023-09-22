@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
@@ -34,7 +34,7 @@ func prepareZipfile(src string, excludes []string) (*os.File, os.FileInfo, error
 }
 
 func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *FunctionV2) error {
-	if fn.PackageType == lambdav2types.PackageTypeImage {
+	if fn.PackageType == types.PackageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return fmt.Errorf("PackageType=Image requires Code.ImageUri in function definition")
 		}
@@ -42,7 +42,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *FunctionV2) e
 		log.Printf("[info] using docker image %s", *fn.Code.ImageUri)
 
 		if fn.ImageConfig == nil {
-			fn.ImageConfig = &lambdav2types.ImageConfig{} // reset explicitly
+			fn.ImageConfig = &types.ImageConfig{} // reset explicitly
 		}
 		return nil
 	}
@@ -86,7 +86,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *FunctionV2) e
 		if err != nil {
 			return fmt.Errorf("failed to read zipfile content: %w", err)
 		}
-		fn.Code = &lambdav2types.FunctionCode{ZipFile: b}
+		fn.Code = &types.FunctionCode{ZipFile: b}
 	}
 	return nil
 }
@@ -124,7 +124,7 @@ func (app *App) create(opt DeployOption, fn *FunctionV2) error {
 
 	log.Printf("[info] creating alias set %s to version %s %s", *opt.AliasName, version, opt.label())
 	if !*opt.DryRun {
-		_, err := app.lambdav2.CreateAlias(ctx, &lambdav2.CreateAliasInput{
+		_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,
 			FunctionVersion: aws.String(version),
 			Name:            aws.String(*opt.AliasName),
@@ -137,8 +137,8 @@ func (app *App) create(opt DeployOption, fn *FunctionV2) error {
 	return nil
 }
 
-func (app *App) createFunction(ctx context.Context, fn *lambdav2.CreateFunctionInput) (*lambdav2.CreateFunctionOutput, error) {
-	if res, err := app.lambdav2.CreateFunction(ctx, fn); err != nil {
+func (app *App) createFunction(ctx context.Context, fn *lambda.CreateFunctionInput) (*lambda.CreateFunctionOutput, error) {
+	if res, err := app.lambda.CreateFunction(ctx, fn); err != nil {
 		return nil, fmt.Errorf("failed to create function: %w", err)
 	} else {
 		return res, app.waitForLastUpdateStatusSuccessful(ctx, *fn.FunctionName)

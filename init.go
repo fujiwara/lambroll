@@ -11,8 +11,8 @@ import (
 	"strings"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	lambdav2 "github.com/aws/aws-sdk-go-v2/service/lambda"
-	lambdav2types "github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // InitOption represents options for Init()
@@ -24,19 +24,19 @@ type InitOption struct {
 // Init initializes function.json
 func (app *App) Init(opt InitOption) error {
 	ctx := context.TODO()
-	res, err := app.lambdav2.GetFunction(ctx, &lambdav2.GetFunctionInput{
+	res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: opt.FunctionName,
 	})
-	var c *lambdav2types.FunctionConfiguration
+	var c *types.FunctionConfiguration
 	exists := true
 	if err != nil {
-		var nfe *lambdav2types.ResourceNotFoundException
+		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
 			log.Printf("[info] function %s is not found", *opt.FunctionName)
-			c = &lambdav2types.FunctionConfiguration{
+			c = &types.FunctionConfiguration{
 				FunctionName: opt.FunctionName,
 				MemorySize:   awsv2.Int32(128),
-				Runtime:      lambdav2types.RuntimeNodejs18x,
+				Runtime:      types.RuntimeNodejs18x,
 				Timeout:      awsv2.Int32(3),
 				Handler:      awsv2.String("index.handler"),
 				Role: awsv2.String(
@@ -60,7 +60,7 @@ func (app *App) Init(opt InitOption) error {
 	if exists {
 		arn := app.functionArn(*c.FunctionName)
 		log.Printf("[debug] listing tags of %s", arn)
-		res, err := app.lambdav2.ListTags(ctx, &lambdav2.ListTagsInput{
+		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 			Resource: awsv2.String(arn),
 		})
 		if err != nil {
