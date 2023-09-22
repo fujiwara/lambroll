@@ -10,8 +10,7 @@ import (
 
 // DeleteOption represents options for Delete()
 type DeleteOption struct {
-	FunctionFilePath *string
-	DryRun           *bool
+	DryRun *bool
 }
 
 func (opt DeleteOption) label() string {
@@ -23,7 +22,7 @@ func (opt DeleteOption) label() string {
 
 // Delete deletes function
 func (app *App) Delete(ctx context.Context, opt DeleteOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}

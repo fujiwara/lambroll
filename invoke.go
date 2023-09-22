@@ -18,26 +18,25 @@ import (
 
 // InvokeOption represents option for Invoke()
 type InvokeOption struct {
-	FunctionFilePath *string
-	Async            *bool
-	LogTail          *bool
-	Qualifier        *string
+	Async     bool    `default:"false" help:"invocation type async"`
+	LogTail   bool    `default:"false" help:"output tail of log to STDERR"`
+	Qualifier *string `help:"version or alias to invoke"`
 }
 
 // Invoke invokes function
 func (app *App) Invoke(ctx context.Context, opt InvokeOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 	var invocationType typesv2.InvocationType
 	var logType typesv2.LogType
-	if *opt.Async {
+	if opt.Async {
 		invocationType = typesv2.InvocationTypeEvent
 	} else {
 		invocationType = typesv2.InvocationTypeRequestResponse
 	}
-	if *opt.LogTail {
+	if opt.LogTail {
 		logType = typesv2.LogTypeTail
 	}
 
@@ -65,9 +64,7 @@ PAYLOAD:
 			LogType:        logType,
 			Payload:        b,
 		}
-		if len(*opt.Qualifier) > 0 {
-			in.Qualifier = opt.Qualifier
-		}
+		in.Qualifier = opt.Qualifier
 		log.Println("[debug] invoking function", in)
 		res, err := app.lambda.Invoke(ctx, in)
 		if err != nil {

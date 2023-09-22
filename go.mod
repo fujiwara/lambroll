@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Songmu/prompter v0.5.0
-	github.com/alecthomas/kingpin v2.2.6+incompatible
+	github.com/alecthomas/kong v0.8.0
 	github.com/aws/aws-sdk-go-v2 v1.18.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.27
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.37.0
@@ -22,6 +22,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/shogo82148/go-retry v1.1.0
+	golang.org/x/sys v0.6.0
 )
 
 require (
@@ -40,8 +41,6 @@ require (
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v0.9.0 // indirect
 	github.com/BurntSushi/toml v0.3.1 // indirect
-	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.26 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.4 // indirect
@@ -85,7 +84,6 @@ require (
 	golang.org/x/mod v0.8.0 // indirect
 	golang.org/x/net v0.8.0 // indirect
 	golang.org/x/oauth2 v0.0.0-20210413134643-5e61552d6c78 // indirect
-	golang.org/x/sys v0.6.0 // indirect
 	golang.org/x/term v0.6.0 // indirect
 	golang.org/x/text v0.8.0 // indirect
 	golang.org/x/time v0.0.0-20220411224347-583f2d630306 // indirect

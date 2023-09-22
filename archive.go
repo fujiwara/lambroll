@@ -17,13 +17,13 @@ import (
 
 // Archive archives zip
 func (app *App) Archive(ctx context.Context, opt DeployOption) error {
-	excludes, err := expandExcludeFile(*opt.ExcludeFile)
+	excludes, err := expandExcludeFile(opt.ExcludeFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse exclude file: %w", err)
 	}
-	opt.Excludes = append(opt.Excludes, excludes...)
+	opt.excludes = append(opt.excludes, excludes...)
 
-	zipfile, _, err := createZipArchive(*opt.Src, opt.Excludes)
+	zipfile, _, err := createZipArchive(opt.Src, opt.excludes)
 	if err != nil {
 		return err
 	}

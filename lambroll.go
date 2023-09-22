@@ -22,6 +22,8 @@ import (
 	"github.com/shogo82148/go-retry"
 )
 
+var Version string
+
 const versionLatest = "$LATEST"
 const packageTypeImage = "Image"
 
@@ -52,8 +54,8 @@ var (
 	// IgnoreFilename defines file name includes ingore patterns at creating zip archive.
 	IgnoreFilename = ".lambdaignore"
 
-	// FunctionFilename defines file name for function definition.
-	FunctionFilenames = []string{
+	// DefaultFunctionFilename defines file name for function definition.
+	DefaultFunctionFilenames = []string{
 		"function.json",
 		"function.jsonnet",
 	}
@@ -64,8 +66,8 @@ var (
 	// DefaultExcludes is a preset excludes file list
 	DefaultExcludes = []string{
 		IgnoreFilename,
-		FunctionFilenames[0],
-		FunctionFilenames[1],
+		DefaultFunctionFilenames[0],
+		DefaultFunctionFilenames[1],
 		FunctionZipFilename,
 		".git/*",
 		".terraform/*",
@@ -87,6 +89,8 @@ type App struct {
 
 	extStr  map[string]string
 	extCode map[string]string
+
+	functionFilePath string
 }
 
 func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
@@ -119,7 +123,7 @@ func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
 
 // New creates an application
 func New(ctx context.Context, opt *Option) (*App, error) {
-	for _, envfile := range *opt.Envfile {
+	for _, envfile := range opt.Envfile {
 		if err := exportEnvFile(envfile); err != nil {
 			return nil, err
 		}
@@ -143,18 +147,16 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		}
 		loader.Funcs(funcs)
 	}
-	if opt.PrefixedTFState != nil {
+	if len(opt.PrefixedTFState) > 0 {
 		prefixedFuncs := make(template.FuncMap)
-		for prefix, path := range *opt.PrefixedTFState {
+		for prefix, path := range opt.PrefixedTFState {
 			if prefix == "" {
 				return nil, fmt.Errorf("--prefixed-tfstate option cannot have empty key")
 			}
-
 			funcs, err := tfstate.FuncMap(ctx, path)
 			if err != nil {
 				return nil, err
 			}
-
 			for name, f := range funcs {
 				prefixedFuncs[prefix+name] = f
 			}
@@ -163,18 +165,14 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 	}
 
 	app := &App{
-		profile: profile,
-		loader:  loader,
-
-		awsConfig: v2cfg,
-		lambda:    lambda.NewFromConfig(v2cfg),
+		profile:          profile,
+		loader:           loader,
+		awsConfig:        v2cfg,
+		lambda:           lambda.NewFromConfig(v2cfg),
+		functionFilePath: opt.Function,
 	}
-	if opt.ExtStr != nil {
-		app.extStr = *opt.ExtStr
-	}
-	if opt.ExtCode != nil {
-		app.extCode = *opt.ExtCode
-	}
+	app.extStr = opt.ExtStr
+	app.extCode = opt.ExtCode
 
 	return app, nil
 }
@@ -195,6 +193,14 @@ func (app *App) AWSAccountID(ctx context.Context) string {
 }
 
 func (app *App) loadFunction(path string) (*Function, error) {
+	if path == "" {
+		p, err := FindFunctionFile("")
+		if err != nil {
+			return nil, err
+		}
+		path = p
+	}
+
 	var (
 		src []byte
 		err error

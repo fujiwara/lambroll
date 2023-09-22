@@ -16,20 +16,20 @@ import (
 
 // DeployOption represens an option for Deploy()
 type DeployOption struct {
-	FunctionFilePath *string
-	Src              *string
-	Excludes         []string
-	ExcludeFile      *string
-	Publish          *bool
-	AliasName        *string
-	AliasToLatest    *bool
-	DryRun           *bool
-	SkipArchive      *bool
-	KeepVersions     *int
+	Src           string `help:"function zip archive or src dir" default:"."`
+	ExcludeFile   string `help:"exclude file" default:".lambdaignore"`
+	Publish       bool   `help:"publish function" default:"true"`
+	AliasName     string `help:"alias name for publish" default:"current"`
+	AliasToLatest bool   `help:"set alias to unpublished $LATEST version" default:"false"`
+	DryRun        bool   `help:"dry run" default:"false"`
+	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
+	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
+
+	excludes []string
 }
 
 func (opt DeployOption) label() string {
-	if *opt.DryRun {
+	if opt.DryRun {
 		return "**DRY RUN**"
 	}
 	return ""
@@ -69,14 +69,14 @@ func (opt *DeployOption) String() string {
 
 // Deploy deployes a new lambda function code
 func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
-	excludes, err := expandExcludeFile(*opt.ExcludeFile)
+	excludes, err := expandExcludeFile(opt.ExcludeFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse exclude-file: %w", err)
 	}
-	opt.Excludes = append(opt.Excludes, excludes...)
+	opt.excludes = append(opt.excludes, excludes...)
 	log.Printf("[debug] %s", opt.String())
 
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
@@ -129,7 +129,7 @@ func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
 	log.Printf("[debug]\n%s", ToJSONString(confIn))
 
 	var newerVersion string
-	if !*opt.DryRun {
+	if !opt.DryRun {
 		proc := func(ctx context.Context) error {
 			return app.updateFunctionConfiguration(ctx, confIn)
 		}
@@ -150,10 +150,10 @@ func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
 		S3ObjectVersion: fn.Code.S3ObjectVersion,
 		ImageUri:        fn.Code.ImageUri,
 	}
-	if *opt.DryRun {
+	if opt.DryRun {
 		codeIn.DryRun = true
 	} else {
-		codeIn.Publish = *opt.Publish
+		codeIn.Publish = opt.Publish
 	}
 
 	var res *lambda.UpdateFunctionCodeOutput
@@ -173,17 +173,17 @@ func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
 		newerVersion = versionLatest
 		log.Printf("[info] deployed version %s %s", newerVersion, opt.label())
 	}
-	if *opt.DryRun {
+	if opt.DryRun {
 		return nil
 	}
-	if *opt.Publish || *opt.AliasToLatest {
-		err := app.updateAliases(ctx, *fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+	if opt.Publish || opt.AliasToLatest {
+		err := app.updateAliases(ctx, *fn.FunctionName, versionAlias{newerVersion, opt.AliasName})
 		if err != nil {
 			return err
 		}
 	}
-	if *opt.KeepVersions > 0 { // Ignore zero-value.
-		return app.deleteVersions(ctx, *fn.FunctionName, *opt.KeepVersions)
+	if opt.KeepVersions > 0 { // Ignore zero-value.
+		return app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions)
 	}
 	return nil
 }
