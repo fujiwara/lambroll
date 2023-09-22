@@ -17,14 +17,14 @@ type Option struct {
 	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:"trace,debug,info,warn,error"`
 	Color    bool   `help:"enable colored output" default:"false"`
 
-	Region          *string             `help:"AWS region" environment:"AWS_REGION"`
-	Profile         *string            `help:"AWS credential profile name" environment:"AWS_PROFILE"`
-	TFState         *string            `name:"tfstate" help:"URL to terraform.tfstate"`
-	PrefixedTFState *map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate"`
-	Endpoint        *string            `help:"AWS API Lambda Endpoint"`
-	Envfile         []string           `help:"environment files"`
-	ExtStr          map[string]string  `help:"external string values for Jsonnet"`
-	ExtCode         map[string]string  `help:"external code values for Jsonnet"`
+	Region          *string           `help:"AWS region" environment:"AWS_REGION"`
+	Profile         *string           `help:"AWS credential profile name" environment:"AWS_PROFILE"`
+	TFState         *string           `name:"tfstate" help:"URL to terraform.tfstate"`
+	PrefixedTFState map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate"`
+	Endpoint        *string           `help:"AWS API Lambda Endpoint"`
+	Envfile         []string          `help:"environment files"`
+	ExtStr          map[string]string `help:"external string values for Jsonnet"`
+	ExtCode         map[string]string `help:"external code values for Jsonnet"`
 }
 
 type CLIOptions struct {
@@ -101,7 +101,11 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 	if err != nil {
 		return err
 	}
-	log.Printf("[info] lambroll %s with %s", Version, app.functionFilePath)
+	if opts.Function != "" {
+		log.Printf("[info] lambroll %s with %s", Version, opts.Function)
+	} else {
+		log.Printf("[info] lambroll %s", Version)
+	}
 	switch sub {
 	case "init":
 		return app.Init(ctx, *opts.Init)

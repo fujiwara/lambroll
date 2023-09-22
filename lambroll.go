@@ -147,18 +147,16 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		}
 		loader.Funcs(funcs)
 	}
-	if opt.PrefixedTFState != nil {
+	if len(opt.PrefixedTFState) > 0 {
 		prefixedFuncs := make(template.FuncMap)
-		for prefix, path := range *opt.PrefixedTFState {
+		for prefix, path := range opt.PrefixedTFState {
 			if prefix == "" {
 				return nil, fmt.Errorf("--prefixed-tfstate option cannot have empty key")
 			}
-
 			funcs, err := tfstate.FuncMap(ctx, path)
 			if err != nil {
 				return nil, err
 			}
-
 			for name, f := range funcs {
 				prefixedFuncs[prefix+name] = f
 			}
