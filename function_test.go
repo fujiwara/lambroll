@@ -31,7 +31,7 @@ func TestLoadFunction(t *testing.T) {
 		t.Error(err)
 	}
 	for _, f := range []string{"test/function.json", "test/function.jsonnet"} {
-		fn, err := app.loadFunctionV2(f)
+		fn, err := app.loadFunction(f)
 		if err != nil {
 			t.Error(err)
 		}
@@ -79,7 +79,7 @@ func TestNewFunction(t *testing.T) {
 	tags := map[string]string{
 		"foo": "bar",
 	}
-	fn := newFunctionFromV2(conf, nil, tags)
+	fn := newFunctionFrom(conf, nil, tags)
 	if *fn.FunctionName != "hello" {
 		t.Errorf("unexpected function name got %s", *fn.FunctionName)
 	}

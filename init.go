@@ -56,7 +56,7 @@ func (app *App) Init(opt InitOption) error {
 		c = res.Configuration
 	}
 
-	var tags TagsV2
+	var tags Tags
 	if exists {
 		arn := app.functionArn(*c.FunctionName)
 		log.Printf("[debug] listing tags of %s", arn)
@@ -69,7 +69,7 @@ func (app *App) Init(opt InitOption) error {
 		tags = res.Tags
 	}
 
-	fn := newFunctionFromV2(c, res.Code, tags)
+	fn := newFunctionFrom(c, res.Code, tags)
 
 	if *opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
@@ -89,7 +89,7 @@ func (app *App) Init(opt InitOption) error {
 	}
 
 	log.Printf("[info] creating %s", FunctionFilenames[0])
-	b, _ := marshalJSONV2(fn)
+	b, _ := marshalJSON(fn)
 	return app.saveFile(FunctionFilenames[0], b, os.FileMode(0644))
 }
 

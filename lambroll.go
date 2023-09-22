@@ -34,12 +34,10 @@ var retryPolicy = retry.Policy{
 // Function represents configuration of Lambda function
 //type Function = lambda.CreateFunctionInput
 
-type FunctionV2 = lambda.CreateFunctionInput
+type Function = lambda.CreateFunctionInput
 
 // Tags represents tags of function
-type Tags = map[string]*string
-
-type TagsV2 = map[string]string
+type Tags = map[string]string
 
 func (app *App) functionArn(name string) string {
 	return fmt.Sprintf(
@@ -91,7 +89,7 @@ type App struct {
 	extCode map[string]string
 }
 
-func newAwsV2Config(ctx context.Context, opt *Option) (aws.Config, error) {
+func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
 	var region string
 	if opt.Region != nil && *opt.Region != "" {
 		region = aws.ToString(opt.Region)
@@ -127,7 +125,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		}
 	}
 
-	v2cfg, err := newAwsV2Config(ctx, opt)
+	v2cfg, err := newAwsConfig(ctx, opt)
 	if err != nil {
 		return nil, err
 	}
@@ -197,7 +195,7 @@ func (app *App) AWSAccountID() string {
 	return app.accountID
 }
 
-func (app *App) loadFunctionV2(path string) (*FunctionV2, error) {
+func (app *App) loadFunction(path string) (*Function, error) {
 	var (
 		src []byte
 		err error
@@ -225,15 +223,15 @@ func (app *App) loadFunctionV2(path string) (*FunctionV2, error) {
 			return nil, err
 		}
 	}
-	var fn FunctionV2
+	var fn Function
 	if err := unmarshalJSON(src, &fn, path); err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
 	return &fn, nil
 }
 
-func newFunctionFromV2(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags TagsV2) *FunctionV2 {
-	fn := &FunctionV2{
+func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags Tags) *Function {
+	fn := &Function{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
 		EphemeralStorage:  c.EphemeralStorage,
@@ -246,7 +244,7 @@ func newFunctionFromV2(c *types.FunctionConfiguration, code *types.FunctionCodeL
 		DeadLetterConfig:  c.DeadLetterConfig,
 		FileSystemConfigs: c.FileSystemConfigs,
 		KMSKeyArn:         c.KMSKeyArn,
-		SnapStart:         newSnapStartV2(c.SnapStart),
+		SnapStart:         newSnapStart(c.SnapStart),
 	}
 
 	if e := c.Environment; e != nil {
@@ -291,7 +289,7 @@ func newFunctionFromV2(c *types.FunctionConfiguration, code *types.FunctionCodeL
 	return fn
 }
 
-func fillDefaultValuesV2(fn *FunctionV2) {
+func fillDefaultValues(fn *Function) {
 	if len(fn.Architectures) == 0 {
 		fn.Architectures = []types.Architecture{types.ArchitectureX8664}
 	}
@@ -321,7 +319,7 @@ func fillDefaultValuesV2(fn *FunctionV2) {
 	}
 }
 
-func newSnapStartV2(s *types.SnapStartResponse) *types.SnapStart {
+func newSnapStart(s *types.SnapStartResponse) *types.SnapStart {
 	if s == nil {
 		return nil
 	}
@@ -353,7 +351,7 @@ func exportEnvFile(file string) error {
 
 var errCannotUpdateImageAndZip = fmt.Errorf("cannot update function code between Image and Zip")
 
-func validateUpdateFunctionV2(currentConf *types.FunctionConfiguration, currentCode *types.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
+func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCode *types.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
 	newCode := newFn.Code
 
 	// new=Image

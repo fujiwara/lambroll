@@ -77,7 +77,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	opt.Excludes = append(opt.Excludes, excludes...)
 	log.Printf("[debug] %s", opt.String())
 
-	fn, err := app.loadFunctionV2(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
@@ -91,10 +91,10 @@ func (app *App) Deploy(opt DeployOption) error {
 			return app.create(opt, fn)
 		}
 		return err
-	} else if err := validateUpdateFunctionV2(current.Configuration, current.Code, fn); err != nil {
+	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
-	fillDefaultValuesV2(fn)
+	fillDefaultValues(fn)
 
 	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
 		return fmt.Errorf("failed to prepare function code for deploy: %w", err)

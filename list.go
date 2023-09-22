@@ -34,7 +34,7 @@ func (app *App) List(opt ListOption) error {
 			if err != nil {
 				return fmt.Errorf("faled to list tags: %w", err)
 			}
-			b, _ := marshalJSONV2(newFunctionFromV2(&c, nil, res.Tags))
+			b, _ := marshalJSON(newFunctionFrom(&c, nil, res.Tags))
 			os.Stdout.Write(b)
 		}
 		if marker = res.NextMarker; marker == nil {

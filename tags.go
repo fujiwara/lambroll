@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-func (app *App) updateTags(fn *FunctionV2, opt DeployOption) error {
+func (app *App) updateTags(fn *Function, opt DeployOption) error {
 	ctx := context.TODO()
 	if fn.Tags == nil {
 		log.Println("[debug] Tags not defined in function.json skip updating tags")
@@ -68,8 +68,8 @@ func (app *App) updateTags(fn *FunctionV2, opt DeployOption) error {
 }
 
 // mergeTags merges old/new tags
-func mergeTags(oldTags, newTags TagsV2) (sets TagsV2, removes []string) {
-	sets = make(TagsV2)
+func mergeTags(oldTags, newTags Tags) (sets Tags, removes []string) {
+	sets = make(Tags)
 	removes = make([]string, 0)
 	for key, oldValue := range oldTags {
 		if newValue, ok := newTags[key]; ok {

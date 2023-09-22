@@ -34,17 +34,17 @@ func (app *App) Diff(opt DiffOption) error {
 	}
 	opt.Excludes = append(opt.Excludes, excludes...)
 
-	newFunc, err := app.loadFunctionV2(*opt.FunctionFilePath)
+	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
-	fillDefaultValuesV2(newFunc)
+	fillDefaultValues(newFunc)
 	name := *newFunc.FunctionName
 
 	var latest *types.FunctionConfiguration
 	var code *types.FunctionCodeLocation
 
-	var tags TagsV2
+	var tags Tags
 	var currentCodeSha256 string
 	var packageType types.PackageType
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
@@ -58,10 +58,10 @@ func (app *App) Diff(opt DiffOption) error {
 		currentCodeSha256 = *res.Configuration.CodeSha256
 		packageType = res.Configuration.PackageType
 	}
-	latestFunc := newFunctionFromV2(latest, code, tags)
+	latestFunc := newFunctionFrom(latest, code, tags)
 
-	latestJSON, _ := marshalJSONV2(latestFunc)
-	newJSON, _ := marshalJSONV2(newFunc)
+	latestJSON, _ := marshalJSON(latestFunc)
+	newJSON, _ := marshalJSON(newFunc)
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
 		fmt.Println(color.RedString("---" + app.functionArn(name)))
@@ -69,7 +69,7 @@ func (app *App) Diff(opt DiffOption) error {
 		fmt.Println(coloredDiff(ds))
 	}
 
-	if err := validateUpdateFunctionV2(latest, code, newFunc); err != nil {
+	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
 		return err
 	}
 

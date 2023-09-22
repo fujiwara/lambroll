@@ -30,7 +30,7 @@ func (opt RollbackOption) label() string {
 // Rollback rollbacks function
 func (app *App) Rollback(opt RollbackOption) error {
 	ctx := context.TODO()
-	fn, err := app.loadFunctionV2(*opt.FunctionFilePath)
+	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}

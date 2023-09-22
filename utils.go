@@ -21,7 +21,7 @@ func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
 	return os.WriteFile(path, b, mode)
 }
 
-func marshalJSONV2(s interface{}) ([]byte, error) {
+func marshalJSON(s interface{}) ([]byte, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
