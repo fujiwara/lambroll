@@ -15,7 +15,7 @@ func TestLoadFunction(t *testing.T) {
 	path := "test/terraform.tfstate"
 	app, err := New(context.Background(), &Option{
 		TFState: &path,
-		PrefixedTFState: &map[string]string{
+		PrefixedTFState: map[string]string{
 			"prefix1_": "test/terraform_1.tfstate",
 			"prefix2_": "test/terraform_2.tfstate",
 		},
