@@ -19,11 +19,11 @@ func TestLoadFunction(t *testing.T) {
 			"prefix1_": "test/terraform_1.tfstate",
 			"prefix2_": "test/terraform_2.tfstate",
 		},
-		Envfile: &envfiles,
-		ExtStr: &map[string]string{
+		Envfile: envfiles,
+		ExtStr: map[string]string{
 			"Description": "hello function",
 		},
-		ExtCode: &map[string]string{
+		ExtCode: map[string]string{
 			"MemorySize": "64 * 2", // == 128
 		},
 	})

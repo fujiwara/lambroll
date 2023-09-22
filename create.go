@@ -47,14 +47,14 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt DeployOpti
 		return nil
 	}
 
-	if opt.SkipArchive != nil && *opt.SkipArchive {
+	if opt.SkipArchive {
 		if fn.Code == nil || fn.Code.S3Bucket == nil || fn.Code.S3Key == nil {
 			return fmt.Errorf("--skip-archive requires Code.S3Bucket and Code.S3key elements in function definition")
 		}
 		return nil
 	}
 
-	zipfile, info, err := prepareZipfile(*opt.Src, opt.Excludes)
+	zipfile, info, err := prepareZipfile(opt.Src, opt.excludes)
 	if err != nil {
 		return err
 	}
@@ -99,8 +99,8 @@ func (app *App) create(ctx context.Context, opt DeployOption, fn *Function) erro
 	log.Println("[info] creating function", opt.label())
 
 	version := "(created)"
-	if !*opt.DryRun {
-		fn.Publish = *opt.Publish
+	if !opt.DryRun {
+		fn.Publish = opt.Publish
 		res, err := app.createFunction(ctx, fn)
 		if err != nil {
 			return fmt.Errorf("failed to create function: %w", err)
@@ -117,16 +117,16 @@ func (app *App) create(ctx context.Context, opt DeployOption, fn *Function) erro
 		return err
 	}
 
-	if !*opt.Publish {
+	if !opt.Publish {
 		return nil
 	}
 
-	log.Printf("[info] creating alias set %s to version %s %s", *opt.AliasName, version, opt.label())
-	if !*opt.DryRun {
+	log.Printf("[info] creating alias set %s to version %s %s", opt.AliasName, version, opt.label())
+	if !opt.DryRun {
 		_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,
 			FunctionVersion: aws.String(version),
-			Name:            aws.String(*opt.AliasName),
+			Name:            aws.String(opt.AliasName),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create alias: %w", err)

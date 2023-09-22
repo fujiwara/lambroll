@@ -22,6 +22,8 @@ import (
 	"github.com/shogo82148/go-retry"
 )
 
+var Version string
+
 const versionLatest = "$LATEST"
 const packageTypeImage = "Image"
 
@@ -119,7 +121,7 @@ func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
 
 // New creates an application
 func New(ctx context.Context, opt *Option) (*App, error) {
-	for _, envfile := range *opt.Envfile {
+	for _, envfile := range opt.Envfile {
 		if err := exportEnvFile(envfile); err != nil {
 			return nil, err
 		}
@@ -169,12 +171,8 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		awsConfig: v2cfg,
 		lambda:    lambda.NewFromConfig(v2cfg),
 	}
-	if opt.ExtStr != nil {
-		app.extStr = *opt.ExtStr
-	}
-	if opt.ExtCode != nil {
-		app.extCode = *opt.ExtCode
-	}
+	app.extStr = opt.ExtStr
+	app.extCode = opt.ExtCode
 
 	return app, nil
 }

@@ -18,9 +18,9 @@ import (
 // VersionsOption represents options for Versions()
 type VersionsOption struct {
 	FunctionFilePath *string
-	Output           *string
-	Delete           *bool
-	KeepVersions     *int
+	Output           string `default:"table" enum:"table,json,tsv" help:"output format"`
+	Delete           bool   `default:"false" help:"delete older versions"`
+	KeepVersions     int    `default:"0" help:"Number of latest versions to keep. Older versions will be deleted with --delete."`
 }
 
 type versionsOutput struct {
@@ -79,8 +79,8 @@ func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 	name := *newFunc.FunctionName
-	if *opt.Delete {
-		return app.deleteVersions(ctx, name, *opt.KeepVersions)
+	if opt.Delete {
+		return app.deleteVersions(ctx, name, opt.KeepVersions)
 	}
 
 	aliases := make(map[string][]string)
@@ -140,13 +140,15 @@ func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
 		})
 	}
 
-	switch *opt.Output {
+	switch opt.Output {
 	case "json":
 		fmt.Println(vo.JSON())
 	case "tsv":
 		fmt.Print(vo.TSV())
 	case "table":
 		fmt.Print(vo.Table())
+	default:
+		return fmt.Errorf("unknown output format: %s", opt.Output)
 	}
 	return nil
 }

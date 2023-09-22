@@ -39,7 +39,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt DeployOption) 
 
 	if n := len(setTags); n > 0 {
 		log.Printf("[info] setting %d tags %s", n, opt.label())
-		if !*opt.DryRun {
+		if !opt.DryRun {
 			_, err = app.lambda.TagResource(ctx, &lambda.TagResourceInput{
 				Resource: aws.String(arn),
 				Tags:     setTags,
@@ -52,7 +52,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt DeployOption) 
 
 	if n := len(removeTagKeys); n > 0 {
 		log.Printf("[info] removing %d tags %s", n, opt.label())
-		if !*opt.DryRun {
+		if !opt.DryRun {
 			_, err = app.lambda.UntagResource(ctx, &lambda.UntagResourceInput{
 				Resource: aws.String(arn),
 				TagKeys:  removeTagKeys,
