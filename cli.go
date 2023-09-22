@@ -39,6 +39,8 @@ type CLIOptions struct {
 	Logs     *LogsOption     `cmd:"logs" help:"show logs of function"`
 	Diff     *DiffOption     `cmd:"diff" help:"show diff of function"`
 	Versions *VersionsOption `cmd:"versions" help:"show versions of function"`
+
+	Version struct{} `cmd:"version" help:"show version"`
 }
 
 type CLIParseFunc func([]string) (string, *CLIOptions, func(), error)
