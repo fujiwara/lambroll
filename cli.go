@@ -17,10 +17,10 @@ type Option struct {
 	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:"trace,debug,info,warn,error"`
 	Color    bool   `help:"enable colored output" default:"false"`
 
-	Region          *string            `help:"AWS region" environment:"AWS_REGION"`
+	Region          *string             `help:"AWS region" environment:"AWS_REGION"`
 	Profile         *string            `help:"AWS credential profile name" environment:"AWS_PROFILE"`
-	TFState         *string            `help:"URL to terraform.tfstate"`
-	PrefixedTFState *map[string]string `help:"key value pair of the prefix for template function name and URL to terraform.tfstate"`
+	TFState         *string            `name:"tfstate" help:"URL to terraform.tfstate"`
+	PrefixedTFState *map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate"`
 	Endpoint        *string            `help:"AWS API Lambda Endpoint"`
 	Envfile         []string           `help:"environment files"`
 	ExtStr          map[string]string  `help:"external string values for Jsonnet"`
