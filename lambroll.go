@@ -123,11 +123,6 @@ func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
 
 // New creates an application
 func New(ctx context.Context, opt *Option) (*App, error) {
-	functionFilePath, err := FindFunctionFile(opt.Function)
-	if err != nil {
-		return nil, err
-	}
-
 	for _, envfile := range opt.Envfile {
 		if err := exportEnvFile(envfile); err != nil {
 			return nil, err
@@ -177,8 +172,6 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 
 		awsConfig: v2cfg,
 		lambda:    lambda.NewFromConfig(v2cfg),
-
-		functionFilePath: functionFilePath,
 	}
 	app.extStr = opt.ExtStr
 	app.extCode = opt.ExtCode
@@ -202,6 +195,14 @@ func (app *App) AWSAccountID(ctx context.Context) string {
 }
 
 func (app *App) loadFunction(path string) (*Function, error) {
+	if path == "" {
+		p, err := FindFunctionFile("")
+		if err != nil {
+			return nil, err
+		}
+		path = p
+	}
+
 	var (
 		src []byte
 		err error

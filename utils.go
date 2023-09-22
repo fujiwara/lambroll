@@ -66,5 +66,5 @@ func FindFunctionFile(preffered string) (string, error) {
 			return name, nil
 		}
 	}
-	return "", fmt.Errorf("function file (%s) not found", strings.Join(DefaultFunctionFilenames, "or"))
+	return "", fmt.Errorf("function file (%s) not found", strings.Join(DefaultFunctionFilenames, " or "))
 }
