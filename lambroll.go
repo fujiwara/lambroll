@@ -167,11 +167,11 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 	}
 
 	app := &App{
-		profile: profile,
-		loader:  loader,
-
-		awsConfig: v2cfg,
-		lambda:    lambda.NewFromConfig(v2cfg),
+		profile:          profile,
+		loader:           loader,
+		awsConfig:        v2cfg,
+		lambda:           lambda.NewFromConfig(v2cfg),
+		functionFilePath: opt.Function,
 	}
 	app.extStr = opt.ExtStr
 	app.extCode = opt.ExtCode
