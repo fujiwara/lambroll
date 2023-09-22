@@ -26,8 +26,7 @@ type DiffOption struct {
 }
 
 // Diff prints diff of function.json compared with latest function
-func (app *App) Diff(opt DiffOption) error {
-	ctx := context.TODO()
+func (app *App) Diff(ctx context.Context, opt DiffOption) error {
 	excludes, err := expandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse exclude-file: %w", err)
@@ -64,7 +63,7 @@ func (app *App) Diff(opt DiffOption) error {
 	newJSON, _ := marshalJSON(newFunc)
 
 	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-		fmt.Println(color.RedString("---" + app.functionArn(name)))
+		fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
 		fmt.Println(color.GreenString("+++" + *opt.FunctionFilePath))
 		fmt.Println(coloredDiff(ds))
 	}
@@ -88,7 +87,7 @@ func (app *App) Diff(opt DiffOption) error {
 		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		prefix := "CodeSha256: "
 		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
-			fmt.Println(color.RedString("---" + app.functionArn(name)))
+			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
 			fmt.Println(color.GreenString("+++" + "--src=" + *opt.Src))
 			fmt.Println(coloredDiff(ds))
 		}

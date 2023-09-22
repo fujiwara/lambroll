@@ -22,8 +22,7 @@ type InitOption struct {
 }
 
 // Init initializes function.json
-func (app *App) Init(opt InitOption) error {
-	ctx := context.TODO()
+func (app *App) Init(ctx context.Context, opt InitOption) error {
 	res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: opt.FunctionName,
 	})
@@ -42,7 +41,7 @@ func (app *App) Init(opt InitOption) error {
 				Role: aws.String(
 					fmt.Sprintf(
 						"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
-						app.AWSAccountID(),
+						app.AWSAccountID(ctx),
 					),
 				),
 			}
@@ -58,7 +57,7 @@ func (app *App) Init(opt InitOption) error {
 
 	var tags Tags
 	if exists {
-		arn := app.functionArn(*c.FunctionName)
+		arn := app.functionArn(ctx, *c.FunctionName)
 		log.Printf("[debug] listing tags of %s", arn)
 		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 			Resource: aws.String(arn),

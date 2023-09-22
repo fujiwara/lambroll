@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -17,7 +18,7 @@ type LogsOption struct {
 	FilterPattern    *string
 }
 
-func (app *App) Logs(opt LogsOption) error {
+func (app *App) Logs(ctx context.Context, opt LogsOption) error {
 	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)

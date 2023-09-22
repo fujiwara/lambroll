@@ -73,15 +73,14 @@ func (v versionsOutput) TSV() string {
 }
 
 // Versions manages the versions of a Lambda function
-func (app *App) Versions(opt VersionsOption) error {
-	ctx := context.TODO()
+func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
 	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 	name := *newFunc.FunctionName
 	if *opt.Delete {
-		return app.deleteVersions(name, *opt.KeepVersions)
+		return app.deleteVersions(ctx, name, *opt.KeepVersions)
 	}
 
 	aliases := make(map[string][]string)

@@ -22,8 +22,7 @@ func (opt DeleteOption) label() string {
 }
 
 // Delete deletes function
-func (app *App) Delete(opt DeleteOption) error {
-	ctx := context.TODO()
+func (app *App) Delete(ctx context.Context, opt DeleteOption) error {
 	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)

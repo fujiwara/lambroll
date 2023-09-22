@@ -39,11 +39,11 @@ type Function = lambda.CreateFunctionInput
 // Tags represents tags of function
 type Tags = map[string]string
 
-func (app *App) functionArn(name string) string {
+func (app *App) functionArn(ctx context.Context, name string) string {
 	return fmt.Sprintf(
 		"arn:aws:lambda:%s:%s:function:%s",
 		app.awsConfig.Region,
-		app.AWSAccountID(),
+		app.AWSAccountID(ctx),
 		name,
 	)
 }
@@ -180,8 +180,7 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 }
 
 // AWSAccountID returns AWS account ID in current session
-func (app *App) AWSAccountID() string {
-	ctx := context.TODO()
+func (app *App) AWSAccountID(ctx context.Context) string {
 	if app.accountID != "" {
 		return app.accountID
 	}

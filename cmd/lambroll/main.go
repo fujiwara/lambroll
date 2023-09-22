@@ -141,28 +141,29 @@ func _main() int {
 		return 1
 	}
 
+	ctx := context.TODO()
 	log.Printf("[info] lambroll %s with %s", Version, *function)
 	switch command {
 	case "init":
-		err = app.Init(initOption)
+		err = app.Init(ctx, initOption)
 	case "list":
-		err = app.List(listOption)
+		err = app.List(ctx, listOption)
 	case "deploy":
-		err = app.Deploy(deployOption)
+		err = app.Deploy(ctx, deployOption)
 	case "rollback":
-		err = app.Rollback(rollbackOption)
+		err = app.Rollback(ctx, rollbackOption)
 	case "delete":
-		err = app.Delete(deleteOption)
+		err = app.Delete(ctx, deleteOption)
 	case "invoke":
-		err = app.Invoke(invokeOption)
+		err = app.Invoke(ctx, invokeOption)
 	case "archive":
-		err = app.Archive(archiveOption)
+		err = app.Archive(ctx, archiveOption)
 	case "logs":
-		err = app.Logs(logsOption)
+		err = app.Logs(ctx, logsOption)
 	case "diff":
-		err = app.Diff(diffOption)
+		err = app.Diff(ctx, diffOption)
 	case "versions":
-		err = app.Versions(versionsOption)
+		err = app.Versions(ctx, versionsOption)
 	}
 
 	if err != nil {

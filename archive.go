@@ -16,7 +16,7 @@ import (
 )
 
 // Archive archives zip
-func (app *App) Archive(opt DeployOption) error {
+func (app *App) Archive(ctx context.Context, opt DeployOption) error {
 	excludes, err := expandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse exclude file: %w", err)

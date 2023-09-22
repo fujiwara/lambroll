@@ -33,7 +33,7 @@ func prepareZipfile(src string, excludes []string) (*os.File, os.FileInfo, error
 	return nil, nil, fmt.Errorf("src %s is not found", src)
 }
 
-func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) error {
+func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt DeployOption, fn *Function) error {
 	if fn.PackageType == types.PackageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return fmt.Errorf("PackageType=Image requires Code.ImageUri in function definition")
@@ -63,7 +63,7 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 	if fn.Code != nil {
 		if bucket, key := fn.Code.S3Bucket, fn.Code.S3Key; bucket != nil && key != nil {
 			log.Printf("[info] uploading function %d bytes to s3://%s/%s", info.Size(), *bucket, *key)
-			versionID, err := app.uploadFunctionToS3(context.TODO(), zipfile, *bucket, *key)
+			versionID, err := app.uploadFunctionToS3(ctx, zipfile, *bucket, *key)
 			if err != nil {
 				fmt.Errorf("failed to upload function zip to s3://%s/%s: %w", *bucket, *key, err)
 			}
@@ -91,9 +91,8 @@ func (app *App) prepareFunctionCodeForDeploy(opt DeployOption, fn *Function) err
 	return nil
 }
 
-func (app *App) create(opt DeployOption, fn *Function) error {
-	ctx := context.TODO()
-	err := app.prepareFunctionCodeForDeploy(opt, fn)
+func (app *App) create(ctx context.Context, opt DeployOption, fn *Function) error {
+	err := app.prepareFunctionCodeForDeploy(ctx, opt, fn)
 	if err != nil {
 		return fmt.Errorf("failed to prepare function code: %w", err)
 	}
@@ -114,7 +113,7 @@ func (app *App) create(opt DeployOption, fn *Function) error {
 		}
 	}
 
-	if err := app.updateTags(fn, opt); err != nil {
+	if err := app.updateTags(ctx, fn, opt); err != nil {
 		return err
 	}
 

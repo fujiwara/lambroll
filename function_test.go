@@ -13,7 +13,7 @@ func TestLoadFunction(t *testing.T) {
 	os.Setenv("FUNCTION_NAME", "test")
 	envfiles := []string{"test/env"}
 	path := "test/terraform.tfstate"
-	app, err := New(context.TODO(), &Option{
+	app, err := New(context.Background(), &Option{
 		TFState: &path,
 		PrefixedTFState: &map[string]string{
 			"prefix1_": "test/terraform_1.tfstate",

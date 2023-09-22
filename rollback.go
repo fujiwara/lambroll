@@ -28,8 +28,7 @@ func (opt RollbackOption) label() string {
 }
 
 // Rollback rollbacks function
-func (app *App) Rollback(opt RollbackOption) error {
-	ctx := context.TODO()
+func (app *App) Rollback(ctx context.Context, opt RollbackOption) error {
 	fn, err := app.loadFunction(*opt.FunctionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
@@ -80,7 +79,7 @@ VERSIONS:
 	if *opt.DryRun {
 		return nil
 	}
-	err = app.updateAliases(*fn.FunctionName, versionAlias{Version: prevVersion, Name: CurrentAliasName})
+	err = app.updateAliases(ctx, *fn.FunctionName, versionAlias{Version: prevVersion, Name: CurrentAliasName})
 	if err != nil {
 		return err
 	}
@@ -89,11 +88,10 @@ VERSIONS:
 		return nil
 	}
 
-	return app.deleteFunctionVersion(*fn.FunctionName, currentVersion)
+	return app.deleteFunctionVersion(ctx, *fn.FunctionName, currentVersion)
 }
 
-func (app *App) deleteFunctionVersion(functionName, version string) error {
-	ctx := context.TODO()
+func (app *App) deleteFunctionVersion(ctx context.Context, functionName, version string) error {
 	for {
 		log.Printf("[debug] checking aliased version")
 		res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{

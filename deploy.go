@@ -68,8 +68,7 @@ func (opt *DeployOption) String() string {
 }
 
 // Deploy deployes a new lambda function code
-func (app *App) Deploy(opt DeployOption) error {
-	ctx := context.Background()
+func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
 	excludes, err := expandExcludeFile(*opt.ExcludeFile)
 	if err != nil {
 		return fmt.Errorf("failed to parse exclude-file: %w", err)
@@ -88,7 +87,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	}); err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			return app.create(opt, fn)
+			return app.create(ctx, opt, fn)
 		}
 		return err
 	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
@@ -96,7 +95,7 @@ func (app *App) Deploy(opt DeployOption) error {
 	}
 	fillDefaultValues(fn)
 
-	if err := app.prepareFunctionCodeForDeploy(opt, fn); err != nil {
+	if err := app.prepareFunctionCodeForDeploy(ctx, opt, fn); err != nil {
 		return fmt.Errorf("failed to prepare function code for deploy: %w", err)
 	}
 
@@ -138,7 +137,7 @@ func (app *App) Deploy(opt DeployOption) error {
 			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
 	}
-	if err := app.updateTags(fn, opt); err != nil {
+	if err := app.updateTags(ctx, fn, opt); err != nil {
 		return err
 	}
 
@@ -178,13 +177,13 @@ func (app *App) Deploy(opt DeployOption) error {
 		return nil
 	}
 	if *opt.Publish || *opt.AliasToLatest {
-		err := app.updateAliases(*fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
+		err := app.updateAliases(ctx, *fn.FunctionName, versionAlias{newerVersion, *opt.AliasName})
 		if err != nil {
 			return err
 		}
 	}
 	if *opt.KeepVersions > 0 { // Ignore zero-value.
-		return app.deleteVersions(*fn.FunctionName, *opt.KeepVersions)
+		return app.deleteVersions(ctx, *fn.FunctionName, *opt.KeepVersions)
 	}
 	return nil
 }
@@ -263,8 +262,7 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 	return fmt.Errorf("max retries reached")
 }
 
-func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
-	ctx := context.TODO()
+func (app *App) updateAliases(ctx context.Context, functionName string, vs ...versionAlias) error {
 	for _, v := range vs {
 		log.Printf("[info] updating alias set %s to version %s", v.Name, v.Version)
 		_, err := app.lambda.UpdateAlias(ctx, &lambda.UpdateAliasInput{
@@ -293,8 +291,7 @@ func (app *App) updateAliases(functionName string, vs ...versionAlias) error {
 	return nil
 }
 
-func (app *App) deleteVersions(functionName string, keepVersions int) error {
-	ctx := context.TODO()
+func (app *App) deleteVersions(ctx context.Context, functionName string, keepVersions int) error {
 	if keepVersions <= 0 {
 		log.Printf("[info] specify --keep-versions")
 		return nil

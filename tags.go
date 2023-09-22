@@ -11,13 +11,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-func (app *App) updateTags(fn *Function, opt DeployOption) error {
-	ctx := context.TODO()
+func (app *App) updateTags(ctx context.Context, fn *Function, opt DeployOption) error {
 	if fn.Tags == nil {
 		log.Println("[debug] Tags not defined in function.json skip updating tags")
 		return nil
 	}
-	arn := app.functionArn(*fn.FunctionName)
+	arn := app.functionArn(ctx, *fn.FunctionName)
 	tags, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 		Resource: aws.String(arn),
 	})
