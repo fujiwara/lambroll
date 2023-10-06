@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -123,7 +124,7 @@ func New(opt *Option) (*App, error) {
 
 	loader := config.New()
 	if opt.TFState != nil && *opt.TFState != "" {
-		funcs, err := tfstate.FuncMap(*opt.TFState)
+		funcs, err := tfstate.FuncMap(context.TODO(), *opt.TFState)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +137,7 @@ func New(opt *Option) (*App, error) {
 				return nil, errors.New("--prefixed-tfstate option cannot have empty key")
 			}
 
-			funcs, err := tfstate.FuncMap(path)
+			funcs, err := tfstate.FuncMap(context.TODO(), path)
 			if err != nil {
 				return nil, err
 			}
