@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/fujiwara/ssm-lookup/ssm"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-jsonnet"
 	"github.com/hashicorp/go-envparse"
@@ -140,6 +141,15 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 	}
 
 	loader := config.New()
+
+	// load ssm functions
+	if ssmFuncs, err := ssm.FuncMap(ctx, v2cfg); err != nil {
+		return nil, err
+	} else {
+		loader.Funcs(ssmFuncs)
+	}
+
+	// load tfstate functions
 	if opt.TFState != nil && *opt.TFState != "" {
 		funcs, err := tfstate.FuncMap(ctx, *opt.TFState)
 		if err != nil {

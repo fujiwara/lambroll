@@ -343,6 +343,18 @@ When "Tags" key exists in function.json, lambroll set / remove tags to the lambd
 When "Tags" key does not exist, lambroll doesn't manage tags.
 If you hope to remove all tags, set `"Tags": {}` expressly.
 
+#### Expand SSM parameter values
+
+At reading the file, lambrol evaluates `{{ ssm }}` syntax in JSON.
+
+For example,
+
+```
+{{ ssm `/path/to/param` }}
+```
+
+SSM parameter value of `/path/to/param` is expanded here.
+
 #### Expand enviroment variables
 
 At reading the file, lambrol evaluates `{{ env }}` and `{{ must_env }}` syntax in JSON.
