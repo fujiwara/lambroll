@@ -9,6 +9,9 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
+	"github.com/hexops/gotextdiff"
+	"github.com/hexops/gotextdiff/myers"
+	"github.com/hexops/gotextdiff/span"
 	"github.com/kylelemons/godebug/diff"
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -19,6 +22,7 @@ import (
 type DiffOption struct {
 	Src        string `help:"function zip archive or src dir" default:"."`
 	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
+	Unified    bool   `help:"unified diff" default:"true" negatable:"" short:"u"`
 
 	ExcludeFileOption
 }
@@ -58,10 +62,18 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)
 
-	if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-		fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
-		fmt.Println(color.GreenString("+++" + app.functionFilePath))
-		fmt.Println(coloredDiff(ds))
+	if opt.Unified {
+		remoteArn := app.functionArn(ctx, name)
+		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))
+		if ds := fmt.Sprint(gotextdiff.ToUnified(remoteArn, app.functionFilePath, string(latestJSON), edits)); ds != "" {
+			fmt.Print(coloredDiff(ds))
+		}
+	} else {
+		if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
+			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
+			fmt.Println(color.GreenString("+++" + app.functionFilePath))
+			fmt.Print(coloredDiff(ds))
+		}
 	}
 
 	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
