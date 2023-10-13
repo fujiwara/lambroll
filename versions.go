@@ -122,21 +122,28 @@ func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
 		}
 	}
 
-	vo := make(versionsOutputs, 0, len(versions))
+	vos := make(versionsOutputs, 0, len(versions))
+	var latestVo versionsOutput
 	for _, v := range versions {
-		if aws.ToString(v.Version) == versionLatest {
-			continue
-		}
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
 		if err != nil {
 			return fmt.Errorf("failed to parse last modified: %w", err)
 		}
-		vo = append(vo, versionsOutput{
+		vo := versionsOutput{
 			Version:      *v.Version,
 			Aliases:      aliases[*v.Version],
 			LastModified: lm,
 			Runtime:      string(v.Runtime),
-		})
+		}
+		if aws.ToString(v.Version) == versionLatest {
+			latestVo = vo
+		} else {
+			vos = append(vos, vo)
+		}
+	}
+	// append latest version to the last
+	if latestVo.Version != "" {
+		vos = append(vos, latestVo)
 	}
 
 	switch opt.Output {
