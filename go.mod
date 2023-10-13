@@ -16,7 +16,7 @@ require (
 	github.com/fujiwara/tfstate-lookup v1.1.2
 	github.com/go-test/deep v1.0.7
 	github.com/google/go-cmp v0.5.9
-	github.com/google/go-jsonnet v0.17.0
+	github.com/google/go-jsonnet v0.20.0
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
 	github.com/kayac/go-config v0.6.0
 	github.com/kylelemons/godebug v1.1.0
@@ -97,4 +97,5 @@ require (
 	google.golang.org/protobuf v1.26.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	sigs.k8s.io/yaml v1.1.0 // indirect
 )

@@ -38,6 +38,7 @@ type CLIOptions struct {
 	Archive  *ArchiveOption  `cmd:"archive" help:"archive function"`
 	Logs     *LogsOption     `cmd:"logs" help:"show logs of function"`
 	Diff     *DiffOption     `cmd:"diff" help:"show diff of function"`
+	Render   *RenderOption   `cmd:"render" help:"render function.json"`
 	Versions *VersionsOption `cmd:"versions" help:"show versions of function"`
 
 	Version struct{} `cmd:"version" help:"show version"`
@@ -122,7 +123,7 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 	case "archive":
 		return app.Archive(ctx, opts.Archive)
 	case "rollback":
-		return app.Rollback(ctx, opts.Rollback)
+		return app.Rollback(ctx, *opts.Rollback)
 	case "diff":
 		return app.Diff(ctx, opts.Diff)
 	default:
