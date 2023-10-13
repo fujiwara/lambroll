@@ -15,20 +15,37 @@ import (
 	"github.com/fujiwara/lambroll/wildcard"
 )
 
+type ArchiveOption struct {
+	Src  string `help:"function zip archive or src dir" default:"."`
+	Dest string `help:"destination file path" default:"archive.zip"`
+
+	ExcludeFileOption
+}
+
 // Archive archives zip
-func (app *App) Archive(ctx context.Context, opt DeployOption) error {
-	excludes, err := expandExcludeFile(opt.ExcludeFile)
-	if err != nil {
-		return fmt.Errorf("failed to parse exclude file: %w", err)
+func (app *App) Archive(ctx context.Context, opt *ArchiveOption) error {
+	if err := opt.Expand(); err != nil {
+		return err
 	}
-	opt.excludes = append(opt.excludes, excludes...)
 
 	zipfile, _, err := createZipArchive(opt.Src, opt.excludes)
 	if err != nil {
 		return err
 	}
 	defer zipfile.Close()
-	_, err = io.Copy(os.Stdout, zipfile)
+	var w io.WriteCloser
+	if opt.Dest == "-" {
+		log.Printf("[info] writing zip archive to stdout")
+		w = os.Stdout
+	} else {
+		log.Printf("[info] writing zip archive to %s", opt.Dest)
+		w, err = os.Create(opt.Dest)
+		if err != nil {
+			return fmt.Errorf("failed to create %s: %w", opt.Dest, err)
+		}
+		defer w.Close()
+	}
+	_, err = io.Copy(w, zipfile)
 	return err
 }
 
@@ -132,7 +149,6 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 func (app *App) uploadFunctionToS3(ctx context.Context, f *os.File, bucket, key string) (string, error) {
 	svc := s3.NewFromConfig(app.awsConfig)
 	log.Printf("[debug] PutObjcet to s3://%s/%s", bucket, key)
-	// TODO multipart upload
 	res, err := svc.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),

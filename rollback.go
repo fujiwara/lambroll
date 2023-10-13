@@ -27,7 +27,7 @@ func (opt RollbackOption) label() string {
 }
 
 // Rollback rollbacks function
-func (app *App) Rollback(ctx context.Context, opt RollbackOption) error {
+func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)

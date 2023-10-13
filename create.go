@@ -33,7 +33,7 @@ func prepareZipfile(src string, excludes []string) (*os.File, os.FileInfo, error
 	return nil, nil, fmt.Errorf("src %s is not found", src)
 }
 
-func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt DeployOption, fn *Function) error {
+func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOption, fn *Function) error {
 	if fn.PackageType == types.PackageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return fmt.Errorf("PackageType=Image requires Code.ImageUri in function definition")
@@ -91,7 +91,7 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt DeployOpti
 	return nil
 }
 
-func (app *App) create(ctx context.Context, opt DeployOption, fn *Function) error {
+func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) error {
 	err := app.prepareFunctionCodeForDeploy(ctx, opt, fn)
 	if err != nil {
 		return fmt.Errorf("failed to prepare function code: %w", err)

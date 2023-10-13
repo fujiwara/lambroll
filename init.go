@@ -23,7 +23,7 @@ type InitOption struct {
 }
 
 // Init initializes function.json
-func (app *App) Init(ctx context.Context, opt InitOption) error {
+func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: opt.FunctionName,
 	})

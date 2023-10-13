@@ -17,20 +17,17 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src         string `help:"function zip archive or src dir" default:"."`
-	CodeSha256  bool   `help:"diff of code sha256" default:"false"`
-	ExcludeFile string `help:"exclude file" default:".lambrollignore"`
+	Src        string `help:"function zip archive or src dir" default:"."`
+	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
 
-	excludes []string
+	ExcludeFileOption
 }
 
 // Diff prints diff of function.json compared with latest function
-func (app *App) Diff(ctx context.Context, opt DiffOption) error {
-	excludes, err := expandExcludeFile(opt.ExcludeFile)
-	if err != nil {
-		return fmt.Errorf("failed to parse exclude-file: %w", err)
+func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
+	if err := opt.Expand(); err != nil {
+		return err
 	}
-	opt.excludes = append(opt.excludes, excludes...)
 
 	newFunc, err := app.loadFunction(app.functionFilePath)
 	if err != nil {

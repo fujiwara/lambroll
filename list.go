@@ -15,7 +15,7 @@ type ListOption struct {
 }
 
 // List lists lambda functions
-func (app *App) List(ctx context.Context, opt ListOption) error {
+func (app *App) List(ctx context.Context, opt *ListOption) error {
 	var marker *string
 	for {
 		res, err := app.lambda.ListFunctions(ctx, &lambda.ListFunctionsInput{

@@ -35,10 +35,9 @@ type CLIOptions struct {
 	List     *ListOption     `cmd:"list" help:"list functions"`
 	Rollback *RollbackOption `cmd:"rollback" help:"rollback function"`
 	Invoke   *InvokeOption   `cmd:"invoke" help:"invoke function"`
-	Archive  *DeployOption   `cmd:"archive" help:"archive function"`
+	Archive  *ArchiveOption  `cmd:"archive" help:"archive function"`
 	Logs     *LogsOption     `cmd:"logs" help:"show logs of function"`
 	Diff     *DiffOption     `cmd:"diff" help:"show diff of function"`
-	Render   *RenderOption   `cmd:"render" help:"render function.json"`
 	Versions *VersionsOption `cmd:"versions" help:"show versions of function"`
 
 	Version struct{} `cmd:"version" help:"show version"`
@@ -109,25 +108,23 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 	}
 	switch sub {
 	case "init":
-		return app.Init(ctx, *opts.Init)
+		return app.Init(ctx, opts.Init)
 	case "list":
-		return app.List(ctx, *opts.List)
+		return app.List(ctx, opts.List)
 	case "deploy":
-		return app.Deploy(ctx, *opts.Deploy)
+		return app.Deploy(ctx, opts.Deploy)
 	case "invoke":
-		return app.Invoke(ctx, *opts.Invoke)
+		return app.Invoke(ctx, opts.Invoke)
 	case "logs":
-		return app.Logs(ctx, *opts.Logs)
+		return app.Logs(ctx, opts.Logs)
 	case "versions":
-		return app.Versions(ctx, *opts.Versions)
+		return app.Versions(ctx, opts.Versions)
 	case "archive":
-		return app.Archive(ctx, *opts.Archive)
+		return app.Archive(ctx, opts.Archive)
 	case "rollback":
-		return app.Rollback(ctx, *opts.Rollback)
-	case "render":
-		return app.Render(ctx, *opts.Render)
+		return app.Rollback(ctx, opts.Rollback)
 	case "diff":
-		return app.Diff(ctx, *opts.Diff)
+		return app.Diff(ctx, opts.Diff)
 	default:
 		usage()
 	}
