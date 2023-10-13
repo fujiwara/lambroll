@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/Songmu/prompter"
+	"github.com/google/go-jsonnet/formatter"
 )
 
 func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
@@ -67,4 +68,12 @@ func FindFunctionFile(preffered string) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("function file (%s) not found", strings.Join(DefaultFunctionFilenames, " or "))
+}
+
+func jsonToJsonnet(src []byte, filepath string) ([]byte, error) {
+	s, err := formatter.Format(filepath, string(src), formatter.DefaultOptions())
+	if err != nil {
+		return nil, fmt.Errorf("failed to format jsonnet: %w", err)
+	}
+	return []byte(s), nil
 }

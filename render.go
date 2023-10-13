@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-
-	"github.com/google/go-jsonnet/formatter"
 )
 
 type RenderOption struct {
@@ -23,17 +21,13 @@ func (app *App) Render(ctx context.Context, opt RenderOption) error {
 		return fmt.Errorf("failed to marshal function: %w", err)
 	}
 	if opt.Jsonnet {
-		s, err := formatter.Format(app.functionFilePath, string(b), formatter.DefaultOptions())
+		b, err = jsonToJsonnet(b, app.functionFilePath)
 		if err != nil {
-			return fmt.Errorf("failed to format jsonnet: %w", err)
+			return fmt.Errorf("failed to render function.json as jsonnet: %w", err)
 		}
-		if _, err := os.Stdout.WriteString(s); err != nil {
-			return fmt.Errorf("failed to write function: %w", err)
-		}
-	} else {
-		if _, err := os.Stdout.Write(b); err != nil {
-			return fmt.Errorf("failed to write function: %w", err)
-		}
+	}
+	if _, err := os.Stdout.Write(b); err != nil {
+		return fmt.Errorf("failed to write function.json: %w", err)
 	}
 	return nil
 }

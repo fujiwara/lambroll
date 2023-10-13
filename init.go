@@ -19,6 +19,7 @@ import (
 type InitOption struct {
 	FunctionName *string `help:"Function name for init" required:"true" default:""`
 	DownloadZip  bool    `help:"Download function.zip" default:"false"`
+	Jsonnet      bool    `default:"false" help:"render function.json as jsonnet"`
 }
 
 // Init initializes function.json
@@ -87,9 +88,21 @@ func (app *App) Init(ctx context.Context, opt InitOption) error {
 		return err
 	}
 
-	log.Printf("[info] creating %s", DefaultFunctionFilenames[0])
+	var name string
+	if opt.Jsonnet {
+		name = DefaultFunctionFilenames[1]
+	} else {
+		name = DefaultFunctionFilenames[0]
+	}
+	log.Printf("[info] creating %s", name)
 	b, _ := marshalJSON(fn)
-	return app.saveFile(DefaultFunctionFilenames[0], b, os.FileMode(0644))
+	if opt.Jsonnet {
+		b, err = jsonToJsonnet(b, name)
+		if err != nil {
+			return err
+		}
+	}
+	return app.saveFile(name, b, os.FileMode(0644))
 }
 
 func download(url, path string) error {
