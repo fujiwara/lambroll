@@ -11,7 +11,7 @@ type RenderOption struct {
 }
 
 // Invoke invokes function
-func (app *App) Render(ctx context.Context, opt RenderOption) error {
+func (app *App) Render(ctx context.Context, opt *RenderOption) error {
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
