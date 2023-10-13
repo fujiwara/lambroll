@@ -148,11 +148,11 @@ func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
 
 	switch opt.Output {
 	case "json":
-		fmt.Println(vo.JSON())
+		fmt.Println(vos.JSON())
 	case "tsv":
-		fmt.Print(vo.TSV())
+		fmt.Print(vos.TSV())
 	case "table":
-		fmt.Print(vo.Table())
+		fmt.Print(vos.Table())
 	default:
 		return fmt.Errorf("unknown output format: %s", opt.Output)
 	}
