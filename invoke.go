@@ -24,7 +24,7 @@ type InvokeOption struct {
 }
 
 // Invoke invokes function
-func (app *App) Invoke(ctx context.Context, opt InvokeOption) error {
+func (app *App) Invoke(ctx context.Context, opt *InvokeOption) error {
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)

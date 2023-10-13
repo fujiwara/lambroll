@@ -17,7 +17,6 @@ import (
 // DeployOption represens an option for Deploy()
 type DeployOption struct {
 	Src           string `help:"function zip archive or src dir" default:"."`
-	ExcludeFile   string `help:"exclude file" default:".lambdaignore"`
 	Publish       bool   `help:"publish function" default:"true"`
 	AliasName     string `help:"alias name for publish" default:"current"`
 	AliasToLatest bool   `help:"set alias to unpublished $LATEST version" default:"false"`
@@ -25,7 +24,7 @@ type DeployOption struct {
 	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
 	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
 
-	excludes []string
+	ExcludeFileOption
 }
 
 func (opt DeployOption) label() string {
@@ -68,12 +67,10 @@ func (opt *DeployOption) String() string {
 }
 
 // Deploy deployes a new lambda function code
-func (app *App) Deploy(ctx context.Context, opt DeployOption) error {
-	excludes, err := expandExcludeFile(opt.ExcludeFile)
-	if err != nil {
-		return fmt.Errorf("failed to parse exclude-file: %w", err)
+func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
+	if err := opt.Expand(); err != nil {
+		return err
 	}
-	opt.excludes = append(opt.excludes, excludes...)
 	log.Printf("[debug] %s", opt.String())
 
 	fn, err := app.loadFunction(app.functionFilePath)

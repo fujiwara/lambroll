@@ -72,7 +72,7 @@ func (v versionsOutput) TSV() string {
 }
 
 // Versions manages the versions of a Lambda function
-func (app *App) Versions(ctx context.Context, opt VersionsOption) error {
+func (app *App) Versions(ctx context.Context, opt *VersionsOption) error {
 	newFunc, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)

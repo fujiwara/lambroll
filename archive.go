@@ -16,20 +16,17 @@ import (
 )
 
 type ArchiveOption struct {
-	Src         string `help:"function zip archive or src dir" default:"."`
-	ExcludeFile string `help:"exclude file" default:".lambdaignore"`
-	Dest        string `help:"destination file path" default:"archive.zip"`
+	Src  string `help:"function zip archive or src dir" default:"."`
+	Dest string `help:"destination file path" default:"archive.zip"`
 
-	excludes []string
+	ExcludeFileOption
 }
 
 // Archive archives zip
-func (app *App) Archive(ctx context.Context, opt ArchiveOption) error {
-	excludes, err := expandExcludeFile(opt.ExcludeFile)
-	if err != nil {
-		return fmt.Errorf("failed to parse exclude file: %w", err)
+func (app *App) Archive(ctx context.Context, opt *ArchiveOption) error {
+	if err := opt.Expand(); err != nil {
+		return err
 	}
-	opt.excludes = append(opt.excludes, excludes...)
 
 	zipfile, _, err := createZipArchive(opt.Src, opt.excludes)
 	if err != nil {

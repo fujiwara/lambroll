@@ -17,7 +17,7 @@ type LogsOption struct {
 	FilterPattern *string `help:"The filter pattern to use"`
 }
 
-func (app *App) Logs(ctx context.Context, opt LogsOption) error {
+func (app *App) Logs(ctx context.Context, opt *LogsOption) error {
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
