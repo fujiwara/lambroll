@@ -14,6 +14,7 @@ import (
 	"github.com/hexops/gotextdiff/span"
 	"github.com/kylelemons/godebug/diff"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -23,6 +24,7 @@ type DiffOption struct {
 	Src        string `help:"function zip archive or src dir" default:"."`
 	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
 	Unified    bool   `help:"unified diff" default:"true" negatable:"" short:"u"`
+	Qualifier  string `help:"compare with" default:"$LATEST"`
 
 	ExcludeFileOption
 }
@@ -48,12 +50,23 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	var packageType types.PackageType
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &name,
+		Qualifier:    &opt.Qualifier,
 	}); err != nil {
 		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
 		latest = res.Configuration
 		code = res.Code
-		tags = res.Tags
+		{
+			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
+				// Tagging operations are permitted on Lambda functions only.
+				// Tags on aliases and versions are not supported.
+				Resource: aws.String(app.functionArn(ctx, name)),
+			})
+			if err != nil {
+				return fmt.Errorf("faled to list tags: %w", err)
+			}
+			tags = res.Tags
+		}
 		currentCodeSha256 = *res.Configuration.CodeSha256
 		packageType = res.Configuration.PackageType
 	}
@@ -61,16 +74,16 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)
+	remoteArn := app.functionArn(ctx, name) + ":" + opt.Qualifier
 
 	if opt.Unified {
-		remoteArn := app.functionArn(ctx, name)
 		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))
 		if ds := fmt.Sprint(gotextdiff.ToUnified(remoteArn, app.functionFilePath, string(latestJSON), edits)); ds != "" {
 			fmt.Print(coloredDiff(ds))
 		}
 	} else {
 		if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
+			fmt.Println(color.RedString("---" + remoteArn))
 			fmt.Println(color.GreenString("+++" + app.functionFilePath))
 			fmt.Print(coloredDiff(ds))
 		}
