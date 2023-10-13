@@ -35,7 +35,7 @@ type CLIOptions struct {
 	List     *ListOption     `cmd:"list" help:"list functions"`
 	Rollback *RollbackOption `cmd:"rollback" help:"rollback function"`
 	Invoke   *InvokeOption   `cmd:"invoke" help:"invoke function"`
-	Archive  *DeployOption   `cmd:"archive" help:"archive function"`
+	Archive  *ArchiveOption   `cmd:"archive" help:"archive function"`
 	Logs     *LogsOption     `cmd:"logs" help:"show logs of function"`
 	Diff     *DiffOption     `cmd:"diff" help:"show diff of function"`
 	Versions *VersionsOption `cmd:"versions" help:"show versions of function"`
