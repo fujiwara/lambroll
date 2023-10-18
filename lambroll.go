@@ -267,7 +267,7 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 			Variables: e.Variables,
 		}
 	}
-	if i := c.ImageConfigResponse; i != nil {
+	if i := c.ImageConfigResponse; i != nil && *i != (lambda.ImageConfigResponse{}) {
 		fn.ImageConfig = &lambda.ImageConfig{
 			Command:          i.ImageConfig.Command,
 			EntryPoint:       i.ImageConfig.EntryPoint,
