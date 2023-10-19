@@ -267,13 +267,12 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 			Variables: e.Variables,
 		}
 	}
-	if i := c.ImageConfigResponse; i != nil {
-		if ic := i.ImageConfig; ic != nil {
-			fn.ImageConfig = &types.ImageConfig{
-				Command:          i.ImageConfig.Command,
-				EntryPoint:       i.ImageConfig.EntryPoint,
-				WorkingDirectory: i.ImageConfig.WorkingDirectory,
-			}
+
+	if i := c.ImageConfigResponse; i != nil && i.ImageConfig != nil {
+		fn.ImageConfig = &types.ImageConfig{
+			Command:          i.ImageConfig.Command,
+			EntryPoint:       i.ImageConfig.EntryPoint,
+			WorkingDirectory: i.ImageConfig.WorkingDirectory,
 		}
 	}
 	for _, layer := range c.Layers {
