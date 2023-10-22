@@ -1,24 +1,39 @@
 package main
 
 import (
-	"fmt"
+	"context"
+	"errors"
 	"log"
 	"os"
+	"os/signal"
 
-	"github.com/alecthomas/kingpin"
-	"github.com/fatih/color"
 	"github.com/fujiwara/lambroll"
-	"github.com/fujiwara/logutils"
-	"github.com/mattn/go-isatty"
+	"golang.org/x/sys/unix"
 )
 
 // Version number
 var Version = "current"
 
 func main() {
-	os.Exit(_main())
+	os.Exit(_mainv2())
 }
 
+func _mainv2() int {
+	lambroll.Version = Version
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, unix.SIGTERM)
+	defer stop()
+
+	exitCode, err := lambroll.CLI(ctx, lambroll.ParseCLI)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			log.Println("[warn] Interrupted")
+		} else {
+			log.Printf("[error] FAILED. %s", err)
+		}
+	}
+	return exitCode
+}
+/*
 func _main() int {
 	kingpin.Command("version", "show version")
 	logLevel := kingpin.Flag("log-level", "log level (trace, debug, info, warn, error)").Default("info").Enum("trace", "debug", "info", "warn", "error")
@@ -136,34 +151,35 @@ func _main() int {
 	}
 	log.SetOutput(filter)
 
-	app, err := lambroll.New(&opt)
+	app, err := lambroll.New(context.TODO(), &opt)
 	if err != nil {
 		log.Println("[error]", err)
 		return 1
 	}
 
+	ctx := context.TODO()
 	log.Printf("[info] lambroll %s with %s", Version, *function)
 	switch command {
 	case "init":
-		err = app.Init(initOption)
+		err = app.Init(ctx, initOption)
 	case "list":
-		err = app.List(listOption)
+		err = app.List(ctx, listOption)
 	case "deploy":
-		err = app.Deploy(deployOption)
+		err = app.Deploy(ctx, deployOption)
 	case "rollback":
-		err = app.Rollback(rollbackOption)
+		err = app.Rollback(ctx, rollbackOption)
 	case "delete":
-		err = app.Delete(deleteOption)
+		err = app.Delete(ctx, deleteOption)
 	case "invoke":
-		err = app.Invoke(invokeOption)
+		err = app.Invoke(ctx, invokeOption)
 	case "archive":
-		err = app.Archive(archiveOption)
+		err = app.Archive(ctx, archiveOption)
 	case "logs":
-		err = app.Logs(logsOption)
+		err = app.Logs(ctx, logsOption)
 	case "diff":
-		err = app.Diff(diffOption)
+		err = app.Diff(ctx, diffOption)
 	case "versions":
-		err = app.Versions(versionsOption)
+		err = app.Versions(ctx, versionsOption)
 	}
 
 	if err != nil {
@@ -173,3 +189,4 @@ func _main() int {
 	log.Println("[info] completed")
 	return 0
 }
+*/

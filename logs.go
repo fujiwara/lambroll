@@ -1,34 +1,33 @@
 package lambroll
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
-
-	"github.com/pkg/errors"
 )
 
 type LogsOption struct {
-	FunctionFilePath *string
-	Since            *string
-	Follow           *bool
-	Format           *string
-	FilterPattern    *string
+	Since         *string `help:"From what time to begin displaying logs" default:"10m"`
+	Follow        *bool   `help:"follow new logs" default:"false"`
+	Format        *string `help:"The format to display the logs" default:"detailed" enum:"detailed,short,json"`
+	FilterPattern *string `help:"The filter pattern to use"`
 }
 
-func (app *App) Logs(opt LogsOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+func (app *App) Logs(ctx context.Context, opt *LogsOption) error {
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 
 	logGroup := "/aws/lambda/" + *fn.FunctionName
 	command := []string{
 		"aws",
 		"--profile", app.profile,
-		"--region", *app.sess.Config.Region,
+		"--region", app.awsConfig.Region,
 		"logs",
 		"tail",
 		logGroup,
@@ -51,7 +50,7 @@ func (app *App) Logs(opt LogsOption) error {
 	}
 	log.Println("[debug] invoking command", strings.Join(command, " "))
 	if err := syscall.Exec(bin, command, os.Environ()); err != nil {
-		return errors.Wrap(err, "failed to invoke aws logs tail")
+		return fmt.Errorf("failed to invoke aws logs tail: %w", err)
 	}
 	return nil
 }

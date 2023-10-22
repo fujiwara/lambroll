@@ -2,23 +2,24 @@ package lambroll
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/errors"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // VersionsOption represents options for Versions()
 type VersionsOption struct {
-	FunctionFilePath *string
-	Output           *string
-	Delete           *bool
-	KeepVersions     *int
+	Output       string `default:"table" enum:"table,json,tsv" help:"output format"`
+	Delete       bool   `default:"false" help:"delete older versions"`
+	KeepVersions int    `default:"0" help:"Number of latest versions to keep. Older versions will be deleted with --delete."`
 }
 
 type versionsOutput struct {
@@ -71,25 +72,25 @@ func (v versionsOutput) TSV() string {
 }
 
 // Versions manages the versions of a Lambda function
-func (app *App) Versions(opt VersionsOption) error {
-	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
+func (app *App) Versions(ctx context.Context, opt *VersionsOption) error {
+	newFunc, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 	name := *newFunc.FunctionName
-	if *opt.Delete {
-		return app.deleteVersions(name, *opt.KeepVersions)
+	if opt.Delete {
+		return app.deleteVersions(ctx, name, opt.KeepVersions)
 	}
 
 	aliases := make(map[string][]string)
 	var nextAliasMarker *string
 	for {
-		res, err := app.lambda.ListAliases(&lambda.ListAliasesInput{
+		res, err := app.lambda.ListAliases(ctx, &lambda.ListAliasesInput{
 			FunctionName: &name,
 			Marker:       nextAliasMarker,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list aliases")
+			return fmt.Errorf("failed to list aliases: %w", err)
 		}
 		for _, alias := range res.Aliases {
 			aliases[*alias.FunctionVersion] = append(aliases[*alias.FunctionVersion], *alias.Name)
@@ -105,15 +106,15 @@ func (app *App) Versions(opt VersionsOption) error {
 		}
 	}
 
-	var versions []*lambda.FunctionConfiguration
+	var versions []types.FunctionConfiguration
 	var nextMarker *string
 	for {
-		res, err := app.lambda.ListVersionsByFunction(&lambda.ListVersionsByFunctionInput{
+		res, err := app.lambda.ListVersionsByFunction(ctx, &lambda.ListVersionsByFunctionInput{
 			FunctionName: &name,
 			Marker:       nextMarker,
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to list versions")
+			return fmt.Errorf("failed to list versions: %w", err)
 		}
 		versions = append(versions, res.Versions...)
 		if nextMarker = res.NextMarker; nextMarker == nil {
@@ -121,30 +122,39 @@ func (app *App) Versions(opt VersionsOption) error {
 		}
 	}
 
-	vo := make(versionsOutputs, 0, len(versions))
+	vos := make(versionsOutputs, 0, len(versions))
+	var latestVo versionsOutput
 	for _, v := range versions {
-		if aws.StringValue(v.Version) == versionLatest {
-			continue
-		}
 		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
 		if err != nil {
-			return errors.Wrap(err, "failed to parse last modified")
+			return fmt.Errorf("failed to parse last modified: %w", err)
 		}
-		vo = append(vo, versionsOutput{
+		vo := versionsOutput{
 			Version:      *v.Version,
 			Aliases:      aliases[*v.Version],
 			LastModified: lm,
-			Runtime:      *v.Runtime,
-		})
+			Runtime:      string(v.Runtime),
+		}
+		if aws.ToString(v.Version) == versionLatest {
+			latestVo = vo
+		} else {
+			vos = append(vos, vo)
+		}
+	}
+	// append latest version to the last
+	if latestVo.Version != "" {
+		vos = append(vos, latestVo)
 	}
 
-	switch *opt.Output {
+	switch opt.Output {
 	case "json":
-		fmt.Println(vo.JSON())
+		fmt.Println(vos.JSON())
 	case "tsv":
-		fmt.Print(vo.TSV())
+		fmt.Print(vos.TSV())
 	case "table":
-		fmt.Print(vo.Table())
+		fmt.Print(vos.Table())
+	default:
+		return fmt.Errorf("unknown output format: %s", opt.Output)
 	}
 	return nil
 }

@@ -1,12 +1,13 @@
 package lambroll
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
-	"github.com/pkg/errors"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
 // ListOption represents options for List()
@@ -14,25 +15,25 @@ type ListOption struct {
 }
 
 // List lists lambda functions
-func (app *App) List(opt ListOption) error {
+func (app *App) List(ctx context.Context, opt *ListOption) error {
 	var marker *string
 	for {
-		res, err := app.lambda.ListFunctions(&lambda.ListFunctionsInput{
-			MaxItems: aws.Int64(50),
+		res, err := app.lambda.ListFunctions(ctx, &lambda.ListFunctionsInput{
+			MaxItems: aws.Int32(50),
 		})
 		if err != nil {
-			return errors.Wrap(err, "failed to ListFunctions")
+			return fmt.Errorf("failed to ListFunctions: %w", err)
 		}
 		for _, c := range res.Functions {
-			arn := app.functionArn(*c.FunctionName)
+			arn := app.functionArn(ctx, *c.FunctionName)
 			log.Printf("[debug] listing tags of %s", arn)
-			res, err := app.lambda.ListTags(&lambda.ListTagsInput{
+			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				Resource: aws.String(arn),
 			})
 			if err != nil {
-				return errors.Wrap(err, "faled to list tags")
+				return fmt.Errorf("faled to list tags: %w", err)
 			}
-			b, _ := marshalJSON(newFunctionFrom(c, nil, res.Tags))
+			b, _ := marshalJSON(newFunctionFrom(&c, nil, res.Tags))
 			os.Stdout.Write(b)
 		}
 		if marker = res.NextMarker; marker == nil {

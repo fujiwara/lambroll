@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
@@ -8,87 +9,108 @@ import (
 	"strings"
 
 	"github.com/aereal/jsondiff"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/fatih/color"
+	"github.com/hexops/gotextdiff"
+	"github.com/hexops/gotextdiff/myers"
+	"github.com/hexops/gotextdiff/span"
 	"github.com/itchyny/gojq"
-	"github.com/pkg/errors"
+	"github.com/kylelemons/godebug/diff"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	FunctionFilePath *string
-	Src              *string
-	Excludes         []string
-	CodeSha256       *bool
-	ExcludeFile      *string
-	Ignore           *string
+	Src        string `help:"function zip archive or src dir" default:"."`
+	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
+	Unified    bool   `help:"unified diff" default:"true" negatable:"" short:"u"`
+	Qualifier  string `help:"compare with" default:"$LATEST"`
+	Ignore     string `help:"ignore diff by jq query" default:""`
+
+	ExcludeFileOption
 }
 
 // Diff prints diff of function.json compared with latest function
-func (app *App) Diff(opt DiffOption) error {
-	excludes, err := expandExcludeFile(*opt.ExcludeFile)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse exclude-file")
+func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
+	if err := opt.Expand(); err != nil {
+		return err
 	}
-	opt.Excludes = append(opt.Excludes, excludes...)
 
-	newFunc, err := app.loadFunction(*opt.FunctionFilePath)
+	newFunc, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
 	fillDefaultValues(newFunc)
 	name := *newFunc.FunctionName
 
-	var latest *lambda.FunctionConfiguration
-	var code *lambda.FunctionCodeLocation
+	var latest *types.FunctionConfiguration
+	var code *types.FunctionCodeLocation
 
 	var tags Tags
-	var currentCodeSha256, packageType string
-	if res, err := app.lambda.GetFunction(&lambda.GetFunctionInput{
+	var currentCodeSha256 string
+	var packageType types.PackageType
+	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &name,
+		Qualifier:    &opt.Qualifier,
 	}); err != nil {
-		return errors.Wrapf(err, "failed to GetFunction %s", name)
+		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
 		latest = res.Configuration
 		code = res.Code
-		tags = res.Tags
+		{
+			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
+				// Tagging operations are permitted on Lambda functions only.
+				// Tags on aliases and versions are not supported.
+				Resource: aws.String(app.functionArn(ctx, name)),
+			})
+			if err != nil {
+				return fmt.Errorf("faled to list tags: %w", err)
+			}
+			tags = res.Tags
+		}
 		currentCodeSha256 = *res.Configuration.CodeSha256
-		packageType = *res.Configuration.PackageType
+		packageType = res.Configuration.PackageType
 	}
 	latestFunc := newFunctionFrom(latest, code, tags)
 	fillDefaultValues(latestFunc)
 
 	opts := []jsondiff.Option{}
-	if ignore := aws.StringValue(opt.Ignore); ignore != "" {
+	if ignore := opt.Ignore; ignore != "" {
 		if p, err := gojq.Parse(ignore); err != nil {
-			return errors.Wrapf(err, "failed to parse ignore query: %s", ignore)
+			return fmt.Errorf("failed to parse ignore query: %s %w", ignore, err)
 		} else {
 			opts = append(opts, jsondiff.Ignore(p))
 		}
 	}
 
-	from, _ := marshalAny(latestFunc)
-	to, _ := marshalAny(newFunc)
-	if diff, err := jsondiff.Diff(
-		&jsondiff.Input{Name: app.functionArn(name), X: from},
-		&jsondiff.Input{Name: *opt.FunctionFilePath, X: to},
-		opts...,
-	); err != nil {
-		return errors.Wrap(err, "failed to make diff")
+	latestJSON, _ := marshalJSON(latestFunc)
+	newJSON, _ := marshalJSON(newFunc)
+	remoteArn := app.functionArn(ctx, name) + ":" + opt.Qualifier
+
+	if opt.Unified {
+		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))
+		if ds := fmt.Sprint(gotextdiff.ToUnified(remoteArn, app.functionFilePath, string(latestJSON), edits)); ds != "" {
+			fmt.Print(coloredDiff(ds))
+		}
 	} else {
-		fmt.Print(coloredDiff(diff))
+		if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
+			fmt.Println(color.RedString("---" + remoteArn))
+			fmt.Println(color.GreenString("+++" + app.functionFilePath))
+			fmt.Print(coloredDiff(ds))
+		}
 	}
 
 	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
 		return err
 	}
 
-	if aws.BoolValue(opt.CodeSha256) {
-		if strings.ToLower(packageType) != "zip" {
-			return errors.New("code-sha256 is only supported for Zip package type")
+	if opt.CodeSha256 {
+		if packageType != types.PackageTypeZip {
+			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
-		zipfile, _, err := prepareZipfile(*opt.Src, opt.Excludes)
+		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes)
 		if err != nil {
 			return err
 		}
@@ -98,12 +120,10 @@ func (app *App) Diff(opt DiffOption) error {
 		}
 		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		prefix := "CodeSha256: "
-		if currentCodeSha256 != newCodeSha256 {
-			fmt.Println(color.RedString("--- " + app.functionArn(name)))
-			fmt.Println(color.GreenString("+++ " + "--src=" + *opt.Src))
-			fmt.Println("@@ @@")
-			fmt.Println(color.RedString("-" + prefix + currentCodeSha256))
-			fmt.Println(color.GreenString("+" + prefix + newCodeSha256))
+		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
+			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
+			fmt.Println(color.GreenString("+++" + "--src=" + opt.Src))
+			fmt.Println(coloredDiff(ds))
 		}
 	}
 

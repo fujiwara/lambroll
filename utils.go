@@ -4,13 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/Songmu/prompter"
-	"github.com/aws/aws-sdk-go/private/protocol/json/jsonutil"
+	"github.com/google/go-jsonnet/formatter"
 )
 
 func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
@@ -20,18 +19,23 @@ func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
 			return nil
 		}
 	}
-	return ioutil.WriteFile(path, b, mode)
+	return os.WriteFile(path, b, mode)
 }
 
 func marshalJSON(s interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-	b, err := jsonutil.BuildJSON(s)
+	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	json.Indent(&buf, b, "", "  ")
-	buf.WriteString("\n")
-	return buf.Bytes(), nil
+	x := make(map[string]interface{})
+	if err := json.Unmarshal(b, &x); err != nil {
+		return nil, err
+	}
+	if b, err := json.MarshalIndent(omitEmptyValues(x), "", "  "); err != nil {
+		return nil, err
+	} else {
+		return append(b, '\n'), nil
+	}
 }
 
 func marshalAny(s interface{}) (interface{}, error) {
@@ -62,11 +66,26 @@ func unmarshalJSON(src []byte, v interface{}, path string) error {
 	return nil
 }
 
-func FindFunctionFilename() string {
-	for _, name := range FunctionFilenames {
-		if _, err := os.Stat(name); err == nil {
-			return name
+func FindFunctionFile(preffered string) (string, error) {
+	if preffered != "" {
+		if _, err := os.Stat(preffered); err == nil {
+			return preffered, nil
+		} else {
+			return "", err
 		}
 	}
-	return FunctionFilenames[0]
+	for _, name := range DefaultFunctionFilenames {
+		if _, err := os.Stat(name); err == nil {
+			return name, nil
+		}
+	}
+	return "", fmt.Errorf("function file (%s) not found", strings.Join(DefaultFunctionFilenames, " or "))
+}
+
+func jsonToJsonnet(src []byte, filepath string) ([]byte, error) {
+	s, err := formatter.Format(filepath, string(src), formatter.DefaultOptions())
+	if err != nil {
+		return nil, fmt.Errorf("failed to format jsonnet: %w", err)
+	}
+	return []byte(s), nil
 }

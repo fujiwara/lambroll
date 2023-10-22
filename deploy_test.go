@@ -13,20 +13,18 @@ var expectExcludes = []string{
 
 func TestDeployOptionExpand(t *testing.T) {
 	file := "test/src/.lambdaignore"
-	opt := lambroll.DeployOption{
-		ExcludeFile: &file,
-	}
-	excludes, err := lambroll.ExpandExcludeFile(*opt.ExcludeFile)
+	excludes := []string{}
+	ex, err := lambroll.ExpandExcludeFile(file)
 	if err != nil {
 		t.Error("failed to expand", err)
 	}
-	opt.Excludes = append(opt.Excludes, excludes...)
-	if len(opt.Excludes) != len(expectExcludes) {
-		t.Errorf("unexpeted expanded excludes %#v", opt.Excludes)
+	excludes = append(excludes, ex...)
+	if len(excludes) != len(expectExcludes) {
+		t.Errorf("unexpeted expanded excludes %#v", excludes)
 	}
 	for i, line := range expectExcludes {
-		if line != opt.Excludes[i] {
-			t.Errorf("unexpected expanded excludes[%d] expected:%s, got:%s", i, line, opt.Excludes[i])
+		if line != excludes[i] {
+			t.Errorf("unexpected expanded excludes[%d] expected:%s, got:%s", i, line, excludes[i])
 		}
 	}
 }

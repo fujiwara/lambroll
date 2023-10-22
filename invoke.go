@@ -2,6 +2,7 @@ package lambroll
 
 import (
 	"bufio"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -9,34 +10,34 @@ import (
 	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/lambda"
 	"github.com/mattn/go-isatty"
-	"github.com/pkg/errors"
+
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	typesv2 "github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
 // InvokeOption represents option for Invoke()
 type InvokeOption struct {
-	FunctionFilePath *string
-	Async            *bool
-	LogTail          *bool
-	Qualifier        *string
+	Async     bool    `default:"false" help:"invocation type async"`
+	LogTail   bool    `default:"false" help:"output tail of log to STDERR"`
+	Qualifier *string `help:"version or alias to invoke"`
 }
 
 // Invoke invokes function
-func (app *App) Invoke(opt InvokeOption) error {
-	fn, err := app.loadFunction(*opt.FunctionFilePath)
+func (app *App) Invoke(ctx context.Context, opt *InvokeOption) error {
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to load function")
+		return fmt.Errorf("failed to load function: %w", err)
 	}
-	var invocationType, logType *string
-	if *opt.Async {
-		invocationType = aws.String("Event")
+	var invocationType typesv2.InvocationType
+	var logType typesv2.LogType
+	if opt.Async {
+		invocationType = typesv2.InvocationTypeEvent
 	} else {
-		invocationType = aws.String("RequestResponse")
+		invocationType = typesv2.InvocationTypeRequestResponse
 	}
-	if *opt.LogTail {
-		logType = aws.String("Tail")
+	if opt.LogTail {
+		logType = typesv2.LogTypeTail
 	}
 
 	if isatty.IsTerminal(os.Stdin.Fd()) {
@@ -54,7 +55,7 @@ PAYLOAD:
 			if err == io.EOF {
 				break
 			}
-			return errors.Wrap(err, "failed to decode payload as JSON")
+			return fmt.Errorf("failed to decode payload as JSON: %w", err)
 		}
 		b, _ := json.Marshal(payload)
 		in := &lambda.InvokeInput{
@@ -63,11 +64,9 @@ PAYLOAD:
 			LogType:        logType,
 			Payload:        b,
 		}
-		if len(*opt.Qualifier) > 0 {
-			in.Qualifier = opt.Qualifier
-		}
-		log.Println("[debug] invoking function", in.String())
-		res, err := app.lambda.Invoke(in)
+		in.Qualifier = opt.Qualifier
+		log.Println("[debug] invoking function", in)
+		res, err := app.lambda.Invoke(ctx, in)
 		if err != nil {
 			log.Println("[error] failed to invoke function", err.Error())
 			continue PAYLOAD
@@ -76,7 +75,7 @@ PAYLOAD:
 		stdout.Write([]byte("\n"))
 		stdout.Flush()
 
-		log.Printf("[info] StatusCode:%d", *res.StatusCode)
+		log.Printf("[info] StatusCode:%d", res.StatusCode)
 		if res.ExecutedVersion != nil {
 			log.Printf("[info] ExecutionVersion:%s", *res.ExecutedVersion)
 		}

@@ -124,59 +124,57 @@ $ lambroll deploy
 ## Usage
 
 ```console
-usage: lambroll [<flags>] <command> [<args> ...]
+Usage: lambroll <command>
 
 Flags:
-  --help                      Show context-sensitive help (also try --help-long and --help-man).
-  --log-level=info            log level (trace, debug, info, warn, error)
-  --function="function.json"  Function file path
-  --color                     enable colored output
-  --profile=""                AWS credential profile name
-  --region=""                 AWS region
-  --tfstate=""                URL to terraform.tfstate
-  --prefixed-tfstate=PREFIX=URL ...
-                              key value pair of the prefix for template function name and URL to terraform.tfstate
-  --endpoint=""               AWS API Lambda Endpoint
-  --envfile=ENVFILE ...       environment files
-  --ext-str=EXT-STR ...       external string values for Jsonnet
-  --ext-code=EXT-CODE ...     external code values for Jsonnet
+  -h, --help                      Show context-sensitive help.
+      --function=STRING           Function file path
+      --log-level="info"          log level (trace, debug, info, warn, error)
+      --color                     enable colored output
+      --region=REGION             AWS region
+      --profile=PROFILE           AWS credential profile name
+      --tfstate=TFSTATE           URL to terraform.tfstate
+      --prefixed-tfstate=KEY=VALUE;...
+                                  key value pair of the prefix for template function name
+                                  and URL to terraform.tfstate
+      --endpoint=ENDPOINT         AWS API Lambda Endpoint
+      --envfile=ENVFILE,...       environment files
+      --ext-str=KEY=VALUE;...     external string values for Jsonnet
+      --ext-code=KEY=VALUE;...    external code values for Jsonnet
 
 Commands:
-  help [<command>...]
-    Show help.
+  deploy
+    deploy or create function
 
-  version
-    show version
-
-  init --function-name=FUNCTION-NAME [<flags>]
+  init --function-name=
     init function.json
 
   list
     list functions
 
-  deploy [<flags>]
-    deploy or create function
-
-  rollback [<flags>]
+  rollback
     rollback function
 
-  delete [<flags>]
-    delete function
-
-  invoke [<flags>]
+  invoke
     invoke function
 
-  archive [<flags>]
-    archive zip
+  archive
+    archive function
 
-  logs [<flags>]
-    tail logs using `aws logs tail` (aws-cli v2 required)
+  logs
+    show logs of function
 
-  diff [<flags>]
-    show display diff of function.json compared with latest function
+  diff
+    show diff of function
 
-  versions [<flags>]
-    manage function versions
+  render
+    render function.json
+
+  versions
+    show versions of function
+
+  version
+    show version
 ```
 
 ### Init
@@ -350,6 +348,18 @@ When "Tags" key exists in function.json, lambroll set / remove tags to the lambd
 
 When "Tags" key does not exist, lambroll doesn't manage tags.
 If you hope to remove all tags, set `"Tags": {}` expressly.
+
+#### Expand SSM parameter values
+
+At reading the file, lambrol evaluates `{{ ssm }}` syntax in JSON.
+
+For example,
+
+```
+{{ ssm `/path/to/param` }}
+```
+
+SSM parameter value of `/path/to/param` is expanded here.
 
 #### Expand enviroment variables
 
