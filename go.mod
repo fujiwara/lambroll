@@ -16,9 +16,8 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.17.0
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
-	github.com/itchyny/gojq v0.12.8
+	github.com/itchyny/gojq v0.12.11
 	github.com/kayac/go-config v0.6.0
-	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.17
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/pkg/errors v0.9.1
