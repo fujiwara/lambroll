@@ -10,9 +10,6 @@ import (
 
 	"github.com/aereal/jsondiff"
 	"github.com/fatih/color"
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
-	"github.com/hexops/gotextdiff/span"
 	"github.com/itchyny/gojq"
 	"github.com/kylelemons/godebug/diff"
 
@@ -25,7 +22,6 @@ import (
 type DiffOption struct {
 	Src        string `help:"function zip archive or src dir" default:"."`
 	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
-	Unified    bool   `help:"unified diff" default:"true" negatable:"" short:"u"`
 	Qualifier  string `help:"compare with" default:"$LATEST"`
 	Ignore     string `help:"ignore diff by jq query" default:""`
 
@@ -45,7 +41,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	fillDefaultValues(newFunc)
 	name := *newFunc.FunctionName
 
-	var latest *types.FunctionConfiguration
+	var remote *types.FunctionConfiguration
 	var code *types.FunctionCodeLocation
 
 	var tags Tags
@@ -57,7 +53,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	}); err != nil {
 		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
-		latest = res.Configuration
+		remote = res.Configuration
 		code = res.Code
 		{
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
@@ -73,8 +69,8 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		currentCodeSha256 = *res.Configuration.CodeSha256
 		packageType = res.Configuration.PackageType
 	}
-	latestFunc := newFunctionFrom(latest, code, tags)
-	fillDefaultValues(latestFunc)
+	remoteFunc := newFunctionFrom(remote, code, tags)
+	fillDefaultValues(remoteFunc)
 
 	opts := []jsondiff.Option{}
 	if ignore := opt.Ignore; ignore != "" {
@@ -85,24 +81,21 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		}
 	}
 
-	latestJSON, _ := marshalJSON(latestFunc)
-	newJSON, _ := marshalJSON(newFunc)
+	remoteJSON, _ := marshalAny(remoteFunc)
+	newJSON, _ := marshalAny(newFunc)
 	remoteArn := app.functionArn(ctx, name) + ":" + opt.Qualifier
 
-	if opt.Unified {
-		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))
-		if ds := fmt.Sprint(gotextdiff.ToUnified(remoteArn, app.functionFilePath, string(latestJSON), edits)); ds != "" {
-			fmt.Print(coloredDiff(ds))
-		}
-	} else {
-		if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-			fmt.Println(color.RedString("---" + remoteArn))
-			fmt.Println(color.GreenString("+++" + app.functionFilePath))
-			fmt.Print(coloredDiff(ds))
-		}
+	if diff, err := jsondiff.Diff(
+		&jsondiff.Input{Name: remoteArn, X: remoteJSON},
+		&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
+		opts...,
+	); err != nil {
+		return fmt.Errorf("failed to diff: %w", err)
+	} else if diff != "" {
+		fmt.Print(coloredDiff(diff))
 	}
 
-	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
+	if err := validateUpdateFunction(remote, code, newFunc); err != nil {
 		return err
 	}
 

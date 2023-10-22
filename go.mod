@@ -19,7 +19,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.20.0
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
-	github.com/hexops/gotextdiff v1.0.3
+	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/itchyny/gojq v0.12.11
 	github.com/kayac/go-config v0.6.0
 	github.com/kylelemons/godebug v1.1.0
