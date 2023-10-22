@@ -225,9 +225,11 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 		return nil, err
 	}
 
+	var res *lambda.FunctionConfiguration
 	retrier := retryPolicy.Start(ctx)
 	for retrier.Continue() {
-		res, err := app.lambda.UpdateFunctionCodeWithContext(ctx, in)
+		var err error
+		res, err = app.lambda.UpdateFunctionCodeWithContext(ctx, in)
 		if err != nil {
 			if aerr, ok := err.(awserr.Error); ok {
 				switch aerr.Code() {
@@ -238,10 +240,20 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 			}
 			return nil, errors.Wrap(err, "failed to update function code")
 		}
-		log.Println("[info] updated function code successfully")
-		return res, nil
+		log.Println("[info] update function code request was accepted")
+		break
 	}
-	return nil, errors.New("failed to update function code (max retries reached)")
+
+	if !retrier.Continue() {
+		return nil, errors.New("failed to update function code (max retries reached)")
+	}
+
+	if err := app.waitForLastUpdateStatusSuccessful(ctx, *in.FunctionName); err != nil {
+		return nil, err
+	}
+	log.Println("[info] updated function code successfully")
+
+	return res, nil
 }
 
 func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name string) error {

@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
         id: go
@@ -37,6 +37,8 @@ jobs:
           echo $PATH
           make clean
           make test
+        env:
+          TZ: Asia/Tokyo
 
       - name: create test
         run: |

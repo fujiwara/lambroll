@@ -29,6 +29,14 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 $ brew install fujiwara/tap/lambroll
 ```
 
+### aqua
+
+[aqua](https://aquaproj.github.io/) is a declarative CLI Version Manager.
+
+```console
+$ aqua g -i fujiwara/lambroll
+```
+
 ### Binary packages
 
 [Releases](https://github.com/fujiwara/lambroll/releases)
@@ -316,7 +324,7 @@ function.json is a definition for Lambda function. JSON structure is based from 
   "Handler": "index.js",
   "MemorySize": 128,
   "Role": "arn:aws:iam::123456789012:role/hello_lambda_function",
-  "Runtime": "nodejs14.x",
+  "Runtime": "nodejs18.x",
   "Tags": {
     "Env": "dev"
   },
@@ -482,6 +490,17 @@ For example,
 ```
 
 For each line in `.lambdaignore` are evaluated as Go's [`path/filepath#Match`](https://godoc.org/path/filepath#Match).
+
+### Lambda@Edge support
+
+lambroll can deploy [Lambda@Edge](https://aws.amazon.com/lambda/edge/) functions.
+
+Edge functions require two preconditions:
+
+- `--region` must set to `us-east-1`.
+- The IAM Role must be assumed by `lambda.amazonaws.com` and `edgelambda.amazonaws.com` both.
+
+Otherwise, it works as usual.
 
 ## LICENSE
 
