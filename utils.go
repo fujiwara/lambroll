@@ -54,7 +54,7 @@ func unmarshalJSON(src []byte, v interface{}, path string) error {
 	return nil
 }
 
-func FindFunctionFile(preffered string) (string, error) {
+func findDefinitionFile(preffered string, defaults []string) (string, error) {
 	if preffered != "" {
 		if _, err := os.Stat(preffered); err == nil {
 			return preffered, nil
@@ -62,7 +62,7 @@ func FindFunctionFile(preffered string) (string, error) {
 			return "", err
 		}
 	}
-	for _, name := range DefaultFunctionFilenames {
+	for _, name := range defaults {
 		if _, err := os.Stat(name); err == nil {
 			return name, nil
 		}
