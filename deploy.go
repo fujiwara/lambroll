@@ -78,10 +78,15 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
+
+	deployFunctionURL := func(context.Context) error { return nil }
 	if opt.FunctionURL != "" {
-		_, err := app.loadFunctionUrl(opt.FunctionURL, *fn.FunctionName)
+		fc, err := app.loadFunctionUrl(opt.FunctionURL, *fn.FunctionName)
 		if err != nil {
 			return fmt.Errorf("failed to load function url config: %w", err)
+		}
+		deployFunctionURL = func(ctx context.Context) error {
+			return app.deployFunctionURL(ctx, fc)
 		}
 	}
 
@@ -190,8 +195,8 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions)
 	}
 
-	if opt.FunctionURL != "" {
-		return app.deployFunctionURL(ctx, *fn.FunctionName, opt.FunctionURL)
+	if err := deployFunctionURL(ctx); err != nil {
+		return err
 	}
 
 	return nil

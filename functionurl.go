@@ -115,11 +115,7 @@ func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL,
 	return f, nil
 }
 
-func (app *App) deployFunctionURL(ctx context.Context, functionName, path string) error {
-	fc, err := app.loadFunctionUrl(path, functionName)
-	if err != nil {
-		return fmt.Errorf("failed to load function url config: %w", err)
-	}
+func (app *App) deployFunctionURL(ctx context.Context, fc *FunctionURL) error {
 	log.Println("[info] deploying function url...")
 
 	if err := app.deployFunctionURLConfig(ctx, fc); err != nil {
