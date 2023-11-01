@@ -7,11 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"sort"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/samber/lo"
@@ -77,8 +79,8 @@ func (ps FunctionURLPermissions) Find(sid string) *FunctionURLPermission {
 type FunctionURLPermission struct {
 	lambda.AddPermissionInput
 
-	once sync.Once
 	sid  string
+	once sync.Once
 }
 
 func (p *FunctionURLPermission) Sid() string {
@@ -103,6 +105,74 @@ type PolicyStatement struct {
 	Action    string `json:"Action"`
 	Resource  any    `json:"Resource"`
 	Condition any    `json:"Condition"`
+}
+
+func (ps *PolicyStatement) PrincipalAccountID() *string {
+	if ps.Principal == nil {
+		return nil
+	}
+	switch v := ps.Principal.(type) {
+	case string:
+		return aws.String(v)
+	case map[string]interface{}:
+		if v["AWS"] == nil {
+			return nil
+		}
+		switch vv := v["AWS"].(type) {
+		case string:
+			if a, err := arn.Parse(vv); err == nil {
+				return aws.String(a.AccountID)
+			}
+			return aws.String(vv)
+		}
+	}
+	return nil
+}
+
+/*
+	{
+	      "Sid": "lambroll-622ed5c2bb0714ef0af1929fcea568e4ba0c4dbe",
+	      "Effect": "Allow",
+	      "Principal": "*",
+	      "Action": "lambda:InvokeFunctionUrl",
+	      "Resource": "arn:aws:lambda:ap-northeast-1:1234567890:function:hello",
+	      "Condition": {
+	        "StringEquals": {
+	          "lambda:FunctionUrlAuthType": "AWS_IAM",
+	          "aws:PrincipalOrgID": "o-xxxxxxxxxx"
+	        }
+	      }
+	    }
+*/
+func (ps *PolicyStatement) PrincipalOrgID() *string {
+	principal := ps.PrincipalAccountID()
+	if principal == nil || *principal != "*" {
+		return nil
+	}
+	m, ok := ps.Condition.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	if m["StringEquals"] == nil {
+		return nil
+	}
+	mm, ok := m["StringEquals"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	if mm["lambda:FunctionUrlAuthType"] == nil {
+		return nil
+	}
+	if v, ok := mm["lambda:FunctionUrlAuthType"].(string); ok && v != "AWS_IAM" {
+		return nil
+	}
+	if mm["aws:PrincipalOrgID"] == nil {
+		return nil
+	}
+	if v, ok := mm["aws:PrincipalOrgID"].(string); ok {
+		return aws.String(v)
+	}
+	return nil
 }
 
 func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL, error) {
@@ -192,8 +262,8 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 				return fmt.Errorf("failed to unmarshal policy: %w", err)
 			}
 			for _, s := range policy.Statement {
-				if !SidPattern.MatchString(s.Sid) || s.Action != "lambda:InvokeFunctionUrl" || s.Effect != "Allow" {
-					// not a lambroll policy
+				if s.Action != "lambda:InvokeFunctionUrl" || s.Effect != "Allow" {
+					// not a lambda function url policy
 					continue
 				}
 				existsSids = append(existsSids, s.Sid)
@@ -242,6 +312,84 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 			return fmt.Errorf("failed to remove permission: %w", err)
 		}
 		log.Printf("[info] removed permission Sid %s", sid)
+	}
+
+	return nil
+}
+
+func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOption) error {
+	fc, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
+		FunctionName: fn.FunctionName,
+		Qualifier:    opt.Qualifier,
+	})
+	if err != nil {
+		var nfe *types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			log.Printf("[warn] function url config for %s not found", *fn.FunctionName)
+			return nil
+		} else {
+			return fmt.Errorf("failed to get function url config: %w", err)
+		}
+	}
+	fu := &FunctionURL{
+		Config: &lambda.CreateFunctionUrlConfigInput{
+			Cors:       fc.Cors,
+			AuthType:   fc.AuthType,
+			InvokeMode: fc.InvokeMode,
+			Qualifier:  opt.Qualifier,
+		},
+	}
+
+	{
+		res, err := app.lambda.GetPolicy(ctx, &lambda.GetPolicyInput{
+			FunctionName: fn.FunctionName,
+			Qualifier:    opt.Qualifier,
+		})
+		if err != nil {
+			var nfe *types.ResourceNotFoundException
+			if errors.As(err, &nfe) {
+				// do nothing
+			} else {
+				return fmt.Errorf("failed to get policy: %w", err)
+			}
+		}
+		if res != nil {
+			log.Printf("[debug] policy for %s: %s", *fn.FunctionName, *res.Policy)
+			var policy PolicyOutput
+			if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
+				return fmt.Errorf("failed to unmarshal policy: %w", err)
+			}
+			for _, s := range policy.Statement {
+				if s.Action != "lambda:InvokeFunctionUrl" || s.Effect != "Allow" {
+					// not a lambda function url policy
+					continue
+				}
+				fu.Permissions = append(fu.Permissions, &FunctionURLPermission{
+					AddPermissionInput: lambda.AddPermissionInput{
+						Principal:      s.PrincipalAccountID(),
+						PrincipalOrgID: s.PrincipalOrgID(),
+					},
+				})
+			}
+		}
+	}
+
+	var name string
+	if opt.Jsonnet {
+		name = DefaultFunctionURLFilenames[1]
+	} else {
+		name = DefaultFunctionURLFilenames[0]
+	}
+	log.Printf("[info] creating %s", name)
+	b, _ := marshalJSON(fu)
+	if opt.Jsonnet {
+		b, err = jsonToJsonnet(b, name)
+		if err != nil {
+			return err
+		}
+	}
+	if err := app.saveFile(name, b, os.FileMode(0644)); err != nil {
+		return err
 	}
 
 	return nil
