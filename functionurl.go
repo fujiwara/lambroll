@@ -19,6 +19,7 @@ import (
 
 var (
 	SidPattern = regexp.MustCompile("^lambroll-[0-9a-f]+$")
+	SidFormat  = "lambroll-%x"
 )
 
 type FunctionURL struct {
@@ -84,7 +85,7 @@ func (p *FunctionURLPermission) Sid() string {
 	p.once.Do(func() {
 		b, _ := json.Marshal(p)
 		h := sha1.Sum(b)
-		p.sid = fmt.Sprintf("lambroll-%x", h)
+		p.sid = fmt.Sprintf(SidFormat, h)
 	})
 	return p.sid
 }
