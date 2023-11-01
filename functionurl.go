@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"slices"
 	"sort"
 	"sync"
 
@@ -27,14 +26,40 @@ type FunctionURL struct {
 	Permissions FunctionURLPermissions `json:"Permissions"`
 }
 
+func (f *FunctionURL) Validate(functionName string) error {
+	if f.Config == nil {
+		return errors.New("function url 'Config' attribute is required")
+	}
+	f.Config.FunctionName = aws.String(functionName)
+	// fill default values
+	switch f.Config.AuthType {
+	case types.FunctionUrlAuthTypeNone:
+		if len(f.Permissions) == 0 {
+			f.Permissions = append(f.Permissions, &FunctionURLPermission{
+				AddPermissionInput: lambda.AddPermissionInput{
+					Principal: aws.String("*"),
+				},
+			})
+		}
+	case types.FunctionUrlAuthTypeAwsIam:
+		if len(f.Permissions) == 0 {
+			return fmt.Errorf("function url 'Permissions' attribute is required when 'AuthType' is '%s'", types.FunctionUrlAuthTypeAwsIam)
+		}
+	default:
+		return fmt.Errorf("unknown function url 'AuthType': %s", f.Config.AuthType)
+	}
+	return nil
+}
+
 type FunctionURLConfig = lambda.CreateFunctionUrlConfigInput
 
 type FunctionURLPermissions []*FunctionURLPermission
 
 func (ps FunctionURLPermissions) Sids() []string {
-	sids := lo.Map(ps, func(p *FunctionURLPermission, _ int) string {
-		return p.Sid()
-	})
+	sids := make([]string, 0, len(ps))
+	for _, p := range ps {
+		sids = append(sids, p.Sid())
+	}
 	sort.Strings(sids)
 	return sids
 }
@@ -64,11 +89,6 @@ func (p *FunctionURLPermission) Sid() string {
 	return p.sid
 }
 
-func (p *FunctionURLPermission) String() string {
-	b, _ := json.Marshal(p)
-	return string(b)
-}
-
 type PolicyOutput struct {
 	Id        string            `json:"Id"`
 	Version   string            `json:"Version"`
@@ -80,7 +100,7 @@ type PolicyStatement struct {
 	Effect    string `json:"Effect"`
 	Principal any    `json:"Principal"`
 	Action    string `json:"Action"`
-	Resource  string `json:"Resource"`
+	Resource  any    `json:"Resource"`
 	Condition any    `json:"Condition"`
 }
 
@@ -89,28 +109,9 @@ func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL,
 	if err != nil {
 		return nil, err
 	}
-	if f.Config == nil {
-		return nil, errors.New("function url 'Config' attribute is required")
+	if err := f.Validate(functionName); err != nil {
+		return nil, err
 	}
-	// fill default values
-	switch f.Config.AuthType {
-	case types.FunctionUrlAuthTypeNone:
-		if len(f.Permissions) == 0 {
-			f.Permissions = append(f.Permissions, &FunctionURLPermission{
-				AddPermissionInput: lambda.AddPermissionInput{
-					Principal: aws.String("*"),
-				},
-			})
-		}
-	case types.FunctionUrlAuthTypeAwsIam:
-		if len(f.Permissions) == 0 {
-			return nil, fmt.Errorf("function url 'Permissions' attribute is required when 'AuthType' is '%s'", types.FunctionUrlAuthTypeAwsIam)
-		}
-	default:
-		return nil, fmt.Errorf("unknown function url 'AuthType': %s", f.Config.AuthType)
-	}
-	f.Config.FunctionName = &functionName
-
 	return f, nil
 }
 
@@ -200,7 +201,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 				}
 				existsSids = append(existsSids, s.Sid)
 			}
-			slices.Sort(existsSids)
+			sort.Strings(existsSids)
 		}
 	}
 
