@@ -61,7 +61,7 @@ var (
 		"function.jsonnet",
 	}
 
-	DefaultFunctionURLConfigFilenames = []string{
+	DefaultFunctionURLFilenames = []string{
 		"function_url.json",
 		"function_url.jsonnet",
 	}
@@ -74,8 +74,8 @@ var (
 		IgnoreFilename,
 		DefaultFunctionFilenames[0],
 		DefaultFunctionFilenames[1],
-		DefaultFunctionURLConfigFilenames[0],
-		DefaultFunctionURLConfigFilenames[1],
+		DefaultFunctionURLFilenames[0],
+		DefaultFunctionURLFilenames[1],
 		FunctionZipFilename,
 		".git/*",
 		".terraform/*",

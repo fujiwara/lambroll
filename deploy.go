@@ -79,7 +79,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 	if opt.FunctionURL != "" {
-		_, err := app.loadFunctionUrlConfig(opt.FunctionURL)
+		_, err := app.loadFunctionUrl(opt.FunctionURL, *fn.FunctionName)
 		if err != nil {
 			return fmt.Errorf("failed to load function url config: %w", err)
 		}
