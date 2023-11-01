@@ -9,6 +9,7 @@ import (
 	"log"
 	"regexp"
 	"slices"
+	"sort"
 	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -34,7 +35,7 @@ func (ps FunctionURLPermissions) Sids() []string {
 	sids := lo.Map(ps, func(p *FunctionURLPermission, _ int) string {
 		return p.Sid()
 	})
-	slices.Sort(sids)
+	sort.Strings(sids)
 	return sids
 }
 
