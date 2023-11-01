@@ -93,17 +93,24 @@ func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL,
 		return nil, errors.New("function url 'Config' attribute is required")
 	}
 	// fill default values
-	if f.Config.AuthType == types.FunctionUrlAuthTypeNone && len(f.Permissions) == 0 {
-		f.Permissions = append(f.Permissions, &FunctionURLPermission{
-			AddPermissionInput: lambda.AddPermissionInput{
-				Principal: aws.String("*"),
-			},
-		})
+	switch f.Config.AuthType {
+	case types.FunctionUrlAuthTypeNone:
+		if len(f.Permissions) == 0 {
+			f.Permissions = append(f.Permissions, &FunctionURLPermission{
+				AddPermissionInput: lambda.AddPermissionInput{
+					Principal: aws.String("*"),
+				},
+			})
+		}
+	case types.FunctionUrlAuthTypeAwsIam:
+		if len(f.Permissions) == 0 {
+			return nil, fmt.Errorf("function url 'Permissions' attribute is required when 'AuthType' is '%s'", types.FunctionUrlAuthTypeAwsIam)
+		}
+	default:
+		return nil, fmt.Errorf("unknown function url 'AuthType': %s", f.Config.AuthType)
 	}
 	f.Config.FunctionName = &functionName
-	for _, p := range f.Permissions {
-		p.FunctionName = &functionName
-	}
+
 	return f, nil
 }
 
