@@ -225,6 +225,12 @@ func fillDefaultValues(fn *Function) {
 	if fn.MemorySize == nil {
 		fn.MemorySize = aws.Int64(128)
 	}
+	if fn.LoggingConfig == nil {
+		fn.LoggingConfig = &lambda.LoggingConfig{
+			LogFormat: aws.String("Text"),
+			LogGroup:  aws.String("/aws/lambda/" + *fn.FunctionName),
+		}
+	}
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &lambda.TracingConfig{
 			Mode: aws.String("PassThrough"),
@@ -252,6 +258,7 @@ func newFunctionFrom(c *lambda.FunctionConfiguration, code *lambda.FunctionCodeL
 		EphemeralStorage:  c.EphemeralStorage,
 		FunctionName:      c.FunctionName,
 		Handler:           c.Handler,
+		LoggingConfig:     c.LoggingConfig,
 		MemorySize:        c.MemorySize,
 		Role:              c.Role,
 		Runtime:           c.Runtime,
