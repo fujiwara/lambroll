@@ -22,6 +22,12 @@
     },
   ],
   Handler: 'index.js',
+  LoggingConfig: {
+    ApplicationLogLevel: "DEBUG",
+    LogFormat: "JSON",
+    LogGroup: "/aws/lambda/{{ must_env `FUNCTION_NAME` }}/json",
+    SystemLogLevel: "INFO",
+  },
   MemorySize: std.extVar('MemorySize'),
   Role: '{{ tfstate `data.aws_iam_role.lambda.arn` }}',
   Runtime: 'nodejs12.x',

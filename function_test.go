@@ -62,6 +62,9 @@ func TestLoadFunction(t *testing.T) {
 		if *fn.EphemeralStorage.Size != 1024 {
 			t.Errorf("unexpected EphemeralStorage %v", fn.EphemeralStorage)
 		}
+		if *fn.LoggingConfig.LogGroup != "/aws/lambda/test/json" {
+			t.Errorf("unexpected LoggingConfig %v", fn.LoggingConfig)
+		}
 		t.Log(fn.String())
 	}
 }
