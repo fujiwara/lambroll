@@ -24,7 +24,10 @@ func (app *App) Logs(opt LogsOption) error {
 		return errors.Wrap(err, "failed to load function")
 	}
 
-	logGroup := "/aws/lambda/" + *fn.FunctionName
+	logGroup := "/aws/lambda/" + *fn.FunctionName // default
+	if fn.LoggingConfig != nil && fn.LoggingConfig.LogGroup != nil {
+		logGroup = *fn.LoggingConfig.LogGroup
+	}
 	command := []string{
 		"aws",
 		"--profile", app.profile,
