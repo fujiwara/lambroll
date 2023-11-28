@@ -5,13 +5,13 @@
   ],
   Description: std.extVar('Description'),
   EphemeralStorage: {
-    Size: 1024
+    Size: 1024,
   },
   Environment: {
     Variables: {
       JSON: '{{ env `JSON` | json_escape }}',
       PREFIXED_TFSTATE_1: '{{ prefix1_tfstate `data.aws_iam_role.lambda.arn` }}',
-      PREFIXED_TFSTATE_2: '{{ prefix2_tfstate `data.aws_iam_role.lambda.arn` }}'
+      PREFIXED_TFSTATE_2: '{{ prefix2_tfstate `data.aws_iam_role.lambda.arn` }}',
     },
   },
   FunctionName: '{{ must_env `FUNCTION_NAME` }}',
@@ -22,6 +22,12 @@
     },
   ],
   Handler: 'index.js',
+  LoggingConfig: {
+    ApplicationLogLevel: 'DEBUG',
+    LogFormat: 'JSON',
+    LogGroup: '/aws/lambda/{{ must_env `FUNCTION_NAME` }}/json',
+    SystemLogLevel: 'INFO',
+  },
   MemorySize: std.extVar('MemorySize'),
   Role: '{{ tfstate `data.aws_iam_role.lambda.arn` }}',
   Runtime: 'nodejs12.x',

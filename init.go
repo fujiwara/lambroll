@@ -64,7 +64,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			Resource: aws.String(arn),
 		})
 		if err != nil {
-			return fmt.Errorf("faled to list tags: %w", err)
+			return fmt.Errorf("failed to list tags: %w", err)
 		}
 		tags = res.Tags
 	}

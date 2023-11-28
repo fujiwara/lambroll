@@ -23,7 +23,7 @@ func (app *App) Logs(ctx context.Context, opt *LogsOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
-	logGroup := "/aws/lambda/" + *fn.FunctionName
+	logGroup := resolveLogGroup(fn)
 	command := []string{
 		"aws",
 		"--profile", app.profile,
