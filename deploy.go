@@ -118,6 +118,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		Handler:           fn.Handler,
 		KMSKeyArn:         fn.KMSKeyArn,
 		Layers:            fn.Layers,
+		LoggingConfig:     fn.LoggingConfig,
 		MemorySize:        fn.MemorySize,
 		Role:              fn.Role,
 		Runtime:           fn.Runtime,

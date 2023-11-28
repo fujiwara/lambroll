@@ -202,7 +202,7 @@ func (app *App) AWSAccountID(ctx context.Context) string {
 	svc := sts.NewFromConfig(app.awsConfig)
 	r, err := svc.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		log.Println("[warn] failed to get caller identity", err)
+		log.Println("[warn] failed to get caller identity.", err)
 		return ""
 	}
 	app.accountID = *r.Account
@@ -263,6 +263,7 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 		EphemeralStorage:  c.EphemeralStorage,
 		FunctionName:      c.FunctionName,
 		Handler:           c.Handler,
+		LoggingConfig:     c.LoggingConfig,
 		MemorySize:        c.MemorySize,
 		Role:              c.Role,
 		Runtime:           c.Runtime,
@@ -323,6 +324,12 @@ func fillDefaultValues(fn *Function) {
 	}
 	if fn.MemorySize == nil {
 		fn.MemorySize = aws.Int32(128)
+	}
+	if fn.LoggingConfig == nil {
+		fn.LoggingConfig = &types.LoggingConfig{
+			LogFormat: types.LogFormatText,
+			LogGroup:  aws.String(resolveLogGroup(fn)),
+		}
 	}
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &types.TracingConfig{
