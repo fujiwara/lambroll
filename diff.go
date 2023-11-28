@@ -65,7 +65,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 				Resource: aws.String(app.functionArn(ctx, name)),
 			})
 			if err != nil {
-				return fmt.Errorf("faled to list tags: %w", err)
+				return fmt.Errorf("failed to list tags: %w", err)
 			}
 			tags = res.Tags
 		}
