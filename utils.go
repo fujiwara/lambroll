@@ -77,3 +77,10 @@ func jsonToJsonnet(src []byte, filepath string) ([]byte, error) {
 	}
 	return []byte(s), nil
 }
+
+func resolveLogGroup(fn *Function) string {
+	if fn.LoggingConfig != nil && fn.LoggingConfig.LogGroup != nil {
+		return *fn.LoggingConfig.LogGroup
+	}
+	return fmt.Sprintf("/aws/lambda/%s", *fn.FunctionName)
+}

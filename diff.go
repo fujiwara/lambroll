@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 
 	"github.com/fatih/color"
@@ -57,6 +58,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		latest = res.Configuration
 		code = res.Code
 		{
+			log.Println("[debug] list tags Resource", app.functionArn(ctx, name))
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				// Tagging operations are permitted on Lambda functions only.
 				// Tags on aliases and versions are not supported.
