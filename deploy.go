@@ -24,6 +24,7 @@ type DeployOption struct {
 	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
 	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
 	FunctionURL   string `help:"path to function-url definiton" default:""`
+	SkipFunction  bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
 	ExcludeFileOption
 }
@@ -81,13 +82,18 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 
 	deployFunctionURL := func(context.Context) error { return nil }
 	if opt.FunctionURL != "" {
-		fc, err := app.loadFunctionUrl(opt.FunctionURL, *fn.FunctionName)
-		if err != nil {
-			return fmt.Errorf("failed to load function url config: %w", err)
-		}
 		deployFunctionURL = func(ctx context.Context) error {
+			fc, err := app.loadFunctionUrl(opt.FunctionURL, *fn.FunctionName)
+			if err != nil {
+				return fmt.Errorf("failed to load function url config: %w", err)
+			}
 			return app.deployFunctionURL(ctx, fc)
 		}
+	}
+
+	if opt.SkipFunction {
+		// skip to deploy a function. deploy function-url only
+		return deployFunctionURL(ctx)
 	}
 
 	log.Printf("[info] starting deploy function %s", *fn.FunctionName)

@@ -84,3 +84,10 @@ func resolveLogGroup(fn *Function) string {
 	}
 	return fmt.Sprintf("/aws/lambda/%s", *fn.FunctionName)
 }
+
+func fullQualifiedFunctionName(name string, qualifier *string) string {
+	if qualifier != nil {
+		return name + ":" + *qualifier
+	}
+	return name + ":" + versionLatest
+}

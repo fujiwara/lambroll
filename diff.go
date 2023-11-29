@@ -22,10 +22,10 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src        string `help:"function zip archive or src dir" default:"."`
-	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
-	Unified    bool   `help:"unified diff" default:"true" negatable:"" short:"u"`
-	Qualifier  string `help:"compare with" default:"$LATEST"`
+	Src        string  `help:"function zip archive or src dir" default:"."`
+	CodeSha256 bool    `help:"diff of code sha256" default:"false"`
+	Unified    bool    `help:"unified diff" default:"true" negatable:"" short:"u"`
+	Qualifier  *string `help:"compare with"`
 
 	ExcludeFileOption
 }
@@ -51,7 +51,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	var packageType types.PackageType
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &name,
-		Qualifier:    &opt.Qualifier,
+		Qualifier:    opt.Qualifier,
 	}); err != nil {
 		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
@@ -76,7 +76,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)
-	remoteArn := app.functionArn(ctx, name) + ":" + opt.Qualifier
+	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
 
 	if opt.Unified {
 		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))

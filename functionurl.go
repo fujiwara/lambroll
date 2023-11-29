@@ -203,13 +203,15 @@ func (app *App) deployFunctionURL(ctx context.Context, fc *FunctionURL) error {
 
 func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL) error {
 	create := false
-	if _, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
+	fqFunctionName := fullQualifiedFunctionName(*fc.Config.FunctionName, fc.Config.Qualifier)
+	functinoUrlConfig, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 		FunctionName: fc.Config.FunctionName,
 		Qualifier:    fc.Config.Qualifier,
-	}); err != nil {
+	})
+	if err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			log.Printf("[info] function url config for %s not found. creating", *fc.Config.FunctionName)
+			log.Printf("[info] function url config for %s not found. creating", fqFunctionName)
 			create = true
 		} else {
 			return fmt.Errorf("failed to get function url config: %w", err)
@@ -221,9 +223,14 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL) er
 		if err != nil {
 			return fmt.Errorf("failed to create function url config: %w", err)
 		}
-		log.Printf("[info] created function url config for %s", *fc.Config.FunctionName)
+		log.Printf("[info] created function url config for %s", fqFunctionName)
 		log.Printf("[info] Function URL: %s", *res.FunctionUrl)
 	} else {
+		log.Printf("[info] updating function url config for %s", fqFunctionName)
+		if functinoUrlConfig.Cors != nil && fc.Config.Cors == nil {
+			// reset cors config
+			fc.Config.Cors = &types.Cors{}
+		}
 		res, err := app.lambda.UpdateFunctionUrlConfig(ctx, &lambda.UpdateFunctionUrlConfigInput{
 			FunctionName: fc.Config.FunctionName,
 			Qualifier:    fc.Config.Qualifier,
@@ -234,13 +241,14 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL) er
 		if err != nil {
 			return fmt.Errorf("failed to update function url config: %w", err)
 		}
-		log.Printf("[info] updated function url config for %s", *fc.Config.FunctionName)
+		log.Printf("[info] updated function url config for %s", fqFunctionName)
 		log.Printf("[info] Function URL: %s", *res.FunctionUrl)
 	}
 	return nil
 }
 
 func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionURL) error {
+	fqFunctionName := fullQualifiedFunctionName(*fc.Config.FunctionName, fc.Config.Qualifier)
 	existsSids := []string{}
 	{
 		res, err := app.lambda.GetPolicy(ctx, &lambda.GetPolicyInput{
@@ -256,7 +264,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 			}
 		}
 		if res != nil {
-			log.Printf("[debug] policy for %s: %s", *fc.Config.FunctionName, *res.Policy)
+			log.Printf("[debug] policy for %s: %s", fqFunctionName, *res.Policy)
 			var policy PolicyOutput
 			if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
 				return fmt.Errorf("failed to unmarshal policy: %w", err)
@@ -299,7 +307,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 		if _, err := app.lambda.AddPermission(ctx, in); err != nil {
 			return fmt.Errorf("failed to add permission: %w", err)
 		}
-		log.Printf("[info] added permission for %s", *fc.Config.FunctionName)
+		log.Printf("[info] added permission for %s", fqFunctionName)
 	}
 
 	for _, sid := range removeSids {
@@ -331,6 +339,7 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOpti
 			return fmt.Errorf("failed to get function url config: %w", err)
 		}
 	}
+	fqFunctionName := fullQualifiedFunctionName(*fn.FunctionName, opt.Qualifier)
 	fu := &FunctionURL{
 		Config: &lambda.CreateFunctionUrlConfigInput{
 			Cors:       fc.Cors,
@@ -354,7 +363,7 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOpti
 			}
 		}
 		if res != nil {
-			log.Printf("[debug] policy for %s: %s", *fn.FunctionName, *res.Policy)
+			log.Printf("[debug] policy for %s: %s", fqFunctionName, *res.Policy)
 			var policy PolicyOutput
 			if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
 				return fmt.Errorf("failed to unmarshal policy: %w", err)
