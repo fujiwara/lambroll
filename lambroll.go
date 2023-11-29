@@ -40,7 +40,7 @@ var retryPolicy = retry.Policy{
 type Function = lambda.CreateFunctionInput
 
 // Tags represents tags of function
-type Tags = map[string]string
+type Tags map[string]string
 
 func (app *App) functionArn(ctx context.Context, name string) string {
 	return fmt.Sprintf(
