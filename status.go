@@ -79,6 +79,10 @@ func (st *FunctionStatusOutput) String() string {
 	for k, v := range st.Tags {
 		tags[k] = v
 	}
+	archs := make([]string, len(st.Configuration.Architectures))
+	for i, a := range st.Configuration.Architectures {
+		archs[i] = string(a)
+	}
 	res := strings.Join([]string{
 		"FunctionName: " + aws.ToString(st.Configuration.FunctionName),
 		"Description: " + aws.ToString(st.Configuration.Description),
@@ -87,6 +91,7 @@ func (st *FunctionStatusOutput) String() string {
 		"State: " + string(st.Configuration.State),
 		"LastUpdateStatus: " + string(st.Configuration.LastUpdateStatus),
 		"PackageType: " + string(st.Configuration.PackageType),
+		"Architectures: " + strings.Join(archs, ","),
 		"Runtime: " + string(st.Configuration.Runtime),
 		"Handler: " + aws.ToString(st.Configuration.Handler),
 		"Timeout: " + fmt.Sprintf("%d", aws.ToInt32(st.Configuration.Timeout)),
