@@ -39,6 +39,8 @@ type CLIOptions struct {
 	Logs     *LogsOption     `cmd:"logs" help:"show logs of function"`
 	Diff     *DiffOption     `cmd:"diff" help:"show diff of function"`
 	Render   *RenderOption   `cmd:"render" help:"render function.json"`
+	Status   *StatusOption   `cmd:"status" help:"show status of function"`
+	Delete   *DeleteOption   `cmd:"delete" help:"delete function"`
 	Versions *VersionsOption `cmd:"versions" help:"show versions of function"`
 
 	Version struct{} `cmd:"version" help:"show version"`
@@ -128,6 +130,10 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 		return app.Render(ctx, opts.Render)
 	case "diff":
 		return app.Diff(ctx, opts.Diff)
+	case "delete":
+		return app.Delete(ctx, opts.Delete)
+	case "status":
+		return app.Status(ctx, opts.Status)
 	default:
 		usage()
 	}
