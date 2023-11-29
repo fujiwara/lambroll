@@ -7,7 +7,7 @@ import (
 	"github.com/go-test/deep"
 )
 
-type tags = map[string]string
+type tags = lambroll.Tags
 type keys = []string
 type tagsTestCase struct {
 	oldTags    tags
