@@ -75,37 +75,51 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 }
 
 func (st *FunctionStatusOutput) String() string {
-	tags := make(map[string]string, len(st.Tags))
+	tags := make([]string, 0, len(st.Tags))
 	for k, v := range st.Tags {
-		tags[k] = v
+		tags = append(tags, fmt.Sprintf("%s=%s", k, v))
 	}
-	archs := make([]string, len(st.Configuration.Architectures))
-	for i, a := range st.Configuration.Architectures {
-		archs[i] = string(a)
+	archs := make([]string, 0, len(st.Configuration.Architectures))
+	for _, a := range st.Configuration.Architectures {
+		archs = append(archs, string(a))
 	}
+	loggingConfig := []string{
+		"  LogFormat: " + string(st.Configuration.LoggingConfig.LogFormat),
+		"  LogGroup: " + aws.ToString(st.Configuration.LoggingConfig.LogGroup),
+	}
+	if lv := string(st.Configuration.LoggingConfig.ApplicationLogLevel); lv != "" {
+		loggingConfig = append(loggingConfig, "  ApplicationLogLevel: "+lv)
+	}
+	if lv := string(st.Configuration.LoggingConfig.SystemLogLevel); lv != "" {
+		loggingConfig = append(loggingConfig, "  SystemLogLevel: "+lv)
+	}
+	var snapStart string
+	if ss := st.Configuration.SnapStart; ss != nil {
+		snapStart = strings.Join([]string{
+			"  ApplyOn: " + string(ss.ApplyOn),
+			"  OptimizationStatus: " + string(ss.OptimizationStatus),
+		}, "\n")
+	}
+
 	res := strings.Join([]string{
 		"FunctionName: " + aws.ToString(st.Configuration.FunctionName),
 		"Description: " + aws.ToString(st.Configuration.Description),
 		"Version: " + aws.ToString(st.Configuration.Version),
 		"FunctionArn: " + aws.ToString(st.Configuration.FunctionArn),
+		"Role: " + aws.ToString(st.Configuration.Role),
 		"State: " + string(st.Configuration.State),
 		"LastUpdateStatus: " + string(st.Configuration.LastUpdateStatus),
-		"PackageType: " + string(st.Configuration.PackageType),
+		"LoggingConfig: \n" + strings.Join(loggingConfig, "\n"),
+		"SnapStart: \n" + snapStart,
 		"Architectures: " + strings.Join(archs, ","),
 		"Runtime: " + string(st.Configuration.Runtime),
 		"Handler: " + aws.ToString(st.Configuration.Handler),
 		"Timeout: " + fmt.Sprintf("%d", aws.ToInt32(st.Configuration.Timeout)),
 		"MemorySize: " + fmt.Sprintf("%d", aws.ToInt32(st.Configuration.MemorySize)),
-		"Role: " + aws.ToString(st.Configuration.Role),
-		"LastModified: " + aws.ToString(st.Configuration.LastModified),
+		"PackageType: " + string(st.Configuration.PackageType),
 		"CodeSize: " + fmt.Sprintf("%d", st.Configuration.CodeSize),
 		"CodeSha256: " + aws.ToString(st.Configuration.CodeSha256),
+		"Tags: " + strings.Join(tags, ","),
 	}, "\n") + "\n"
-	if len(tags) > 0 {
-		res += "Tags:\n"
-		for k, v := range tags {
-			res += fmt.Sprintf("  %s: %s\n", k, v)
-		}
-	}
 	return res
 }
