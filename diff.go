@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -22,10 +23,11 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src        string  `help:"function zip archive or src dir" default:"."`
-	CodeSha256 bool    `help:"diff of code sha256" default:"false"`
-	Unified    bool    `help:"unified diff" default:"true" negatable:"" short:"u"`
-	Qualifier  *string `help:"compare with"`
+	Src         string  `help:"function zip archive or src dir" default:"."`
+	CodeSha256  bool    `help:"diff of code sha256" default:"false"`
+	Unified     bool    `help:"unified diff" default:"true" negatable:"" short:"u"`
+	Qualifier   *string `help:"compare with"`
+	FunctionURL string  `help:"path to function-url definiton" default:""`
 
 	ExcludeFileOption
 }
@@ -113,6 +115,63 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
 			fmt.Println(color.GreenString("+++" + "--src=" + opt.Src))
 			fmt.Println(coloredDiff(ds))
+		}
+	}
+
+	if opt.FunctionURL == "" {
+		return nil
+	}
+
+	return app.diffFunctionURL(ctx, name, opt)
+}
+
+func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) error {
+	var remote, local *types.FunctionUrlConfig
+	fqName := fullQualifiedFunctionName(name, opt.Qualifier)
+
+	if fu, err := app.loadFunctionUrl(opt.FunctionURL, name); err != nil {
+		return fmt.Errorf("failed to load function-url: %w", err)
+	} else {
+		fillDefaultValuesFunctionUrlConfig(fu.Config)
+		local = &types.FunctionUrlConfig{
+			AuthType:   fu.Config.AuthType,
+			Cors:       fu.Config.Cors,
+			InvokeMode: fu.Config.InvokeMode,
+		}
+	}
+
+	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
+		FunctionName: &name,
+		Qualifier:    opt.Qualifier,
+	}); err != nil {
+		var nfe *types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			// empty
+			remote = &types.FunctionUrlConfig{}
+		} else {
+			return fmt.Errorf("failed to get function url config: %w", err)
+		}
+	} else {
+		log.Println("[debug] FunctionUrlConfig found")
+		remote = &types.FunctionUrlConfig{
+			AuthType:   res.AuthType,
+			Cors:       res.Cors,
+			InvokeMode: res.InvokeMode,
+		}
+	}
+	r, _ := marshalJSON(remote)
+	l, _ := marshalJSON(local)
+
+	if opt.Unified {
+		edits := myers.ComputeEdits(span.URIFromPath(fqName), string(r), string(l))
+		if ds := fmt.Sprint(gotextdiff.ToUnified(fqName, opt.FunctionURL, string(r), edits)); ds != "" {
+			fmt.Print(coloredDiff(ds))
+		}
+	} else {
+		if ds := diff.Diff(string(r), string(l)); ds != "" {
+			fmt.Println(color.RedString("---" + fqName))
+			fmt.Println(color.GreenString("+++" + opt.FunctionURL))
+			fmt.Print(coloredDiff(ds))
 		}
 	}
 

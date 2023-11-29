@@ -403,3 +403,12 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOpti
 
 	return nil
 }
+
+func fillDefaultValuesFunctionUrlConfig(fc *FunctionURLConfig) {
+	if fc.AuthType == "" {
+		fc.AuthType = types.FunctionUrlAuthTypeNone
+	}
+	if fc.InvokeMode == "" {
+		fc.InvokeMode = types.InvokeModeBuffered
+	}
+}
