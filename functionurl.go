@@ -129,21 +129,6 @@ func (ps *PolicyStatement) PrincipalAccountID() *string {
 	return nil
 }
 
-/*
-	{
-	      "Sid": "lambroll-622ed5c2bb0714ef0af1929fcea568e4ba0c4dbe",
-	      "Effect": "Allow",
-	      "Principal": "*",
-	      "Action": "lambda:InvokeFunctionUrl",
-	      "Resource": "arn:aws:lambda:ap-northeast-1:1234567890:function:hello",
-	      "Condition": {
-	        "StringEquals": {
-	          "lambda:FunctionUrlAuthType": "AWS_IAM",
-	          "aws:PrincipalOrgID": "o-xxxxxxxxxx"
-	        }
-	      }
-	    }
-*/
 func (ps *PolicyStatement) PrincipalOrgID() *string {
 	principal := ps.PrincipalAccountID()
 	if principal == nil || *principal != "*" {
@@ -248,6 +233,35 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL) er
 }
 
 func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionURL) error {
+	adds, removes, err := app.calcFunctionURLPermissionsDiff(ctx, fc)
+	if err != nil {
+		return err
+	}
+	if len(adds) == 0 && len(removes) == 0 {
+		log.Println("[info] no changes in permissions.")
+		return nil
+	}
+
+	log.Printf("[info] adding %d permissions", len(adds))
+	for _, in := range adds {
+		if _, err := app.lambda.AddPermission(ctx, in); err != nil {
+			return fmt.Errorf("failed to add permission: %w", err)
+		}
+		log.Printf("[info] added permission Sid: %s", *in.StatementId)
+	}
+
+	log.Printf("[info] removing %d permissions", len(removes))
+	for _, in := range removes {
+		if _, err := app.lambda.RemovePermission(ctx, in); err != nil {
+			return fmt.Errorf("failed to remove permission: %w", err)
+		}
+		log.Printf("[info] removed permission Sid: %s", *in.StatementId)
+	}
+
+	return nil
+}
+
+func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *FunctionURL) ([]*lambda.AddPermissionInput, []*lambda.RemovePermissionInput, error) {
 	fqFunctionName := fullQualifiedFunctionName(*fc.Config.FunctionName, fc.Config.Qualifier)
 	existsSids := []string{}
 	{
@@ -260,14 +274,14 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 			if errors.As(err, &nfe) {
 				// do nothing
 			} else {
-				return fmt.Errorf("failed to get policy: %w", err)
+				return nil, nil, fmt.Errorf("failed to get policy: %w", err)
 			}
 		}
 		if res != nil {
 			log.Printf("[debug] policy for %s: %s", fqFunctionName, *res.Policy)
 			var policy PolicyOutput
 			if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
-				return fmt.Errorf("failed to unmarshal policy: %w", err)
+				return nil, nil, fmt.Errorf("failed to unmarshal policy: %w", err)
 			}
 			for _, s := range policy.Statement {
 				if s.Action != "lambda:InvokeFunctionUrl" || s.Effect != "Allow" {
@@ -282,11 +296,10 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 
 	removeSids, addSids := lo.Difference(existsSids, fc.Permissions.Sids())
 	if len(removeSids) == 0 && len(addSids) == 0 {
-		log.Println("[info] no changes in permissions")
-		return nil
+		return nil, nil, nil
 	}
 
-	log.Printf("[info] adding %d permissions", len(addSids))
+	var adds []*lambda.AddPermissionInput
 	for _, sid := range addSids {
 		p := fc.Permissions.Find(sid)
 		if p == nil {
@@ -302,27 +315,20 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 			Principal:           p.Principal,
 			PrincipalOrgID:      p.PrincipalOrgID,
 		}
-		v, _ := json.Marshal(p)
-		log.Printf("[debug] adding permission: %s", string(v))
-		if _, err := app.lambda.AddPermission(ctx, in); err != nil {
-			return fmt.Errorf("failed to add permission: %w", err)
-		}
-		log.Printf("[info] added permission for %s", fqFunctionName)
+		adds = append(adds, in)
 	}
 
+	var removes []*lambda.RemovePermissionInput
 	for _, sid := range removeSids {
-		log.Printf("[info] removing permission Sid %s...", sid)
-		if _, err := app.lambda.RemovePermission(ctx, &lambda.RemovePermissionInput{
+		in := &lambda.RemovePermissionInput{
 			FunctionName: fc.Config.FunctionName,
 			Qualifier:    fc.Config.Qualifier,
 			StatementId:  aws.String(sid),
-		}); err != nil {
-			return fmt.Errorf("failed to remove permission: %w", err)
 		}
-		log.Printf("[info] removed permission Sid %s", sid)
+		removes = append(removes, in)
 	}
 
-	return nil
+	return adds, removes, nil
 }
 
 func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOption) error {
@@ -373,12 +379,17 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOpti
 					// not a lambda function url policy
 					continue
 				}
-				fu.Permissions = append(fu.Permissions, &FunctionURLPermission{
+				b, _ := marshalJSON(s)
+				log.Printf("[debug] statement: %s", string(b))
+				pm := &FunctionURLPermission{
 					AddPermissionInput: lambda.AddPermissionInput{
 						Principal:      s.PrincipalAccountID(),
 						PrincipalOrgID: s.PrincipalOrgID(),
 					},
-				})
+				}
+				b, _ = marshalJSON(pm)
+				log.Printf("[debug] permission: %s", string(b))
+				fu.Permissions = append(fu.Permissions, pm)
 			}
 		}
 	}

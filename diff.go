@@ -122,14 +122,18 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		return nil
 	}
 
-	return app.diffFunctionURL(ctx, name, opt)
+	if err := app.diffFunctionURL(ctx, name, opt); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) error {
 	var remote, local *types.FunctionUrlConfig
 	fqName := fullQualifiedFunctionName(name, opt.Qualifier)
 
-	if fu, err := app.loadFunctionUrl(opt.FunctionURL, name); err != nil {
+	fu, err := app.loadFunctionUrl(opt.FunctionURL, name)
+	if err != nil {
 		return fmt.Errorf("failed to load function-url: %w", err)
 	} else {
 		fillDefaultValuesFunctionUrlConfig(fu.Config)
@@ -173,6 +177,27 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 			fmt.Println(color.GreenString("+++" + opt.FunctionURL))
 			fmt.Print(coloredDiff(ds))
 		}
+	}
+
+	// permissions
+	adds, removes, err := app.calcFunctionURLPermissionsDiff(ctx, fu)
+	if err != nil {
+		return err
+	}
+	var addsB []byte
+	for _, in := range adds {
+		b, _ := marshalJSON(in)
+		addsB = append(addsB, b...)
+	}
+	var removesB []byte
+	for _, in := range removes {
+		b, _ := marshalJSON(in)
+		removesB = append(removesB, b...)
+	}
+	if ds := diff.Diff(string(removesB), string(addsB)); ds != "" {
+		fmt.Println(color.RedString("---"))
+		fmt.Println(color.GreenString("+++"))
+		fmt.Print(coloredDiff(ds))
 	}
 
 	return nil
