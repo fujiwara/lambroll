@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go v1.48.0
 	github.com/fatih/color v1.13.0
 	github.com/fujiwara/logutils v1.1.0
-	github.com/fujiwara/tfstate-lookup v1.1.4
+	github.com/fujiwara/tfstate-lookup v1.1.5
 	github.com/go-test/deep v1.0.7
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.17.0
