@@ -504,6 +504,50 @@ Edge functions require two preconditions:
 
 Otherwise, it works as usual.
 
+### Lambda Function URLs support
+
+lambroll can deploy [Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html).
+
+`lambroll deploy --function-url=function_url.json` deploys a function URL after the function deploied.
+
+When you want to deploy a public (without authentication) function URL, `function_url.json` is shown below.
+
+```json
+{
+  "Config": {
+    "AuthType": "NONE"
+  }
+}
+```
+
+When you want to deploy a private (requires AWS IAM authentication) function URL, `function_url.json` is shown below.
+
+```json
+{
+  "Config": {
+    "AuthType": "AWS_IAM"
+  },
+  "Permissions": [
+    {
+      "Principal": "0123456789012"
+    },
+    {
+      "PrincipalOrgID": "o-123456789",
+      "Principal": "*"
+    }
+  ]
+}
+```
+
+- `Config` maps to [CreateFunctionUrlConfigInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#CreateFunctionUrlConfigInput) in AWS SDK Go v2.
+  - `Config.AuthType` must be `AWS_IAM` or `NONE`.
+  - `Config.Qualifer` is optional.
+- `Permissions` is optional.
+  - If `Permissions` is not defined and `AuthType` is `NONE`, `Principal` is set to `*` automatically.
+  - When `AuthType` is `AWS_IAM`, you must define `Permissions` to specify allowed principals.
+  - Each elements of `Permissons` maps to [AddPermissionInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#AddPermissionInput) in AWS SDK Go v2.
+- `function_url.jsonnet` is also supported like `function.jsonnet`.
+
 ## LICENSE
 
 MIT License

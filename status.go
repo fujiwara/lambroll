@@ -2,6 +2,7 @@ package lambroll
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -9,18 +10,20 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/samber/lo"
 )
 
 // StatusOption represents options for Status()
 type StatusOption struct {
-	Qualifier string `help:"compare with" default:"$LATEST"`
-	Output    string `default:"text" enum:"text,json" help:"output format"`
+	Qualifier *string `help:"compare with"`
+	Output    string  `default:"text" enum:"text,json" help:"output format"`
 }
 
 type FunctionStatusOutput struct {
 	Configuration *types.FunctionConfiguration
 	Code          *types.FunctionCodeLocation
 	Tags          Tags
+	FunctionURL   *types.FunctionUrlConfig
 }
 
 // Status prints status of function
@@ -37,7 +40,7 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &name,
-		Qualifier:    &opt.Qualifier,
+		Qualifier:    opt.Qualifier,
 	}); err != nil {
 		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
@@ -56,11 +59,34 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 			tags = res.Tags
 		}
 	}
+
 	st := &FunctionStatusOutput{
 		Configuration: configuration,
 		Code:          code,
 		Tags:          tags,
 	}
+
+	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
+		FunctionName: fn.FunctionName,
+		Qualifier:    opt.Qualifier,
+	}); err != nil {
+		var nfe *types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			// ignore
+			log.Println("[debug] FunctionUrlConfig not found")
+		} else {
+			return fmt.Errorf("failed to get function url config: %w", err)
+		}
+	} else {
+		log.Println("[debug] FunctionUrlConfig found")
+		st.FunctionURL = &types.FunctionUrlConfig{
+			FunctionUrl: res.FunctionUrl,
+			AuthType:    res.AuthType,
+			Cors:        res.Cors,
+			InvokeMode:  res.InvokeMode,
+		}
+	}
+
 	switch opt.Output {
 	case "text":
 		fmt.Print(st.String())
@@ -101,7 +127,7 @@ func (st *FunctionStatusOutput) String() string {
 		}, "\n")
 	}
 
-	res := strings.Join([]string{
+	res := []string{
 		"FunctionName: " + aws.ToString(st.Configuration.FunctionName),
 		"Description: " + aws.ToString(st.Configuration.Description),
 		"Version: " + aws.ToString(st.Configuration.Version),
@@ -120,6 +146,36 @@ func (st *FunctionStatusOutput) String() string {
 		"CodeSize: " + fmt.Sprintf("%d", st.Configuration.CodeSize),
 		"CodeSha256: " + aws.ToString(st.Configuration.CodeSha256),
 		"Tags: " + strings.Join(tags, ","),
-	}, "\n") + "\n"
-	return res
+	}
+
+	if st.FunctionURL != nil {
+		res = append(res, []string{
+			"FunctionUrl:",
+			"  FunctionUrl: " + aws.ToString(st.FunctionURL.FunctionUrl),
+			"  AuthType: " + string(st.FunctionURL.AuthType),
+			"  InvokeMode: " + string(st.FunctionURL.InvokeMode),
+		}...)
+		if cors := st.FunctionURL.Cors; cors != nil {
+			res = append(res, "  Cors:", formatCors(cors, 4))
+		}
+	}
+	return strings.Join(res, "\n") + "\n"
+}
+
+func formatCors(cors *types.Cors, indentLevel int) string {
+	if cors == nil {
+		return ""
+	}
+	indent := strings.Repeat(" ", indentLevel)
+	res := lo.Map([]string{
+		"AllowCredentials: " + fmt.Sprintf("%t", aws.ToBool(cors.AllowCredentials)),
+		"AllowOrigins: " + strings.Join(cors.AllowOrigins, ","),
+		"AllowHeaders: " + strings.Join(cors.AllowHeaders, ","),
+		"AllowMethods: " + strings.Join(cors.AllowMethods, ","),
+		"ExposeHeaders: " + strings.Join(cors.ExposeHeaders, ","),
+		"MaxAge: " + fmt.Sprintf("%d", aws.ToInt32(cors.MaxAge)),
+	}, func(item string, _ int) string {
+		return indent + item
+	})
+	return strings.Join(res, "\n")
 }

@@ -61,6 +61,11 @@ var (
 		"function.jsonnet",
 	}
 
+	DefaultFunctionURLFilenames = []string{
+		"function_url.json",
+		"function_url.jsonnet",
+	}
+
 	// FunctionZipFilename defines file name for zip archive downloaded at init.
 	FunctionZipFilename = "function.zip"
 
@@ -69,6 +74,8 @@ var (
 		IgnoreFilename,
 		DefaultFunctionFilenames[0],
 		DefaultFunctionFilenames[1],
+		DefaultFunctionURLFilenames[0],
+		DefaultFunctionURLFilenames[1],
 		FunctionZipFilename,
 		".git/*",
 		".terraform/*",
@@ -202,9 +209,9 @@ func (app *App) AWSAccountID(ctx context.Context) string {
 	return app.accountID
 }
 
-func (app *App) loadFunction(path string) (*Function, error) {
+func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, error) {
 	if path == "" {
-		p, err := FindFunctionFile("")
+		p, err := findDefinitionFile("", defaults)
 		if err != nil {
 			return nil, err
 		}
@@ -238,11 +245,15 @@ func (app *App) loadFunction(path string) (*Function, error) {
 			return nil, err
 		}
 	}
-	var fn Function
-	if err := unmarshalJSON(src, &fn, path); err != nil {
+	var v T
+	if err := unmarshalJSON(src, &v, path); err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
-	return &fn, nil
+	return &v, nil
+}
+
+func (app *App) loadFunction(path string) (*Function, error) {
+	return loadDefinitionFile[Function](app, path, DefaultFunctionFilenames)
 }
 
 func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags Tags) *Function {

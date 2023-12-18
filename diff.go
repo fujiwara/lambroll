@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -22,10 +23,11 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src        string `help:"function zip archive or src dir" default:"."`
-	CodeSha256 bool   `help:"diff of code sha256" default:"false"`
-	Unified    bool   `help:"unified diff" default:"true" negatable:"" short:"u"`
-	Qualifier  string `help:"compare with" default:"$LATEST"`
+	Src         string  `help:"function zip archive or src dir" default:"."`
+	CodeSha256  bool    `help:"diff of code sha256" default:"false"`
+	Unified     bool    `help:"unified diff" default:"true" negatable:"" short:"u"`
+	Qualifier   *string `help:"compare with"`
+	FunctionURL string  `help:"path to function-url definiton" default:""`
 
 	ExcludeFileOption
 }
@@ -51,7 +53,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	var packageType types.PackageType
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: &name,
-		Qualifier:    &opt.Qualifier,
+		Qualifier:    opt.Qualifier,
 	}); err != nil {
 		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 	} else {
@@ -76,7 +78,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 
 	latestJSON, _ := marshalJSON(latestFunc)
 	newJSON, _ := marshalJSON(newFunc)
-	remoteArn := app.functionArn(ctx, name) + ":" + opt.Qualifier
+	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
 
 	if opt.Unified {
 		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))
@@ -114,6 +116,88 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 			fmt.Println(color.GreenString("+++" + "--src=" + opt.Src))
 			fmt.Println(coloredDiff(ds))
 		}
+	}
+
+	if opt.FunctionURL == "" {
+		return nil
+	}
+
+	if err := app.diffFunctionURL(ctx, name, opt); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) error {
+	var remote, local *types.FunctionUrlConfig
+	fqName := fullQualifiedFunctionName(name, opt.Qualifier)
+
+	fu, err := app.loadFunctionUrl(opt.FunctionURL, name)
+	if err != nil {
+		return fmt.Errorf("failed to load function-url: %w", err)
+	} else {
+		fillDefaultValuesFunctionUrlConfig(fu.Config)
+		local = &types.FunctionUrlConfig{
+			AuthType:   fu.Config.AuthType,
+			Cors:       fu.Config.Cors,
+			InvokeMode: fu.Config.InvokeMode,
+		}
+	}
+
+	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
+		FunctionName: &name,
+		Qualifier:    opt.Qualifier,
+	}); err != nil {
+		var nfe *types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			// empty
+			remote = &types.FunctionUrlConfig{}
+		} else {
+			return fmt.Errorf("failed to get function url config: %w", err)
+		}
+	} else {
+		log.Println("[debug] FunctionUrlConfig found")
+		remote = &types.FunctionUrlConfig{
+			AuthType:   res.AuthType,
+			Cors:       res.Cors,
+			InvokeMode: res.InvokeMode,
+		}
+	}
+	r, _ := marshalJSON(remote)
+	l, _ := marshalJSON(local)
+
+	if opt.Unified {
+		edits := myers.ComputeEdits(span.URIFromPath(fqName), string(r), string(l))
+		if ds := fmt.Sprint(gotextdiff.ToUnified(fqName, opt.FunctionURL, string(r), edits)); ds != "" {
+			fmt.Print(coloredDiff(ds))
+		}
+	} else {
+		if ds := diff.Diff(string(r), string(l)); ds != "" {
+			fmt.Println(color.RedString("---" + fqName))
+			fmt.Println(color.GreenString("+++" + opt.FunctionURL))
+			fmt.Print(coloredDiff(ds))
+		}
+	}
+
+	// permissions
+	adds, removes, err := app.calcFunctionURLPermissionsDiff(ctx, fu)
+	if err != nil {
+		return err
+	}
+	var addsB []byte
+	for _, in := range adds {
+		b, _ := marshalJSON(in)
+		addsB = append(addsB, b...)
+	}
+	var removesB []byte
+	for _, in := range removes {
+		b, _ := marshalJSON(in)
+		removesB = append(removesB, b...)
+	}
+	if ds := diff.Diff(string(removesB), string(addsB)); ds != "" {
+		fmt.Println(color.RedString("---"))
+		fmt.Println(color.GreenString("+++"))
+		fmt.Print(coloredDiff(ds))
 	}
 
 	return nil
