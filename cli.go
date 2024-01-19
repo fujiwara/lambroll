@@ -13,18 +13,18 @@ import (
 )
 
 type Option struct {
-	Function string `help:"Function file path"`
-	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:"trace,debug,info,warn,error"`
-	Color    bool   `help:"enable colored output" default:"false"`
+	Function string `help:"Function file path" env:"LAMBROLL_FUNCTION"`
+	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:"trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL"`
+	Color    bool   `help:"enable colored output" default:"false" env:"LAMBROLL_COLOR"`
 
-	Region          *string           `help:"AWS region" environment:"AWS_REGION"`
-	Profile         *string           `help:"AWS credential profile name" environment:"AWS_PROFILE"`
-	TFState         *string           `name:"tfstate" help:"URL to terraform.tfstate"`
-	PrefixedTFState map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate"`
-	Endpoint        *string           `help:"AWS API Lambda Endpoint"`
-	Envfile         []string          `help:"environment files"`
-	ExtStr          map[string]string `help:"external string values for Jsonnet"`
-	ExtCode         map[string]string `help:"external code values for Jsonnet"`
+	Region          *string           `help:"AWS region" env:"AWS_REGION"`
+	Profile         *string           `help:"AWS credential profile name" env:"AWS_PROFILE"`
+	TFState         *string           `name:"tfstate" help:"URL to terraform.tfstate" env:"LAMBROLL_TFSTATE"`
+	PrefixedTFState map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate" env:"LAMBROLL_PREFIXED_TFSTATE"`
+	Endpoint        *string           `help:"AWS API Lambda Endpoint" env:"AWS_LAMBDA_ENDPOINT"`
+	Envfile         []string          `help:"environment files" env:"LAMBROLL_ENVFILE"`
+	ExtStr          map[string]string `help:"external string values for Jsonnet" env:"LAMBROLL_EXTSTR"`
+	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE"`
 }
 
 type CLIOptions struct {

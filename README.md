@@ -466,7 +466,7 @@ lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) forma
   Handler: 'index.handler',
   MemorySize: std.extVar('memorySize'),
   Role: 'arn:aws:iam::%s:role/lambda_role' % [ std.extVar('accountID') ],
-  Runtime: 'nodejs14.x',
+  Runtime: 'nodejs20.x',
 }
 ```
 
