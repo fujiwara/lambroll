@@ -23,7 +23,7 @@ commands:
             DIRNAME=lambroll_<< parameters.version >>_${OSD_FAMILY}_amd64
             FILENAME=${DIRNAME}.tar.gz
             LAMBROLL_URL=https://github.com/fujiwara/lambroll/releases/download/<< parameters.version >>/${FILENAME}
-            curl -L $LAMBROLL_URL ${FILENAME}
+            curl -sL $LAMBROLL_URL > ${FILENAME}
             tar zxvf ${FILENAME}
             sudo install lambroll /usr/local/bin
 
