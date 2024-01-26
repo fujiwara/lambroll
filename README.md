@@ -40,7 +40,7 @@ https://circleci.com/orbs/registry/orb/fujiwara/lambroll
 ```yml
 version: 2.1
 orbs:
-  lambroll: fujiwara/lambroll@1.0.0
+  lambroll: fujiwara/lambroll@2.0.1
 jobs:
   deloy:
     docker:
