@@ -72,7 +72,11 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		tags = res.Tags
 	}
 
-	fn := newFunctionFrom(c, res.Code, tags)
+	var code *types.FunctionCodeLocation
+	if res != nil {
+		code = res.Code
+	}
+	fn := newFunctionFrom(c, code, tags)
 
 	if opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
