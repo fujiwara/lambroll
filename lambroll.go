@@ -257,6 +257,9 @@ func (app *App) loadFunction(path string) (*Function, error) {
 }
 
 func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags Tags) *Function {
+	if c == nil {
+		return &Function{}
+	}
 	fn := &Function{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
@@ -395,7 +398,7 @@ func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCod
 	}
 
 	// current=Image
-	if currentCode != nil && currentCode.ImageUri != nil || currentConf.PackageType == types.PackageTypeImage {
+	if currentCode != nil && currentCode.ImageUri != nil || currentConf != nil && currentConf.PackageType == types.PackageTypeImage {
 		// new=Zip
 		if newCode == nil || newCode.ImageUri == nil {
 			return errCannotUpdateImageAndZip

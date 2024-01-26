@@ -55,7 +55,12 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		FunctionName: &name,
 		Qualifier:    opt.Qualifier,
 	}); err != nil {
-		return fmt.Errorf("failed to GetFunction %s: %w", name, err)
+		var nfe *types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			log.Printf("[info] function %s is not found. lambroll deploy will create a new function.", name)
+		} else {
+			return fmt.Errorf("failed to GetFunction %s: %w", name, err)
+		}
 	} else {
 		latest = res.Configuration
 		code = res.Code
@@ -97,7 +102,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		return err
 	}
 
-	if opt.CodeSha256 {
+	if opt.CodeSha256 && latest != nil {
 		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
