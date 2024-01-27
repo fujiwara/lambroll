@@ -31,7 +31,7 @@ func (app *App) List(ctx context.Context, opt *ListOption) error {
 				Resource: aws.String(arn),
 			})
 			if err != nil {
-				return fmt.Errorf("faled to list tags: %w", err)
+				return fmt.Errorf("failed to list tags: %w", err)
 			}
 			b, _ := marshalJSON(newFunctionFrom(&c, nil, res.Tags))
 			os.Stdout.Write(b)

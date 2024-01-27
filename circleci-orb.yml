@@ -12,32 +12,20 @@ commands:
       version:
         description: lambroll version
         type: string
-        default: v0.10.0
+        default: v1.0.0
     steps:
       - detect/init
       - run:
           name: "Install lambroll"
           command: |
-            case $OSD_FAMILY in
-              linux)
-                PKG_EXT=tar.gz
-               EXTRACT="tar zxvf"
-                ;;
-              darwin)
-                PKG_EXT=zip
-                EXTRACT="unzip"
-                ;;
-              *)
-                echo "Unsupported operating system. $OSD_FAMILY"
-                exit 1
-              ;;
-            esac
+            mkdir -p /tmp/lambroll-<< parameters.version >>
+            cd /tmp/lambroll-<< parameters.version >>
             DIRNAME=lambroll_<< parameters.version >>_${OSD_FAMILY}_amd64
-            FILENAME=${DIRNAME}.${PKG_EXT}
+            FILENAME=${DIRNAME}.tar.gz
             LAMBROLL_URL=https://github.com/fujiwara/lambroll/releases/download/<< parameters.version >>/${FILENAME}
-            curl -L $LAMBROLL_URL > /tmp/${FILENAME}
-            $EXTRACT /tmp/${FILENAME}
-            sudo install ${DIRNAME}/lambroll /usr/local/bin
+            curl -sL $LAMBROLL_URL > ${FILENAME}
+            tar zxvf ${FILENAME}
+            sudo install lambroll /usr/local/bin
 
 examples:
   install_lambroll:

@@ -66,7 +66,7 @@ func unmarshalJSON(src []byte, v interface{}, path string) error {
 	return nil
 }
 
-func FindFunctionFile(preffered string) (string, error) {
+func findDefinitionFile(preffered string, defaults []string) (string, error) {
 	if preffered != "" {
 		if _, err := os.Stat(preffered); err == nil {
 			return preffered, nil
@@ -74,7 +74,7 @@ func FindFunctionFile(preffered string) (string, error) {
 			return "", err
 		}
 	}
-	for _, name := range DefaultFunctionFilenames {
+	for _, name := range defaults {
 		if _, err := os.Stat(name); err == nil {
 			return name, nil
 		}
@@ -88,4 +88,18 @@ func jsonToJsonnet(src []byte, filepath string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to format jsonnet: %w", err)
 	}
 	return []byte(s), nil
+}
+
+func resolveLogGroup(fn *Function) string {
+	if fn.LoggingConfig != nil && fn.LoggingConfig.LogGroup != nil {
+		return *fn.LoggingConfig.LogGroup
+	}
+	return fmt.Sprintf("/aws/lambda/%s", *fn.FunctionName)
+}
+
+func fullQualifiedFunctionName(name string, qualifier *string) string {
+	if qualifier != nil {
+		return name + ":" + *qualifier
+	}
+	return name + ":" + versionLatest
 }

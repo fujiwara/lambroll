@@ -1,13 +1,13 @@
 inputs:
   version:
     description: "A version to install lamroll"
-    default: "v0.10.0"
+    default: "v1.0.0"
 runs:
   using: "composite"
   steps:
     - run: |
-        cd /tmp
+        mkdir -p /tmp/lambroll-${{ inputs.version }}
+        cd /tmp/lambroll-${{ inputs.version }}
         curl -sL https://github.com/fujiwara/lambroll/releases/download/${{ inputs.version }}/lambroll_${{ inputs.version}}_linux_amd64.tar.gz | tar zxvf -
-        sudo install lambroll_${{ inputs.version }}_linux_amd64/lambroll /usr/local/bin
-        rm -rf lambroll_${{ inputs.version }}_linux_amd64/
+        sudo install lambroll /usr/local/bin
       shell: bash

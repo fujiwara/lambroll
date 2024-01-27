@@ -48,7 +48,7 @@ https://circleci.com/orbs/registry/orb/fujiwara/lambroll
 ```yml
 version: 2.1
 orbs:
-  lambroll: fujiwara/lambroll@0.0.8
+  lambroll: fujiwara/lambroll@2.0.1
 jobs:
   deloy:
     docker:
@@ -56,7 +56,7 @@ jobs:
     steps:
       - checkout
       - lambroll/install:
-          version: v0.12.2
+          version: v1.0.0
       - run:
           command: |
             lambroll deploy
@@ -71,10 +71,10 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: fujiwara/lambroll@v0
+      - uses: actions/checkout@v4
+      - uses: fujiwara/lambroll@v1
         with:
-          version: v0.12.2
+          version: v1.0.0
       - run: |
           lambroll deploy
 ```
@@ -127,20 +127,19 @@ $ lambroll deploy
 Usage: lambroll <command>
 
 Flags:
-  -h, --help                      Show context-sensitive help.
-      --function=STRING           Function file path
-      --log-level="info"          log level (trace, debug, info, warn, error)
-      --color                     enable colored output
-      --region=REGION             AWS region
-      --profile=PROFILE           AWS credential profile name
-      --tfstate=TFSTATE           URL to terraform.tfstate
-      --prefixed-tfstate=KEY=VALUE;...
-                                  key value pair of the prefix for template function name
-                                  and URL to terraform.tfstate
-      --endpoint=ENDPOINT         AWS API Lambda Endpoint
-      --envfile=ENVFILE,...       environment files
-      --ext-str=KEY=VALUE;...     external string values for Jsonnet
-      --ext-code=KEY=VALUE;...    external code values for Jsonnet
+  -h, --help                              Show context-sensitive help.
+      --function=STRING                   Function file path ($LAMBROLL_FUNCTION)
+      --log-level="info"                  log level (trace, debug, info, warn, error) ($LAMBROLL_LOGLEVEL)
+      --color                             enable colored output ($LAMBROLL_COLOR)
+      --region=REGION                     AWS region ($AWS_REGION)
+      --profile=PROFILE                   AWS credential profile name ($AWS_PROFILE)
+      --tfstate=TFSTATE                   URL to terraform.tfstate ($LAMBROLL_TFSTATE)
+      --prefixed-tfstate=KEY=VALUE;...    key value pair of the prefix for template function name and URL to
+                                          terraform.tfstate ($LAMBROLL_PREFIXED_TFSTATE)
+      --endpoint=ENDPOINT                 AWS API Lambda Endpoint ($AWS_LAMBDA_ENDPOINT)
+      --envfile=ENVFILE,...               environment files ($LAMBROLL_ENVFILE)
+      --ext-str=KEY=VALUE;...             external string values for Jsonnet ($LAMBROLL_EXTSTR)
+      --ext-code=KEY=VALUE;...            external code values for Jsonnet ($LAMBROLL_EXTCODE)
 
 Commands:
   deploy
@@ -170,11 +169,19 @@ Commands:
   render
     render function.json
 
+  status
+    show status of function
+
+  delete
+    delete function
+
   versions
     show versions of function
 
   version
     show version
+
+Run "lambroll <command> --help" for more information on a command.
 ```
 
 ### Init
@@ -182,14 +189,16 @@ Commands:
 `lambroll init` initialize function.json by existing function.
 
 ```console
-usage: lambroll init --function-name=FUNCTION-NAME [<flags>]
+Usage: lambroll init --function-name=
 
 init function.json
 
 Flags:
-  (common flags snipped)
-  --function-name=FUNCTION-NAME  Function name for initialize
-  --download                     Download function.zip
+      --function-name=                    Function name for init
+      --download-zip                      Download function.zip
+      --jsonnet                           render function.json as jsonnet
+      --qualifier=QUALIFIER               function version or alias
+      --function-url                      create function url definition file
 ```
 
 `init` creates `function.json` as a configuration file of the function.
@@ -197,21 +206,23 @@ Flags:
 ### Deploy
 
 ```console
-usage: lambroll deploy [<flags>]
+Usage: lambroll deploy
 
 deploy or create function
 
 Flags:
-  (common flags snipped)
-  --src="."                   function zip archive or src dir
-  --exclude-file=".lambdaignore"
-                              exclude file
-  --dry-run                   dry run
-  --publish                   publish function
-  --alias="current"           alias name for publish
-  --alias-to-latest           set alias to unpublished $LATEST version
-  --skip-archive              skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition
-  --keep-versions=0           Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).
+      --src="."                           function zip archive or src dir
+      --publish                           publish function
+      --alias-name="current"              alias name for publish
+      --alias-to-latest                   set alias to unpublished $LATEST version
+      --dry-run                           dry run
+      --skip-archive                      skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function
+                                          definition
+      --keep-versions=0                   Number of latest versions to keep. Older versions will be deleted. (Optional
+                                          value: default 0).
+      --function-url=""                   path to function-url definiton
+      --skip-function                     skip to deploy a function. deploy function-url only
+      --exclude-file=".lambdaignore"      exclude file
 ```
 
 `deploy` works as below.
@@ -242,14 +253,13 @@ PackageType=Image and Code.ImageUri are required in function.json.
 ### Rollback
 
 ```
-usage: lambroll rollback [<flags>]
+Usage: lambroll rollback
 
 rollback function
 
 Flags:
-  (common flags snipped)
-  --delete-version            Delete rolled back version
-  --dry-run                   dry run
+      --dry-run                           dry run
+      --delete-version                    delete rolled back version
 ```
 
 `lambroll deploy` create/update alias `current` to the published function version on deploy.
@@ -263,15 +273,14 @@ Flags:
 ### Invoke
 
 ```
-usage: lambroll invoke [<flags>]
+Usage: lambroll invoke
 
 invoke function
 
 Flags:
-  (common flags snipped)
-  --async                     invocation type async
-  --log-tail                  output tail of log to STDERR
-  --qualifier=QUALIFIER       version or alias to invoke
+      --async                             invocation type async
+      --log-tail                          output tail of log to STDERR
+      --qualifier=QUALIFIER               version or alias to invoke
 ```
 
 `lambroll invoke` accepts multiple JSON payloads for invocations from STDIN.
@@ -474,7 +483,7 @@ lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) forma
   Handler: 'index.handler',
   MemorySize: std.extVar('memorySize'),
   Role: 'arn:aws:iam::%s:role/lambda_role' % [ std.extVar('accountID') ],
-  Runtime: 'nodejs14.x',
+  Runtime: 'nodejs20.x',
 }
 ```
 
@@ -511,6 +520,94 @@ Edge functions require two preconditions:
 - The IAM Role must be assumed by `lambda.amazonaws.com` and `edgelambda.amazonaws.com` both.
 
 Otherwise, it works as usual.
+
+### Lambda Function URLs support
+
+lambroll can deploy [Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html).
+
+`lambroll deploy --function-url=function_url.json` deploys a function URL after the function deploied.
+
+When you want to deploy a public (without authentication) function URL, `function_url.json` is shown below.
+
+```json
+{
+  "Config": {
+    "AuthType": "NONE"
+  }
+}
+```
+
+When you want to deploy a private (requires AWS IAM authentication) function URL, `function_url.json` is shown below.
+
+```json
+{
+  "Config": {
+    "AuthType": "AWS_IAM"
+  },
+  "Permissions": [
+    {
+      "Principal": "0123456789012"
+    },
+    {
+      "PrincipalOrgID": "o-123456789",
+      "Principal": "*"
+    }
+  ]
+}
+```
+
+- `Config` maps to [CreateFunctionUrlConfigInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#CreateFunctionUrlConfigInput) in AWS SDK Go v2.
+  - `Config.AuthType` must be `AWS_IAM` or `NONE`.
+  - `Config.Qualifer` is optional.
+- `Permissions` is optional.
+  - If `Permissions` is not defined and `AuthType` is `NONE`, `Principal` is set to `*` automatically.
+  - When `AuthType` is `AWS_IAM`, you must define `Permissions` to specify allowed principals.
+  - Each elements of `Permissons` maps to [AddPermissionInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#AddPermissionInput) in AWS SDK Go v2.
+- `function_url.jsonnet` is also supported like `function.jsonnet`.
+
+### FunctionURL support
+
+lambroll can deploy [Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html).
+
+`lambroll deploy --function-url=function_url.json` deploys a function URL after the function deploied.
+
+When you want to deploy a public (without authentication) function URL, `function_url.json` is shown below.
+
+```json
+{
+  "Config": {
+    "AuthType": "NONE"
+  }
+}
+```
+
+When you want to deploy a private (requires AWS IAM authentication) function URL, `function_url.json` is shown below.
+
+```json
+{
+  "Config": {
+    "AuthType": "AWS_IAM"
+  },
+  "Permissions": [
+    {
+      "Principal": "0123456789012"
+    },
+    {
+      "PrincipalOrgID": "o-123456789",
+      "Principal": "*"
+    }
+  ]
+}
+```
+
+- `Config` maps to [CreateFunctionUrlConfigInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#CreateFunctionUrlConfigInput) in AWS SDK Go v2.
+  - `Config.AuthType` must be `AWS_IAM` or `NONE`.
+  - `Config.Qualifer` is optional.
+- `Permissions` is optional.
+  - If `Permissions` is not defined and `AuthType` is `NONE`, `Principal` is set to `*` automatically.
+  - When `AuthType` is `AWS_IAM`, you must define `Permissions` to specify allowed principals.
+  - Each elements of `Permissons` maps to [AddPermissionInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#AddPermissionInput) in AWS SDK Go v2.
+- `function_url.jsonnet` is also supported like `function.jsonnet`.
 
 ## LICENSE
 

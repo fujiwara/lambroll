@@ -40,7 +40,7 @@ var retryPolicy = retry.Policy{
 type Function = lambda.CreateFunctionInput
 
 // Tags represents tags of function
-type Tags = map[string]string
+type Tags map[string]string
 
 func (app *App) functionArn(ctx context.Context, name string) string {
 	return fmt.Sprintf(
@@ -61,6 +61,11 @@ var (
 		"function.jsonnet",
 	}
 
+	DefaultFunctionURLFilenames = []string{
+		"function_url.json",
+		"function_url.jsonnet",
+	}
+
 	// FunctionZipFilename defines file name for zip archive downloaded at init.
 	FunctionZipFilename = "function.zip"
 
@@ -69,6 +74,8 @@ var (
 		IgnoreFilename,
 		DefaultFunctionFilenames[0],
 		DefaultFunctionFilenames[1],
+		DefaultFunctionURLFilenames[0],
+		DefaultFunctionURLFilenames[1],
 		FunctionZipFilename,
 		".git/*",
 		".terraform/*",
@@ -195,16 +202,16 @@ func (app *App) AWSAccountID(ctx context.Context) string {
 	svc := sts.NewFromConfig(app.awsConfig)
 	r, err := svc.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		log.Println("[warn] failed to get caller identity", err)
+		log.Println("[warn] failed to get caller identity.", err)
 		return ""
 	}
 	app.accountID = *r.Account
 	return app.accountID
 }
 
-func (app *App) loadFunction(path string) (*Function, error) {
+func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, error) {
 	if path == "" {
-		p, err := FindFunctionFile("")
+		p, err := findDefinitionFile("", defaults)
 		if err != nil {
 			return nil, err
 		}
@@ -238,20 +245,28 @@ func (app *App) loadFunction(path string) (*Function, error) {
 			return nil, err
 		}
 	}
-	var fn Function
-	if err := unmarshalJSON(src, &fn, path); err != nil {
+	var v T
+	if err := unmarshalJSON(src, &v, path); err != nil {
 		return nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
-	return &fn, nil
+	return &v, nil
+}
+
+func (app *App) loadFunction(path string) (*Function, error) {
+	return loadDefinitionFile[Function](app, path, DefaultFunctionFilenames)
 }
 
 func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags Tags) *Function {
+	if c == nil {
+		return &Function{}
+	}
 	fn := &Function{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
 		EphemeralStorage:  c.EphemeralStorage,
 		FunctionName:      c.FunctionName,
 		Handler:           c.Handler,
+		LoggingConfig:     c.LoggingConfig,
 		MemorySize:        c.MemorySize,
 		Role:              c.Role,
 		Runtime:           c.Runtime,
@@ -312,6 +327,12 @@ func fillDefaultValues(fn *Function) {
 	}
 	if fn.MemorySize == nil {
 		fn.MemorySize = aws.Int32(128)
+	}
+	if fn.LoggingConfig == nil {
+		fn.LoggingConfig = &types.LoggingConfig{
+			LogFormat: types.LogFormatText,
+			LogGroup:  aws.String(resolveLogGroup(fn)),
+		}
 	}
 	if fn.TracingConfig == nil {
 		fn.TracingConfig = &types.TracingConfig{
@@ -377,7 +398,7 @@ func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCod
 	}
 
 	// current=Image
-	if currentCode != nil && currentCode.ImageUri != nil || currentConf.PackageType == types.PackageTypeImage {
+	if currentCode != nil && currentCode.ImageUri != nil || currentConf != nil && currentConf.PackageType == types.PackageTypeImage {
 		// new=Zip
 		if newCode == nil || newCode.ImageUri == nil {
 			return errCannotUpdateImageAndZip

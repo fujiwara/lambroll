@@ -26,6 +26,8 @@ type DeployOption struct {
 	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
 	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
 	Ignore        string `help:"ignore fields by jq queries in function.json" default:""`
+	FunctionURL   string `help:"path to function-url definiton" default:"" env:"LAMBROLL_FUNCTION_URL"`
+	SkipFunction  bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
 	ExcludeFileOption
 }
@@ -81,6 +83,22 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
+	deployFunctionURL := func(context.Context) error { return nil }
+	if opt.FunctionURL != "" {
+		deployFunctionURL = func(ctx context.Context) error {
+			fc, err := app.loadFunctionUrl(opt.FunctionURL, *fn.FunctionName)
+			if err != nil {
+				return fmt.Errorf("failed to load function url config: %w", err)
+			}
+			return app.deployFunctionURL(ctx, fc)
+		}
+	}
+
+	if opt.SkipFunction {
+		// skip to deploy a function. deploy function-url only
+		return deployFunctionURL(ctx)
+	}
+
 	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
 	if current, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
@@ -126,6 +144,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		Handler:           fn.Handler,
 		KMSKeyArn:         fn.KMSKeyArn,
 		Layers:            fn.Layers,
+		LoggingConfig:     fn.LoggingConfig,
 		MemorySize:        fn.MemorySize,
 		Role:              fn.Role,
 		Runtime:           fn.Runtime,
@@ -200,6 +219,11 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if opt.KeepVersions > 0 { // Ignore zero-value.
 		return app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions)
 	}
+
+	if err := deployFunctionURL(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 

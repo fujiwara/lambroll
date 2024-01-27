@@ -20,12 +20,15 @@ type InitOption struct {
 	FunctionName *string `help:"Function name for init" required:"true" default:""`
 	DownloadZip  bool    `help:"Download function.zip" default:"false"`
 	Jsonnet      bool    `default:"false" help:"render function.json as jsonnet"`
+	Qualifier    *string `help:"function version or alias"`
+	FunctionURL  bool    `help:"create function url definition file" default:"false"`
 }
 
 // Init initializes function.json
 func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: opt.FunctionName,
+		Qualifier:    opt.Qualifier,
 	})
 	var c *types.FunctionConfiguration
 	exists := true
@@ -61,15 +64,19 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		arn := app.functionArn(ctx, *c.FunctionName)
 		log.Printf("[debug] listing tags of %s", arn)
 		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
-			Resource: aws.String(arn),
+			Resource: aws.String(arn), // tags are not supported for alias
 		})
 		if err != nil {
-			return fmt.Errorf("faled to list tags: %w", err)
+			return fmt.Errorf("failed to list tags: %w", err)
 		}
 		tags = res.Tags
 	}
 
-	fn := newFunctionFrom(c, res.Code, tags)
+	var code *types.FunctionCodeLocation
+	if res != nil {
+		code = res.Code
+	}
+	fn := newFunctionFrom(c, code, tags)
 
 	if opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
@@ -102,7 +109,17 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			return err
 		}
 	}
-	return app.saveFile(name, b, os.FileMode(0644))
+	if err := app.saveFile(name, b, os.FileMode(0644)); err != nil {
+		return err
+	}
+
+	if opt.FunctionURL {
+		if err := app.initFunctionURL(ctx, fn, opt); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func download(url, path string) error {
