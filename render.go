@@ -8,7 +8,7 @@ import (
 
 type RenderOption struct {
 	Jsonnet     bool   `default:"false" help:"render function.json as jsonnet"`
-	FunctionURL string `help:"render function-url definiton file" default:""`
+	FunctionURL string `help:"render function-url definiton file" default:"" env:"LAMBROLL_FUNCTION_URL"`
 }
 
 // Invoke invokes function

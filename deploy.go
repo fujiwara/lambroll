@@ -23,7 +23,7 @@ type DeployOption struct {
 	DryRun        bool   `help:"dry run" default:"false"`
 	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
 	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
-	FunctionURL   string `help:"path to function-url definiton" default:""`
+	FunctionURL   string `help:"path to function-url definiton" default:"" env:"LAMBROLL_FUNCTION_URL"`
 	SkipFunction  bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
 	ExcludeFileOption

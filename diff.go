@@ -26,8 +26,8 @@ type DiffOption struct {
 	Src         string  `help:"function zip archive or src dir" default:"."`
 	CodeSha256  bool    `help:"diff of code sha256" default:"false"`
 	Unified     bool    `help:"unified diff" default:"true" negatable:"" short:"u"`
-	Qualifier   *string `help:"compare with"`
-	FunctionURL string  `help:"path to function-url definiton" default:""`
+	Qualifier   *string `help:"the qualifier to compare"`
+	FunctionURL string  `help:"path to function-url definiton" default:"" env:"LAMBROLL_FUNCTION_URL"`
 
 	ExcludeFileOption
 }
