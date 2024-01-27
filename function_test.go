@@ -57,7 +57,7 @@ func TestLoadFunction(t *testing.T) {
 			t.Errorf("unexpected SecurityGroupIds %v", fn.VpcConfig.SecurityGroupIds)
 		}
 		arch := fn.Architectures
-		if len(arch) != 2 || arch[0] != "x86_64" || arch[1] != "arm64" {
+		if len(arch) != 1 || arch[0] != "x86_64" {
 			t.Errorf("unexpected Architectures %v", fn.Architectures)
 		}
 		if *fn.LoggingConfig.LogGroup != "/aws/lambda/test/json" {

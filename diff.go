@@ -10,10 +10,9 @@ import (
 	"log"
 	"strings"
 
+	"github.com/aereal/jsondiff"
 	"github.com/fatih/color"
-	"github.com/hexops/gotextdiff"
-	"github.com/hexops/gotextdiff/myers"
-	"github.com/hexops/gotextdiff/span"
+	"github.com/itchyny/gojq"
 	"github.com/kylelemons/godebug/diff"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -25,9 +24,9 @@ import (
 type DiffOption struct {
 	Src         string  `help:"function zip archive or src dir" default:"."`
 	CodeSha256  bool    `help:"diff of code sha256" default:"false"`
-	Unified     bool    `help:"unified diff" default:"true" negatable:"" short:"u"`
 	Qualifier   *string `help:"the qualifier to compare"`
 	FunctionURL string  `help:"path to function-url definiton" default:"" env:"LAMBROLL_FUNCTION_URL"`
+	Ignore      string  `help:"ignore diff by jq query" default:""`
 
 	ExcludeFileOption
 }
@@ -45,7 +44,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	fillDefaultValues(newFunc)
 	name := *newFunc.FunctionName
 
-	var latest *types.FunctionConfiguration
+	var remote *types.FunctionConfiguration
 	var code *types.FunctionCodeLocation
 
 	var tags Tags
@@ -62,7 +61,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 			return fmt.Errorf("failed to GetFunction %s: %w", name, err)
 		}
 	} else {
-		latest = res.Configuration
+		remote = res.Configuration
 		code = res.Code
 		{
 			log.Println("[debug] list tags Resource", app.functionArn(ctx, name))
@@ -79,30 +78,37 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		currentCodeSha256 = *res.Configuration.CodeSha256
 		packageType = res.Configuration.PackageType
 	}
-	latestFunc := newFunctionFrom(latest, code, tags)
+	remoteFunc := newFunctionFrom(remote, code, tags)
+	fillDefaultValues(remoteFunc)
 
-	latestJSON, _ := marshalJSON(latestFunc)
-	newJSON, _ := marshalJSON(newFunc)
-	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
-
-	if opt.Unified {
-		edits := myers.ComputeEdits(span.URIFromPath(remoteArn), string(latestJSON), string(newJSON))
-		if ds := fmt.Sprint(gotextdiff.ToUnified(remoteArn, app.functionFilePath, string(latestJSON), edits)); ds != "" {
-			fmt.Print(coloredDiff(ds))
-		}
-	} else {
-		if ds := diff.Diff(string(latestJSON), string(newJSON)); ds != "" {
-			fmt.Println(color.RedString("---" + remoteArn))
-			fmt.Println(color.GreenString("+++" + app.functionFilePath))
-			fmt.Print(coloredDiff(ds))
+	opts := []jsondiff.Option{}
+	if ignore := opt.Ignore; ignore != "" {
+		if p, err := gojq.Parse(ignore); err != nil {
+			return fmt.Errorf("failed to parse ignore query: %s %w", ignore, err)
+		} else {
+			opts = append(opts, jsondiff.Ignore(p))
 		}
 	}
 
-	if err := validateUpdateFunction(latest, code, newFunc); err != nil {
+	remoteJSON, _ := marshalAny(remoteFunc)
+	newJSON, _ := marshalAny(newFunc)
+	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
+
+	if diff, err := jsondiff.Diff(
+		&jsondiff.Input{Name: remoteArn, X: remoteJSON},
+		&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
+		opts...,
+	); err != nil {
+		return fmt.Errorf("failed to diff: %w", err)
+	} else if diff != "" {
+		fmt.Print(coloredDiff(diff))
+	}
+
+	if err := validateUpdateFunction(remote, code, newFunc); err != nil {
 		return err
 	}
 
-	if opt.CodeSha256 && latest != nil {
+	if opt.CodeSha256 {
 		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
@@ -171,17 +177,13 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	r, _ := marshalJSON(remote)
 	l, _ := marshalJSON(local)
 
-	if opt.Unified {
-		edits := myers.ComputeEdits(span.URIFromPath(fqName), string(r), string(l))
-		if ds := fmt.Sprint(gotextdiff.ToUnified(fqName, opt.FunctionURL, string(r), edits)); ds != "" {
-			fmt.Print(coloredDiff(ds))
-		}
-	} else {
-		if ds := diff.Diff(string(r), string(l)); ds != "" {
-			fmt.Println(color.RedString("---" + fqName))
-			fmt.Println(color.GreenString("+++" + opt.FunctionURL))
-			fmt.Print(coloredDiff(ds))
-		}
+	if diff, err := jsondiff.Diff(
+		&jsondiff.Input{Name: fqName, X: r},
+		&jsondiff.Input{Name: opt.FunctionURL, X: l},
+	); err != nil {
+		return fmt.Errorf("failed to diff: %w", err)
+	} else if diff != "" {
+		fmt.Print(coloredDiff(diff))
 	}
 
 	// permissions

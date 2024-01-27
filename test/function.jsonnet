@@ -1,7 +1,6 @@
 {
   Architectures: [
     'x86_64',
-    'arm64',
   ],
   Description: std.extVar('Description'),
   EphemeralStorage: {

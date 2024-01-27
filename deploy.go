@@ -9,9 +9,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/aereal/jsondiff"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/itchyny/gojq"
 )
 
 // DeployOption represens an option for Deploy()
@@ -23,6 +25,7 @@ type DeployOption struct {
 	DryRun        bool   `help:"dry run" default:"false"`
 	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
 	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
+	Ignore        string `help:"ignore fields by jq queries in function.json" default:""`
 	FunctionURL   string `help:"path to function-url definiton" default:"" env:"LAMBROLL_FUNCTION_URL"`
 	SkipFunction  bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
@@ -110,6 +113,22 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	}
 	fillDefaultValues(fn)
 
+	if ignore := opt.Ignore; ignore != "" {
+		q, err := gojq.Parse(ignore)
+		if err != nil {
+			return fmt.Errorf("failed to parse ignore query: %w", err)
+		}
+		q = jsondiff.WithUpdate(q)
+		fnAny, _ := marshalAny(fn)
+		fnAny, err = jsondiff.ModifyValue(q, fnAny)
+		if err != nil {
+			return fmt.Errorf("failed to modify function: %w", err)
+		}
+		src, _ := json.Marshal(fnAny)
+		fn = &Function{}
+		unmarshalJSON(src, &fn, app.functionFilePath)
+	}
+
 	if err := app.prepareFunctionCodeForDeploy(ctx, opt, fn); err != nil {
 		return fmt.Errorf("failed to prepare function code for deploy: %w", err)
 	}
@@ -141,8 +160,6 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	} else {
 		confIn.Environment = env
 	}
-
-	log.Printf("[debug]\n%s", ToJSONString(confIn))
 
 	var newerVersion string
 	if !opt.DryRun {

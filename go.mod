@@ -4,6 +4,7 @@ go 1.20
 
 require (
 	github.com/Songmu/prompter v0.5.1
+	github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1
 	github.com/alecthomas/kong v0.8.0
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
@@ -18,7 +19,8 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/google/go-jsonnet v0.20.0
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
-	github.com/hexops/gotextdiff v1.0.3
+	github.com/hexops/gotextdiff v1.0.3 // indirect
+	github.com/itchyny/gojq v0.12.11
 	github.com/kayac/go-config v0.6.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
@@ -73,7 +75,6 @@ require (
 	github.com/hashicorp/go-slug v0.8.1 // indirect
 	github.com/hashicorp/go-tfe v1.2.0 // indirect
 	github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d // indirect
-	github.com/itchyny/gojq v0.12.11 // indirect
 	github.com/itchyny/timefmt-go v0.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jstemmer/go-junit-report v0.9.1 // indirect

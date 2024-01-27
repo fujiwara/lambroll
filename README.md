@@ -29,6 +29,14 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 $ brew install fujiwara/tap/lambroll
 ```
 
+### aqua
+
+[aqua](https://aquaproj.github.io/) is a declarative CLI Version Manager.
+
+```console
+$ aqua g -i fujiwara/lambroll
+```
+
 ### Binary packages
 
 [Releases](https://github.com/fujiwara/lambroll/releases)

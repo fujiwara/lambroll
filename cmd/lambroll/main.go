@@ -75,6 +75,7 @@ func _main() int {
 		AliasToLatest:    deploy.Flag("alias-to-latest", "set alias to unpublished $LATEST version").Default("false").Bool(),
 		SkipArchive:      deploy.Flag("skip-archive", "skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition").Default("false").Bool(),
 		KeepVersions:     deploy.Flag("keep-versions", "Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).").Default("0").Int(),
+		Ignore:           deploy.Flag("ignore", `ignore function elements. jq queries joined with ",". for example, ".Foo, .Bar"`).String(),
 	}
 
 	rollback := kingpin.Command("rollback", "rollback function")
@@ -119,6 +120,7 @@ func _main() int {
 		CodeSha256:       diff.Flag("code", "diff of code sha256").Default("false").Bool(),
 		ExcludeFile:      diff.Flag("exclude-file", "exclude file").Default(lambroll.IgnoreFilename).String(),
 		Src:              diff.Flag("src", "function zip archive or src dir").Default(".").String(),
+		Ignore:           diff.Flag("ignore", `ignore function elements. jq queries joined with ",". for example, ".Foo, .Bar"`).String(),
 	}
 
 	versions := kingpin.Command("versions", "manage function versions")
