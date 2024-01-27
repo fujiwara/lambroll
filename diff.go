@@ -108,7 +108,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		return err
 	}
 
-	if opt.CodeSha256 && latest != nil {
+	if opt.CodeSha256 {
 		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
@@ -177,17 +177,13 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	r, _ := marshalJSON(remote)
 	l, _ := marshalJSON(local)
 
-	if opt.Unified {
-		edits := myers.ComputeEdits(span.URIFromPath(fqName), string(r), string(l))
-		if ds := fmt.Sprint(gotextdiff.ToUnified(fqName, opt.FunctionURL, string(r), edits)); ds != "" {
-			fmt.Print(coloredDiff(ds))
-		}
-	} else {
-		if ds := diff.Diff(string(r), string(l)); ds != "" {
-			fmt.Println(color.RedString("---" + fqName))
-			fmt.Println(color.GreenString("+++" + opt.FunctionURL))
-			fmt.Print(coloredDiff(ds))
-		}
+	if diff, err := jsondiff.Diff(
+		&jsondiff.Input{Name: fqName, X: r},
+		&jsondiff.Input{Name: opt.FunctionURL, X: l},
+	); err != nil {
+		return fmt.Errorf("failed to diff: %w", err)
+	} else if diff != "" {
+		fmt.Print(coloredDiff(diff))
 	}
 
 	// permissions
