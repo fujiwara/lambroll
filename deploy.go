@@ -137,6 +137,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
+		Environment:       fn.Environment,
 		EphemeralStorage:  fn.EphemeralStorage,
 		FunctionName:      fn.FunctionName,
 		FileSystemConfigs: fn.FileSystemConfigs,
@@ -152,13 +153,6 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		VpcConfig:         fn.VpcConfig,
 		ImageConfig:       fn.ImageConfig,
 		SnapStart:         fn.SnapStart,
-	}
-	if env := fn.Environment; env == nil || env.Variables == nil {
-		confIn.Environment = &types.Environment{
-			Variables: map[string]string{}, // set empty variables explicitly
-		}
-	} else {
-		confIn.Environment = env
 	}
 
 	var newerVersion string

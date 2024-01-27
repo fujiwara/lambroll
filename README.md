@@ -1,25 +1,32 @@
 # lambroll
 
-lambroll is a minimal deployment tool for [AWS Lambda](https://aws.amazon.com/lambda/).
+lambroll is a simple deployment tool for [AWS Lambda](https://aws.amazon.com/lambda/).
 
 lambroll does,
 
 - Create a function.
 - Create a Zip archive from local directory.
-- Update function code / configuration / tags / aliases.
+- Deploy function code / configuration / tags / aliases / function URLs.
 - Rollback a function to previous version.
 - Invoke a function with payloads.
 - Manage function versions.
-
-That's all.
+- Show status of a function.
+- Show function logs.
+- Show diff of function code / configuration.
+- Delete a function.
 
 lambroll does not,
 
 - Manage resources related to the Lambda function.
-  - e.g. IAM Role, function triggers, API Gateway, etc.
+  - For example, IAM Role, function triggers, API Gateway, and etc.
+  - Only the function URLs can be managed by lambroll if you want.
 - Build native binaries or extensions for Linux (AWS Lambda running environment).
 
 When you hope to manage these resources, we recommend other deployment tools ([AWS SAM](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/), etc.).
+
+## Differences of lambroll v0 and v1.
+
+See [docs/v0-v1.md](docs/v0-v1.md).
 
 ## Install
 
@@ -475,7 +482,7 @@ which then exposes additional template functions available like:
 
 ### Jsonnet support for function configuration
 
-lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) format.
+lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) format instead of plain JSON.
 
 ```jsonnet
 {
@@ -521,55 +528,13 @@ Edge functions require two preconditions:
 
 Otherwise, it works as usual.
 
-### Lambda Function URLs support
+### Lambda function URLs support
 
 lambroll can deploy [Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html).
 
 `lambroll deploy --function-url=function_url.json` deploys a function URL after the function deploied.
 
-When you want to deploy a public (without authentication) function URL, `function_url.json` is shown below.
-
-```json
-{
-  "Config": {
-    "AuthType": "NONE"
-  }
-}
-```
-
-When you want to deploy a private (requires AWS IAM authentication) function URL, `function_url.json` is shown below.
-
-```json
-{
-  "Config": {
-    "AuthType": "AWS_IAM"
-  },
-  "Permissions": [
-    {
-      "Principal": "0123456789012"
-    },
-    {
-      "PrincipalOrgID": "o-123456789",
-      "Principal": "*"
-    }
-  ]
-}
-```
-
-- `Config` maps to [CreateFunctionUrlConfigInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#CreateFunctionUrlConfigInput) in AWS SDK Go v2.
-  - `Config.AuthType` must be `AWS_IAM` or `NONE`.
-  - `Config.Qualifer` is optional.
-- `Permissions` is optional.
-  - If `Permissions` is not defined and `AuthType` is `NONE`, `Principal` is set to `*` automatically.
-  - When `AuthType` is `AWS_IAM`, you must define `Permissions` to specify allowed principals.
-  - Each elements of `Permissons` maps to [AddPermissionInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#AddPermissionInput) in AWS SDK Go v2.
-- `function_url.jsonnet` is also supported like `function.jsonnet`.
-
-### FunctionURL support
-
-lambroll can deploy [Lambda function URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html).
-
-`lambroll deploy --function-url=function_url.json` deploys a function URL after the function deploied.
+Even if your Lambda function already has a function URL, `lambroll deploy` without `--function-url` option does not touch the function URLs resources.
 
 When you want to deploy a public (without authentication) function URL, `function_url.json` is shown below.
 
