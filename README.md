@@ -36,6 +36,14 @@ See [docs/v0-v1.md](docs/v0-v1.md).
 $ brew install fujiwara/tap/lambroll
 ```
 
+### aqua
+
+[aqua](https://aquaproj.github.io/) is a declarative CLI Version Manager.
+
+```console
+$ aqua g -i fujiwara/lambroll
+```
+
 ### Binary packages
 
 [Releases](https://github.com/fujiwara/lambroll/releases)

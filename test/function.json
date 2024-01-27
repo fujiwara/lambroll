@@ -1,7 +1,6 @@
 {
     "Architectures": [
-        "x86_64",
-        "arm64"
+        "x86_64"
     ],
     "Description": "hello function",
     "EphemeralStorage": {
@@ -30,7 +29,7 @@
     },
     "MemorySize": 128,
     "Role": "{{ tfstate `data.aws_iam_role.lambda.arn` }}",
-    "Runtime": "nodejs12.x",
+    "Runtime": "nodejs16.x",
     "Timeout": 5,
     "TracingConfig": {
         "Mode": "PassThrough"
