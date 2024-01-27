@@ -70,12 +70,10 @@ github.com/AzureAD/microsoft-authentication-library-for-go v1.1.1/go.mod h1:wP83
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/Songmu/prompter v0.5.0 h1:uf60xlFItY5nW+rlLJ2XIUfaUReo4gUEeftuUeHpio8=
-github.com/Songmu/prompter v0.5.0/go.mod h1:S4Eg25l60kPlnfB2ttFVpvBKYw7RKJexzB3gzpAansY=
-github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1 h1:PrNsETLYKHeiniM9hCru9topK9bOiPjxl5xdYKLQoNo=
-github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1/go.mod h1:a5oayUivaiGHWcodFYZmy0km36ZbSfYtjuVMfKUQdbM=
 github.com/Songmu/prompter v0.5.1 h1:IAsttKsOZWSDw7bV1mtGn9TAmLFAjXbp9I/eYmUUogo=
 github.com/Songmu/prompter v0.5.1/go.mod h1:CS3jEPD6h9IaLaG6afrl1orTgII9+uDWuw95dr6xHSw=
+github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1 h1:PrNsETLYKHeiniM9hCru9topK9bOiPjxl5xdYKLQoNo=
+github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1/go.mod h1:a5oayUivaiGHWcodFYZmy0km36ZbSfYtjuVMfKUQdbM=
 github.com/alecthomas/assert/v2 v2.1.0 h1:tbredtNcQnoSd3QBhQWI7QZ3XHOVkw1Moklp2ojoH/0=
 github.com/alecthomas/kong v0.8.0 h1:ryDCzutfIqJPnNn0omnrgHLbAggDQM2VWHikE1xqK7s=
 github.com/alecthomas/kong v0.8.0/go.mod h1:n1iCIO2xS46oE8ZfYCNDqdR0b0wZNrXAIAqro/2132U=
@@ -149,8 +147,6 @@ github.com/fujiwara/logutils v1.1.2 h1:nYVRyTj+5SyCvpZUrYIZU4kubqNycGTxFXMKJBKe0
 github.com/fujiwara/logutils v1.1.2/go.mod h1:pdb/Uk70rjQWEmFm/OvYH7OG8meZt1fEIqC0qZbvro4=
 github.com/fujiwara/ssm-lookup v0.0.1 h1:qh3KKSg7QSHYpodeg/gkOQZT+8XjpDUFHhcyH/pHE1k=
 github.com/fujiwara/ssm-lookup v0.0.1/go.mod h1:YGhJjvcVrHMVdFU5DttcU7Ft9epNwoS0hZbbnry91s0=
-github.com/fujiwara/tfstate-lookup v1.1.4 h1:oF+cdE0K+Pk9HUxmCzt7jtdhhQS3GfRLg9sj/n8Zx5s=
-github.com/fujiwara/tfstate-lookup v1.1.4/go.mod h1:G+sFc6osVH71L32pX3+2ibfdhqePPrDZa0ren/QaMYs=
 github.com/fujiwara/tfstate-lookup v1.1.5 h1:dNvtfSqSES0y3V7KprcRu7aThUOlRLzvB3mxCFSPeMo=
 github.com/fujiwara/tfstate-lookup v1.1.5/go.mod h1:G+sFc6osVH71L32pX3+2ibfdhqePPrDZa0ren/QaMYs=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
@@ -474,10 +470,6 @@ golang.org/x/sys v0.0.0-20210423082822-04245dca01da/go.mod h1:h1NjWce9XRLGQEsW7w
 golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20210616045830-e2b7044e8c71/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/sys v0.11.0 h1:eG7RXZHdqOJ1i+0lgLgCpSXAp6M3LYlAo6osgSi0xOM=
-golang.org/x/sys v0.11.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
-golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
-golang.org/x/term v0.0.0-20210317153231-de623e64d2a6/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.14.0 h1:Vz7Qs629MkJkGyHxUlRHizWJRG2j8fbQKjELVSNhy7Q=
 golang.org/x/sys v0.14.0/go.mod h1:/VUhepiaJMQUp4+oa/7Zr1D23ma6VTLIYjOOTFZPUcA=

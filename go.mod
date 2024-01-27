@@ -3,8 +3,8 @@ module github.com/fujiwara/lambroll
 go 1.20
 
 require (
-	github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1
 	github.com/Songmu/prompter v0.5.1
+	github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1
 	github.com/alecthomas/kong v0.8.0
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
@@ -31,7 +31,6 @@ require (
 )
 
 require (
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	cloud.google.com/go v0.81.0 // indirect
 	cloud.google.com/go/storage v1.15.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1 // indirect
@@ -101,6 +100,7 @@ require (
 	google.golang.org/genproto v0.0.0-20210420162539-3c870d7478d2 // indirect
 	google.golang.org/grpc v1.37.0 // indirect
 	google.golang.org/protobuf v1.26.0 // indirect
+	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	sigs.k8s.io/yaml v1.1.0 // indirect
 )
