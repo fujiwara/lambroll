@@ -138,7 +138,6 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
 		EphemeralStorage:  fn.EphemeralStorage,
-		Environment:       fn.Environment,
 		FunctionName:      fn.FunctionName,
 		FileSystemConfigs: fn.FileSystemConfigs,
 		Handler:           fn.Handler,
