@@ -258,7 +258,7 @@ func (app *App) loadFunction(path string) (*Function, error) {
 
 func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLocation, tags Tags) *Function {
 	if c == nil {
-		return &Function{}
+		return nil
 	}
 	fn := &Function{
 		Architectures:     c.Architectures,
@@ -319,6 +319,9 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 }
 
 func fillDefaultValues(fn *Function) {
+	if fn == nil {
+		return
+	}
 	if len(fn.Architectures) == 0 {
 		fn.Architectures = []types.Architecture{types.ArchitectureX8664}
 	}
