@@ -331,7 +331,7 @@ func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *Function
 	return adds, removes, nil
 }
 
-func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOption) error {
+func (app *App) initFunctionURL(ctx context.Context, fn *Function, exists bool, opt *InitOption) error {
 	fc, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 		FunctionName: fn.FunctionName,
 		Qualifier:    opt.Qualifier,
@@ -339,8 +339,16 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, opt *InitOpti
 	if err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			log.Printf("[warn] function url config for %s not found", *fn.FunctionName)
-			return nil
+			if exists {
+				log.Printf("[warn] function url config for %s not found", *fn.FunctionName)
+				return nil
+			} else {
+				log.Printf("[info] initializing function url config for %s", *fn.FunctionName)
+				// default settings will be used
+				fc = &lambda.GetFunctionUrlConfigOutput{
+					AuthType: types.FunctionUrlAuthTypeNone,
+				}
+			}
 		} else {
 			return fmt.Errorf("failed to get function url config: %w", err)
 		}
