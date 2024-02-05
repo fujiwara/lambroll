@@ -77,7 +77,7 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	filter := &logutils.LevelFilter{
 		Levels: []logutils.LogLevel{"trace", "debug", "info", "warn", "error"},
 		ModifierFuncs: []logutils.ModifierFunc{
-			logutils.Color(color.FgBlack),   // trace
+			logutils.Color(color.FgHiWhite),   // trace
 			logutils.Color(color.FgHiBlack), // debug
 			nil,                             // info
 			logutils.Color(color.FgYellow),  // warn
