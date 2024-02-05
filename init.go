@@ -114,7 +114,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	}
 
 	if opt.FunctionURL {
-		if err := app.initFunctionURL(ctx, fn, opt); err != nil {
+		if err := app.initFunctionURL(ctx, fn, exists, opt); err != nil {
 			return err
 		}
 	}
