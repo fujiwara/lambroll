@@ -390,6 +390,11 @@ func exportEnvFile(file string) error {
 var errCannotUpdateImageAndZip = fmt.Errorf("cannot update function code between Image and Zip")
 
 func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCode *types.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
+	if currentConf == nil {
+		// create new function
+		return nil
+	}
+
 	newCode := newFn.Code
 
 	// new=Image
