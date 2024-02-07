@@ -90,7 +90,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 			if err != nil {
 				return fmt.Errorf("failed to load function url config: %w", err)
 			}
-			return app.deployFunctionURL(ctx, fc)
+			return app.deployFunctionURL(ctx, fc, opt)
 		}
 	}
 
@@ -104,10 +104,16 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		FunctionName: fn.FunctionName,
 	}); err != nil {
 		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
-			return app.create(ctx, opt, fn)
+		if !errors.As(err, &nfe) {
+			return err
 		}
-		return err
+		if err := app.create(ctx, opt, fn); err != nil {
+			return err
+		}
+		if err := deployFunctionURL(ctx); err != nil {
+			return err
+		}
+		return nil
 	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
@@ -160,7 +166,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		proc := func(ctx context.Context) error {
 			return app.updateFunctionConfiguration(ctx, confIn)
 		}
-		if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function configuration", proc); err != nil {
+		if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function configuration", proc, opt.label()); err != nil {
 			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
 	}
@@ -190,7 +196,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		res, err = app.updateFunctionCode(ctx, codeIn)
 		return err
 	}
-	if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function code", proc); err != nil {
+	if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function code", proc, opt.label()); err != nil {
 		return err
 	}
 	if res.Version != nil {
@@ -256,19 +262,19 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 	return res, nil
 }
 
-func (app *App) ensureLastUpdateStatusSuccessful(ctx context.Context, name string, msg string, code func(ctx context.Context) error) error {
-	log.Println("[info]", msg, "...")
+func (app *App) ensureLastUpdateStatusSuccessful(ctx context.Context, name string, msg string, code func(ctx context.Context) error, label string) error {
+	log.Println("[info]", msg, "...", label)
 	if err := app.waitForLastUpdateStatusSuccessful(ctx, name); err != nil {
 		return err
 	}
 	if err := code(ctx); err != nil {
 		return err
 	}
-	log.Println("[info]", msg, "accepted. waiting for LastUpdateStatus to be successful.")
+	log.Println("[info]", msg, "accepted. waiting for LastUpdateStatus to be successful.", label)
 	if err := app.waitForLastUpdateStatusSuccessful(ctx, name); err != nil {
 		return err
 	}
-	log.Println("[info]", msg, "successfully")
+	log.Println("[info]", msg, "successfully", label)
 	return nil
 }
 
