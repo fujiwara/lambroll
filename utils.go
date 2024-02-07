@@ -22,16 +22,27 @@ func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
 	return os.WriteFile(path, b, mode)
 }
 
-func marshalJSON(s interface{}) ([]byte, error) {
+func toGeneralMap(s any, omitEmpty bool) (any, error) {
 	b, err := json.Marshal(s)
 	if err != nil {
 		return nil, err
 	}
-	x := make(map[string]interface{})
+	x := make(map[string]any)
 	if err := json.Unmarshal(b, &x); err != nil {
 		return nil, err
 	}
-	if b, err := json.MarshalIndent(omitEmptyValues(x), "", "  "); err != nil {
+	if omitEmpty {
+		return omitEmptyValues(x), nil
+	}
+	return x, nil
+}
+
+func marshalJSON(s interface{}) ([]byte, error) {
+	x, err := toGeneralMap(s, true)
+	if err != nil {
+		return nil, err
+	}
+	if b, err := json.MarshalIndent(x, "", "  "); err != nil {
 		return nil, err
 	} else {
 		return append(b, '\n'), nil
