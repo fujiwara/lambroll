@@ -141,7 +141,6 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 
 func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) error {
 	var remote, local *types.FunctionUrlConfig
-	fqName := fullQualifiedFunctionName(name, opt.Qualifier)
 
 	fu, err := app.loadFunctionUrl(opt.FunctionURL, name)
 	if err != nil {
@@ -154,10 +153,17 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 			InvokeMode: fu.Config.InvokeMode,
 		}
 	}
+	var qualifier *string
+	if opt.Qualifier != nil {
+		qualifier = opt.Qualifier
+	} else if fu.Config != nil && fu.Config.Qualifier != nil {
+		qualifier = fu.Config.Qualifier
+	}
+	fqName := fullQualifiedFunctionName(name, qualifier)
 
 	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 		FunctionName: &name,
-		Qualifier:    opt.Qualifier,
+		Qualifier:    qualifier,
 	}); err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
@@ -174,8 +180,8 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 			InvokeMode: res.InvokeMode,
 		}
 	}
-	r, _ := marshalJSON(remote)
-	l, _ := marshalJSON(local)
+	r, _ := toGeneralMap(remote, true)
+	l, _ := toGeneralMap(local, true)
 
 	if diff, err := jsondiff.Diff(
 		&jsondiff.Input{Name: fqName, X: r},
