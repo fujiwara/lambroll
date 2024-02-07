@@ -172,7 +172,7 @@ func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL,
 }
 
 func (app *App) deployFunctionURL(ctx context.Context, fc *FunctionURL, opt *DeployOption) error {
-	log.Printf("[info] deploying function url...%s", opt.label())
+	log.Printf("[info] deploying function url... %s", opt.label())
 
 	if err := app.deployFunctionURLConfig(ctx, fc, opt); err != nil {
 		return fmt.Errorf("failed to deploy function url config: %w", err)
@@ -196,7 +196,7 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 	if err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			log.Printf("[info] function url config for %s not found. creating%s", fqFunctionName, opt.label())
+			log.Printf("[info] function url config for %s not found. creating %s", fqFunctionName, opt.label())
 			create = true
 		} else {
 			return fmt.Errorf("failed to get function url config: %w", err)
@@ -247,7 +247,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 		return nil
 	}
 
-	log.Printf("[info] adding %d permissions%s", len(adds), opt.label())
+	log.Printf("[info] adding %d permissions %s", len(adds), opt.label())
 	if !opt.DryRun {
 		for _, in := range adds {
 			if _, err := app.lambda.AddPermission(ctx, in); err != nil {
@@ -257,7 +257,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 		}
 	}
 
-	log.Printf("[info] removing %d permissions%s", len(removes), opt.label())
+	log.Printf("[info] removing %d permissions %s", len(removes), opt.label())
 	if !opt.DryRun {
 		for _, in := range removes {
 			if _, err := app.lambda.RemovePermission(ctx, in); err != nil {
