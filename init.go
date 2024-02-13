@@ -18,7 +18,7 @@ import (
 // InitOption represents options for Init()
 type InitOption struct {
 	FunctionName *string `help:"Function name for init" required:"true" default:""`
-	DownloadZip  bool    `help:"Download function.zip" default:"false"`
+	DownloadZip  bool    `name:"download" help:"Download function.zip" default:"false"`
 	Jsonnet      bool    `default:"false" help:"render function.json as jsonnet"`
 	Qualifier    *string `help:"function version or alias"`
 	FunctionURL  bool    `help:"create function url definition file" default:"false"`

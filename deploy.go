@@ -20,7 +20,7 @@ import (
 type DeployOption struct {
 	Src           string `help:"function zip archive or src dir" default:"."`
 	Publish       bool   `help:"publish function" default:"true"`
-	AliasName     string `help:"alias name for publish" default:"current"`
+	AliasName     string `name:"alias" help:"alias name for publish" default:"current"`
 	AliasToLatest bool   `help:"set alias to unpublished $LATEST version" default:"false"`
 	DryRun        bool   `help:"dry run" default:"false"`
 	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
