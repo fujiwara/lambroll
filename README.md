@@ -202,7 +202,7 @@ init function.json
 
 Flags:
       --function-name=                    Function name for init
-      --download-zip                      Download function.zip
+      --download                          Download function.zip
       --jsonnet                           render function.json as jsonnet
       --qualifier=QUALIFIER               function version or alias
       --function-url                      create function url definition file
@@ -220,7 +220,7 @@ deploy or create function
 Flags:
       --src="."                           function zip archive or src dir
       --publish                           publish function
-      --alias-name="current"              alias name for publish
+      --alias="current"                   alias name for publish
       --alias-to-latest                   set alias to unpublished $LATEST version
       --dry-run                           dry run
       --skip-archive                      skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function
