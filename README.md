@@ -567,7 +567,7 @@ When you want to deploy a private (requires AWS IAM authentication) function URL
 
 - `Config` maps to [CreateFunctionUrlConfigInput](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/service/lambda#CreateFunctionUrlConfigInput) in AWS SDK Go v2.
   - `Config.AuthType` must be `AWS_IAM` or `NONE`.
-  - `Config.Qualifer` is optional.
+  - `Config.Qualifier` is optional. Default is `$LATEST`.
 - `Permissions` is optional.
   - If `Permissions` is not defined and `AuthType` is `NONE`, `Principal` is set to `*` automatically.
   - When `AuthType` is `AWS_IAM`, you must define `Permissions` to specify allowed principals.
