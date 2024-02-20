@@ -551,7 +551,16 @@ When you want to deploy a private (requires AWS IAM authentication) function URL
 ```json
 {
   "Config": {
-    "AuthType": "AWS_IAM"
+   "AuthType": "AWS_IAM",
+   "Cors": {
+      "AllowOrigins": [
+        "*"
+      ],
+      "AllowMethods": [
+        "GET",
+        "POST"
+      ]
+    },
   },
   "Permissions": [
     {
