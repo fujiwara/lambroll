@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/Songmu/prompter v0.5.1
-	github.com/aereal/jsondiff v0.2.4-0.20221231034809-2e797076aee1
+	github.com/aereal/jsondiff v0.3.0
 	github.com/alecthomas/kong v0.8.0
 	github.com/aws/aws-sdk-go-v2 v1.24.0
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
