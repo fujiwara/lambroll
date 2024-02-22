@@ -15,8 +15,9 @@ import (
 
 // RollbackOption represents option for Rollback()
 type RollbackOption struct {
-	DryRun        bool `default:"false" help:"dry run"`
-	DeleteVersion bool `default:"false" help:"delete rolled back version"`
+	DryRun        bool   `default:"false" help:"dry run"`
+	Alias         string `default:"current" help:"alias to rollback"`
+	DeleteVersion bool   `default:"false" help:"delete rolled back version"`
 }
 
 func (opt RollbackOption) label() string {
@@ -33,14 +34,19 @@ func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
-	log.Printf("[info] starting rollback function %s", *fn.FunctionName)
+	log.Printf("[info] starting rollback function %s:%s", *fn.FunctionName, opt.Alias)
 
 	res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{
 		FunctionName: fn.FunctionName,
-		Name:         aws.String(CurrentAliasName),
+		Name:         aws.String(opt.Alias),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to get alias: %w", err)
+	}
+
+	aliases, err := app.getAliases(ctx, *fn.FunctionName)
+	if err != nil {
+		return fmt.Errorf("failed to get aliases: %w", err)
 	}
 
 	currentVersion := *res.FunctionVersion
@@ -67,6 +73,11 @@ VERSIONS:
 				return fmt.Errorf("failed to get function: %w", err)
 			}
 		}
+		if pv := *res.Configuration.Version; aliases[pv] != nil {
+			// skip if the version has alias
+			log.Printf("[info] version %s has alias %v, skipping", pv, aliases[pv])
+			continue VERSIONS
+		}
 		prevVersion = *res.Configuration.Version
 		break
 	}
@@ -78,7 +89,7 @@ VERSIONS:
 	if opt.DryRun {
 		return nil
 	}
-	err = app.updateAliases(ctx, *fn.FunctionName, versionAlias{Version: prevVersion, Name: CurrentAliasName})
+	err = app.updateAliases(ctx, *fn.FunctionName, versionAlias{Version: prevVersion, Name: opt.Alias})
 	if err != nil {
 		return err
 	}
