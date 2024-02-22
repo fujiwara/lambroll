@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/mattn/go-isatty"
 
@@ -21,6 +22,7 @@ type InvokeOption struct {
 	Async     bool    `default:"false" help:"invocation type async"`
 	LogTail   bool    `default:"false" help:"output tail of log to STDERR"`
 	Qualifier *string `help:"version or alias to invoke"`
+	Payload   *string `help:"payload to invoke. if not specified, read from STDIN"`
 }
 
 // Invoke invokes function
@@ -40,11 +42,16 @@ func (app *App) Invoke(ctx context.Context, opt *InvokeOption) error {
 		logType = typesv2.LogTypeTail
 	}
 
-	if isatty.IsTerminal(os.Stdin.Fd()) {
-		fmt.Println("Enter JSON payloads for the invoking function into STDIN. (Type Ctrl-D to close.)")
+	var payloadSrc io.Reader
+	if opt.Payload != nil {
+		payloadSrc = strings.NewReader(*opt.Payload)
+	} else {
+		if isatty.IsTerminal(os.Stdin.Fd()) {
+			fmt.Println("Enter JSON payloads for the invoking function into STDIN. (Type Ctrl-D to close.)")
+		}
+		payloadSrc = os.Stdin
 	}
-
-	dec := json.NewDecoder(os.Stdin)
+	dec := json.NewDecoder(payloadSrc)
 	stdout := bufio.NewWriter(os.Stdout)
 	stderr := bufio.NewWriter(os.Stderr)
 PAYLOAD:

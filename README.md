@@ -288,15 +288,25 @@ Flags:
       --async                             invocation type async
       --log-tail                          output tail of log to STDERR
       --qualifier=QUALIFIER               version or alias to invoke
+      --payload=PAYLOAD                   payload to invoke. if not specified, read from STDIN
 ```
 
-`lambroll invoke` accepts multiple JSON payloads for invocations from STDIN.
+`lambroll invoke` accepts multiple JSON payloads for invocations from `--payload` flag or STDIN.
 
-Outputs from function are printed in STDOUT.
+If the payload is a concatenation of multiple JSON payloads, `lambroll invoke` will invoke the function for each JSON payload.
+
+Outputs from the function invoked are printed to STDOUT.
 
 ```console
+$ lambroll invoke --payload='{"foo":1} --log-tail'
+{"success": true, "payload": {"foo":1}}
+2019/10/28 23:16:43 [info] StatusCode:200 ExecutionVersion:$LATEST
+START RequestId: aa38233f-a179-4192-8469-c86414fe463c Version: $LATEST
+END RequestId: aa38233f-a179-4192-8469-c86414fe463c
+REPORT RequestId: 60140e16-018e-41b1-bb46-3f021d4960c0	Duration: 561.77 ms	Billed Duration: 600 ms	Memory Size: 128 MB	Max Memory Used: 50 MB
+
 $ echo '{"foo":1}{"foo":2}' | lambroll invoke --log-tail
-{"success": true, payload{"foo:1}}
+{"success": true, payload{"foo":1}}
 2019/10/28 23:16:43 [info] StatusCode:200 ExecutionVersion:$LATEST
 START RequestId: 60140e16-018e-41b1-bb46-3f021d4960c0 Version: $LATEST
 END RequestId: 60140e16-018e-41b1-bb46-3f021d4960c0
