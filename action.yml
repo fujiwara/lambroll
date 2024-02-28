@@ -1,7 +1,7 @@
 inputs:
   version:
     description: "A version to install lamroll"
-    default: "v1.0.0"
+    default: "v1.0.1"
 runs:
   using: "composite"
   steps:
