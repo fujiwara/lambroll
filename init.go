@@ -17,11 +17,12 @@ import (
 
 // InitOption represents options for Init()
 type InitOption struct {
-	FunctionName *string `help:"Function name for init" required:"true" default:""`
-	DownloadZip  bool    `name:"download" help:"Download function.zip" default:"false"`
-	Jsonnet      bool    `default:"false" help:"render function.json as jsonnet"`
-	Qualifier    *string `help:"function version or alias"`
-	FunctionURL  bool    `help:"create function url definition file" default:"false"`
+	FunctionName   *string `help:"Function name for init" required:"true" default:""`
+	DownloadZip    bool    `name:"download" help:"Download function.zip" default:"false"`
+	Jsonnet        bool    `help:"render function.json as jsonnet" default:"false"`
+	Qualifier      *string `help:"function version or alias"`
+	FunctionURL    bool    `help:"create function url definition file" default:"false"`
+	ForceOverwrite bool    `help:"Overwrite existing files without prompting" default:"false"`
 }
 
 // Init initializes function.json
@@ -90,6 +91,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		IgnoreFilename,
 		[]byte(strings.Join(DefaultExcludes, "\n")+"\n"),
 		os.FileMode(0644),
+		opt.ForceOverwrite,
 	)
 	if err != nil {
 		return err
@@ -109,7 +111,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			return err
 		}
 	}
-	if err := app.saveFile(name, b, os.FileMode(0644)); err != nil {
+	if err := app.saveFile(name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
 		return err
 	}
 
