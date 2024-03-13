@@ -22,7 +22,7 @@ type InitOption struct {
 	Jsonnet        bool    `default:"false" help:"render function.json as jsonnet"`
 	Qualifier      *string `help:"function version or alias"`
 	FunctionURL    bool    `help:"create function url definition file" default:"false"`
-	ForceOverwrite bool    `name:"force" help:"Overwrite existing files without prompting" default:"false"`
+	ForceOverwrite bool    `help:"Overwrite existing files without prompting" default:"false"`
 }
 
 // Init initializes function.json
