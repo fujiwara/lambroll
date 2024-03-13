@@ -12,9 +12,9 @@ import (
 	"github.com/google/go-jsonnet/formatter"
 )
 
-func (app *App) saveFile(path string, b []byte, mode os.FileMode) error {
+func (app *App) saveFile(path string, b []byte, mode os.FileMode, force bool) error {
 	if _, err := os.Stat(path); err == nil {
-		ok := prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
+		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {
 			return nil
 		}
