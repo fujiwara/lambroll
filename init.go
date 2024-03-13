@@ -19,7 +19,7 @@ import (
 type InitOption struct {
 	FunctionName   *string `help:"Function name for init" required:"true" default:""`
 	DownloadZip    bool    `name:"download" help:"Download function.zip" default:"false"`
-	Jsonnet        bool    `default:"false" help:"render function.json as jsonnet"`
+	Jsonnet        bool    `help:"render function.json as jsonnet" default:"false"`
 	Qualifier      *string `help:"function version or alias"`
 	FunctionURL    bool    `help:"create function url definition file" default:"false"`
 	ForceOverwrite bool    `help:"Overwrite existing files without prompting" default:"false"`
