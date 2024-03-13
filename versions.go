@@ -82,28 +82,9 @@ func (app *App) Versions(ctx context.Context, opt *VersionsOption) error {
 		return app.deleteVersions(ctx, name, opt.KeepVersions)
 	}
 
-	aliases := make(map[string][]string)
-	var nextAliasMarker *string
-	for {
-		res, err := app.lambda.ListAliases(ctx, &lambda.ListAliasesInput{
-			FunctionName: &name,
-			Marker:       nextAliasMarker,
-		})
-		if err != nil {
-			return fmt.Errorf("failed to list aliases: %w", err)
-		}
-		for _, alias := range res.Aliases {
-			aliases[*alias.FunctionVersion] = append(aliases[*alias.FunctionVersion], *alias.Name)
-			if alias.RoutingConfig == nil || alias.RoutingConfig.AdditionalVersionWeights == nil {
-				continue
-			}
-			for v := range alias.RoutingConfig.AdditionalVersionWeights {
-				aliases[v] = append(aliases[v], *alias.Name)
-			}
-		}
-		if nextAliasMarker = res.NextMarker; nextAliasMarker == nil {
-			break
-		}
+	aliases, err := app.getAliases(ctx, name)
+	if err != nil {
+		return fmt.Errorf("failed to get aliases: %w", err)
 	}
 
 	var versions []types.FunctionConfiguration
@@ -157,4 +138,31 @@ func (app *App) Versions(ctx context.Context, opt *VersionsOption) error {
 		return fmt.Errorf("unknown output format: %s", opt.Output)
 	}
 	return nil
+}
+
+func (app *App) getAliases(ctx context.Context, name string) (map[string][]string, error) {
+	aliases := make(map[string][]string)
+	var nextAliasMarker *string
+	for {
+		res, err := app.lambda.ListAliases(ctx, &lambda.ListAliasesInput{
+			FunctionName: &name,
+			Marker:       nextAliasMarker,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list aliases: %w", err)
+		}
+		for _, alias := range res.Aliases {
+			aliases[*alias.FunctionVersion] = append(aliases[*alias.FunctionVersion], *alias.Name)
+			if alias.RoutingConfig == nil || alias.RoutingConfig.AdditionalVersionWeights == nil {
+				continue
+			}
+			for v := range alias.RoutingConfig.AdditionalVersionWeights {
+				aliases[v] = append(aliases[v], *alias.Name)
+			}
+		}
+		if nextAliasMarker = res.NextMarker; nextAliasMarker == nil {
+			break
+		}
+	}
+	return aliases, nil
 }
