@@ -6,7 +6,7 @@ require (
 	github.com/Songmu/prompter v0.5.1
 	github.com/aereal/jsondiff v0.3.0
 	github.com/alecthomas/kong v0.8.0
-	github.com/aws/aws-sdk-go-v2 v1.24.0
+	github.com/aws/aws-sdk-go-v2 v1.26.1
 	github.com/aws/aws-sdk-go-v2/config v1.26.1
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.49.5
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.47.5
@@ -61,7 +61,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssm v1.44.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.18.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.21.5 // indirect
-	github.com/aws/smithy-go v1.19.0 // indirect
+	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang-jwt/jwt/v5 v5.0.0 // indirect
