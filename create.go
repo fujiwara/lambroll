@@ -34,6 +34,10 @@ func prepareZipfile(src string, excludes []string, keepSymlink bool) (*os.File, 
 }
 
 func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOption, fn *Function) error {
+	if fn.Layers == nil {
+		fn.Layers = []string{} // set explicitly
+	}
+
 	if fn.PackageType == types.PackageTypeImage {
 		if fn.Code == nil || fn.Code.ImageUri == nil {
 			return fmt.Errorf("PackageType=Image requires Code.ImageUri in function definition")
