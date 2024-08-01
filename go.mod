@@ -6,7 +6,7 @@ require (
 	github.com/Songmu/prompter v0.5.1
 	github.com/aereal/jsondiff v0.3.0
 	github.com/alecthomas/kong v0.8.0
-	github.com/aws/aws-sdk-go-v2 v1.30.1
+	github.com/aws/aws-sdk-go-v2 v1.30.3
 	github.com/aws/aws-sdk-go-v2/config v1.27.23
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.56.1
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.57.1
