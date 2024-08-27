@@ -112,7 +112,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		if packageType != types.PackageTypeZip {
 			return fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
-		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes)
+		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes, opt.KeepSymlink)
 		if err != nil {
 			return err
 		}

@@ -14,11 +14,11 @@ import (
 
 var directUploadThreshold = int64(50 * 1024 * 1024) // 50MB
 
-func prepareZipfile(src string, excludes []string) (*os.File, os.FileInfo, error) {
+func prepareZipfile(src string, excludes []string, keepSymlink bool) (*os.File, os.FileInfo, error) {
 	if fi, err := os.Stat(src); err != nil {
 		return nil, nil, fmt.Errorf("src %s is not found: %w", src, err)
 	} else if fi.IsDir() {
-		zipfile, info, err := createZipArchive(src, excludes)
+		zipfile, info, err := createZipArchive(src, excludes, keepSymlink)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -54,7 +54,7 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOpt
 		return nil
 	}
 
-	zipfile, info, err := prepareZipfile(opt.Src, opt.excludes)
+	zipfile, info, err := prepareZipfile(opt.Src, opt.excludes, opt.KeepSymlink)
 	if err != nil {
 		return err
 	}
