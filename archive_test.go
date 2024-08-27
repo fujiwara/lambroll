@@ -4,15 +4,19 @@ import (
 	"archive/zip"
 	"fmt"
 	"os"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/fujiwara/lambroll"
+	"github.com/google/go-cmp/cmp"
 )
 
 type zipTestSuite struct {
-	WorkingDir string
-	SrcDir     string
+	WorkingDir  string
+	SrcDir      string
+	Expected    []string
+	KeepSymlink bool
 }
 
 func (s zipTestSuite) String() string {
@@ -20,8 +24,18 @@ func (s zipTestSuite) String() string {
 }
 
 var createZipArchives = []zipTestSuite{
-	{".", "test/src"},
-	{"test/src/dir", "../"},
+	{
+		WorkingDir:  ".",
+		SrcDir:      "test/src",
+		Expected:    []string{"dir/sub.txt", "ext-hello.txt", "hello.symlink", "hello.txt", "index.js", "world"},
+		KeepSymlink: true,
+	},
+	{
+		WorkingDir:  "test/src/dir",
+		SrcDir:      "../",
+		Expected:    []string{"dir/sub.txt", "ext-hello.txt", "hello.symlink", "hello.txt", "index.js", "world"},
+		KeepSymlink: true,
+	},
 }
 
 func TestCreateZipArchive(t *testing.T) {
@@ -40,7 +54,7 @@ func testCreateZipArchive(t *testing.T, s zipTestSuite) {
 	excludes := []string{}
 	excludes = append(excludes, lambroll.DefaultExcludes...)
 	excludes = append(excludes, []string{"*.bin", "skip/*"}...)
-	r, info, err := lambroll.CreateZipArchive(s.SrcDir, excludes)
+	r, info, err := lambroll.CreateZipArchive(s.SrcDir, excludes, s.KeepSymlink)
 	if err != nil {
 		t.Error("failed to CreateZipArchive", err)
 	}
@@ -51,9 +65,10 @@ func testCreateZipArchive(t *testing.T, s zipTestSuite) {
 	if err != nil {
 		t.Error("failed to new zip reader", err)
 	}
-	if len(zr.File) != 6 {
-		t.Errorf("unexpected included files num %d expect %d", len(zr.File), 6)
+	if len(zr.File) != len(s.Expected) {
+		t.Errorf("unexpected included files num %d expect %d", len(zr.File), len(s.Expected))
 	}
+	zipFiles := []string{}
 	for _, f := range zr.File {
 		h := f.FileHeader
 		t.Logf("%s %10d %s %s",
@@ -62,7 +77,14 @@ func testCreateZipArchive(t *testing.T, s zipTestSuite) {
 			h.Modified.Format(time.RFC3339),
 			h.Name,
 		)
+		zipFiles = append(zipFiles, h.Name)
 	}
+	slices.Sort(zipFiles)
+	slices.Sort(s.Expected)
+	if diff := cmp.Diff(zipFiles, s.Expected); diff != "" {
+		t.Errorf("unexpected included files %s", diff)
+	}
+
 	if info.Size() < 100 {
 		t.Errorf("too small file got %d bytes", info.Size())
 	}

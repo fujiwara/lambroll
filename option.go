@@ -6,6 +6,7 @@ import "fmt"
 
 type ExcludeFileOption struct {
 	ExcludeFile string `help:"exclude file" default:".lambdaignore"`
+	KeepSymlink bool   `name:"symlink" help:"keep symlink (same as zip --symlink,-y)" default:"false"`
 
 	excludes []string
 }

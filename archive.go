@@ -5,9 +5,11 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -28,7 +30,7 @@ func (app *App) Archive(ctx context.Context, opt *ArchiveOption) error {
 		return err
 	}
 
-	zipfile, _, err := createZipArchive(opt.Src, opt.excludes)
+	zipfile, _, err := createZipArchive(opt.Src, opt.excludes, opt.KeepSymlink)
 	if err != nil {
 		return err
 	}
@@ -75,14 +77,14 @@ func loadZipArchive(src string) (*os.File, os.FileInfo, error) {
 }
 
 // createZipArchive creates a zip archive
-func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, error) {
+func createZipArchive(src string, excludes []string, keepSymlink bool) (*os.File, os.FileInfo, error) {
 	log.Printf("[info] creating zip archive from %s", src)
 	tmpfile, err := os.CreateTemp("", "archive")
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to open tempFile: %w", err)
 	}
 	w := zip.NewWriter(tmpfile)
-	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	err = filepath.WalkDir(src, func(path string, info fs.DirEntry, err error) error {
 		log.Println("[trace] waking", path)
 		if err != nil {
 			log.Println("[error] failed to walking dir in", src)
@@ -97,12 +99,12 @@ func createZipArchive(src string, excludes []string) (*os.File, os.FileInfo, err
 			return nil
 		}
 		log.Println("[trace] adding", relpath)
-		return addToZip(w, path, relpath, info)
+		return addToZip(w, path, relpath, info, keepSymlink)
 	})
 	if err := w.Close(); err != nil {
 		return nil, nil, fmt.Errorf("failed to create zip archive: %w", err)
 	}
-	tmpfile.Seek(0, os.SEEK_SET)
+	tmpfile.Seek(0, io.SeekStart)
 	stat, _ := tmpfile.Stat()
 	log.Printf("[info] zip archive wrote %d bytes", stat.Size())
 	return tmpfile, stat, err
@@ -117,23 +119,55 @@ func matchExcludes(path string, excludes []string) bool {
 	return false
 }
 
-func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
-	// treat symlink as file
-	if info.Mode()&os.ModeSymlink != 0 {
-		link, err := os.Readlink(path)
-		if err != nil {
-			log.Printf("[error] failed to read symlink %s: %s", path, err)
-			return err
-		}
-		linkTarget := filepath.Join(filepath.Dir(path), link)
-		log.Printf("[debug] resolve symlink %s to %s", path, linkTarget)
-		info, err = os.Stat(linkTarget)
-		if err != nil {
-			log.Printf("[error] failed to stat symlink target %s: %s", linkTarget, err)
-			return err
-		}
-		path = linkTarget
+func followSymlink(path string) (string, fs.FileInfo, error) {
+	link, err := os.Readlink(path)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to read symlink %s: %s", path, err)
 	}
+	linkTarget := filepath.Join(filepath.Dir(path), link)
+	log.Printf("[debug] resolve symlink %s to %s", path, linkTarget)
+	info, err := os.Stat(linkTarget)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to stat symlink target %s: %s", linkTarget, err)
+	}
+	if info.IsDir() {
+		return "", nil, fmt.Errorf("skip symlink target is directory %s", linkTarget)
+	}
+	return linkTarget, info, nil
+}
+
+func addToZip(z *zip.Writer, path, relpath string, entry fs.DirEntry, keepSymlink bool) error {
+	info, err := entry.Info()
+	if err != nil {
+		log.Printf("[error] failed to get info %s: %s", path, err)
+		return err
+	}
+	var reader io.ReadCloser
+	if info.Mode()&fs.ModeSymlink != 0 { // is symlink
+		if keepSymlink {
+			link, err := os.Readlink(path)
+			if err != nil {
+				return fmt.Errorf("failed to read symlink %s: %w", path, err)
+			}
+			reader = io.NopCloser(strings.NewReader(link))
+		} else {
+			// treat symlink as file. skip symlink target directory.
+			path, info, err = followSymlink(path) // overwrite path, info
+			if err != nil {
+				log.Printf("[warn] failed to follow symlink. skip: %s", err)
+				return nil
+			}
+		}
+	}
+	if reader == nil {
+		reader, err = os.Open(path)
+		if err != nil {
+			log.Printf("[error] failed to open %s: %s", path, err)
+			return err
+		}
+	}
+	defer reader.Close()
+
 	header, err := zip.FileInfoHeader(info)
 	if err != nil {
 		log.Println("[error] failed to create zip file header", err)
@@ -146,13 +180,7 @@ func addToZip(z *zip.Writer, path, relpath string, info os.FileInfo) error {
 		log.Println("[error] failed to create in zip", err)
 		return err
 	}
-	r, err := os.Open(path)
-	if err != nil {
-		log.Printf("[error] failed to open %s: %s", path, err)
-		return err
-	}
-	defer r.Close()
-	_, err = io.Copy(w, r)
+	_, err = io.Copy(w, reader)
 	log.Printf("[debug] %s %10d %s %s",
 		header.Mode(),
 		header.UncompressedSize64,
