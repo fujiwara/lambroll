@@ -28,12 +28,18 @@ var createZipArchives = []zipTestSuite{
 		WorkingDir:  ".",
 		SrcDir:      "test/src",
 		Expected:    []string{"dir/sub.txt", "ext-hello.txt", "hello.symlink", "hello.txt", "index.js", "world"},
-		KeepSymlink: true,
+		KeepSymlink: false,
 	},
 	{
 		WorkingDir:  "test/src/dir",
 		SrcDir:      "../",
 		Expected:    []string{"dir/sub.txt", "ext-hello.txt", "hello.symlink", "hello.txt", "index.js", "world"},
+		KeepSymlink: false,
+	},
+	{
+		WorkingDir:  ".",
+		SrcDir:      "test/src",
+		Expected:    []string{"dir/sub.txt", "dir.symlink", "ext-hello.txt", "hello.symlink", "hello.txt", "index.js", "world"},
 		KeepSymlink: true,
 	},
 }
