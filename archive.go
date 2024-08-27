@@ -131,7 +131,7 @@ func followSymlink(path string) (string, fs.FileInfo, error) {
 		return "", nil, fmt.Errorf("failed to stat symlink target %s: %s", linkTarget, err)
 	}
 	if info.IsDir() {
-		return "", nil, fmt.Errorf("skip symlink target is directory %s", linkTarget)
+		return "", nil, fmt.Errorf("symlink target is a directory %s", linkTarget)
 	}
 	return linkTarget, info, nil
 }
