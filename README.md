@@ -555,6 +555,31 @@ The `caller_identity` function returns an object containing the following fields
 
 This object is the same as the result of [GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html) API.
 
+#### Resolve Lambda layer ARN
+
+The `layer_arn` template/Jsonnet function resolves the Lambda layer ARN.
+
+```json
+{
+  "Layers": [
+    "{{ layer_arn `my-layer` `latest` }}"
+  ]
+}
+```
+
+```jsonnet
+local layer_arn = std.native('layer_arn');
+{
+  Layers: [
+    layer_arn('my-layer', 'latest'),
+  ],
+}
+```
+
+The `layer_arn` function takes two string arguments: `LayerName` and `Version`.
+- `LayerName` is the name of the Lambda layer.
+- `Version` is the version of the Lambda layer. If `Version` is empty or `latest`, the latest version is used. Otherwise, the specified version is used.
+
 #### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
 
 When `--tfstate` option set to an URL to `terraform.tfstate`, tfstate template function enabled.
