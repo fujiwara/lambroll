@@ -136,10 +136,11 @@ $ lambroll deploy
 ## Usage
 
 ```console
-Usage: lambroll <command>
+Usage: lambroll <command> [flags]
 
 Flags:
   -h, --help                              Show context-sensitive help.
+      --config=STRING                     config file path ($LAMBROLL_CONFIG)
       --function=STRING                   Function file path ($LAMBROLL_FUNCTION)
       --log-level="info"                  log level (trace, debug, info, warn, error) ($LAMBROLL_LOGLEVEL)
       --[no-]color                        enable colored output ($LAMBROLL_COLOR)
@@ -200,7 +201,7 @@ Run "lambroll <command> --help" for more information on a command.
 
 lambroll has global flags for all commands.
 
-These flags can be set by environment variables or option file (`lambroll.json` or `lambroll.jsonnet`).
+These flags can be set by environment variables or option file (`--config` or `lambroll.json` or `lambroll.jsonnet`).
 
 #### Environment variables
 
@@ -210,7 +211,7 @@ See the above usage for the environment variable names.
 
 #### Option file
 
-`lambroll.json` or `lambroll.jsonnet` can be used as an option file.
+`--config=filename` or `lambroll.json` or `lambroll.jsonnet` can be used as an option file.
 
 If the option file is found in the current directory, lambroll reads the file and applies to the default values of global flags.
 
