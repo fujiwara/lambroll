@@ -59,6 +59,22 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 
 	kongOpts := []kong.Option{kong.Vars{"version": Version}}
 
+	// parse just the envfile opts to load envfile
+	var opts CLIOptions
+	p, err := kong.New(&opts, kongOpts...)
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("failed to new kong: %w", err)
+	}
+	if _, err := p.Parse(args); err != nil {
+		return "", nil, nil, fmt.Errorf("failed to parse args: %w", err)
+	}
+	for _, envfile := range opts.Envfile {
+		if err := exportEnvFile(envfile); err != nil {
+			return "", nil, nil, fmt.Errorf("failed to load envfile: %w", err)
+		}
+	}
+	mergedEnvfiles := make([]string, 0)
+
 	// load default options from lambroll.json or .jsonnet
 	defaultOpt, err := loadDefinitionFile[Option](nil, "", DefaultOptionFilenames)
 	if err != nil {
@@ -76,10 +92,10 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to parse default options: %w", err)
 		}
+		mergedEnvfiles = append(mergedEnvfiles, defaultOpt.Envfile...)
 		kongOpts = append(kongOpts, kong.Resolvers(resolver))
 	}
 
-	var opts CLIOptions
 	parser, err := kong.New(&opts, kongOpts...)
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to new kong: %w", err)
@@ -88,6 +104,7 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to parse args: %w", err)
 	}
+	opts.Envfile = append(mergedEnvfiles, opts.Envfile...)
 	sub := strings.Fields(c.Command())[0]
 	return sub, &opts, func() { c.PrintUsage(true) }, nil
 }
