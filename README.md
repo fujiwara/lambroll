@@ -215,7 +215,10 @@ See the above usage for the environment variable names.
 
 If the option file is specified, lambroll reads the file and applies to the default values of global flags.
 
+The file format is JSON or Jsonnet.
+
 ```jsonnet
+// option.jsonnet
 {
   log_level: 'info',
   color: true,
