@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -13,12 +12,14 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/fatih/color"
 	"github.com/fujiwara/logutils"
+	"github.com/samber/lo"
 )
 
 type Option struct {
-	Function string `help:"Function file path" env:"LAMBROLL_FUNCTION" json:"function,omitempty"`
-	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:",trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL" json:"log_level"`
-	Color    bool   `help:"enable colored output" default:"true" env:"LAMBROLL_COLOR" negatable:"" json:"color,omitempty"`
+	ConfigFilePath string `help:"config file path" env:"LAMBROLL_CONFIG" name:"config" json:"-"`
+	Function       string `help:"Function file path" env:"LAMBROLL_FUNCTION" json:"function,omitempty"`
+	LogLevel       string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:",trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL" json:"log_level"`
+	Color          bool   `help:"enable colored output" default:"true" env:"LAMBROLL_COLOR" negatable:"" json:"color,omitempty"`
 
 	Region          *string           `help:"AWS region" env:"AWS_REGION" json:"region,omitempty"`
 	Profile         *string           `help:"AWS credential profile name" env:"AWS_PROFILE" json:"profile,omitempty"`
@@ -51,22 +52,21 @@ type CLIOptions struct {
 
 type CLIParseFunc func([]string) (string, *CLIOptions, func(), error)
 
-// parse just the envfile opts to load envfile
-func prepareEnvFromArgs(args []string) error {
+func prepareCLI(args []string) (string, []string, error) {
 	var opts CLIOptions
 	p, err := kong.New(&opts)
 	if err != nil {
-		return fmt.Errorf("failed to new kong: %w", err)
+		return "", nil, fmt.Errorf("failed to new kong: %w", err)
 	}
 	if _, err := p.Parse(args); err != nil {
-		return fmt.Errorf("failed to parse args: %w", err)
+		return "", nil, fmt.Errorf("failed to parse args: %w", err)
 	}
 	for _, envfile := range opts.Envfile {
 		if err := exportEnvFile(envfile); err != nil {
-			return fmt.Errorf("failed to load envfile: %w", err)
+			return "", nil, fmt.Errorf("failed to load envfile: %w", err)
 		}
 	}
-	return nil
+	return opts.ConfigFilePath, opts.Envfile, nil
 }
 
 func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
@@ -76,21 +76,19 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	}
 
 	// resolve envfile from args at first
-	if err := prepareEnvFromArgs(args); err != nil {
+	optionFilePath, argEnvfiles, err := prepareCLI(args)
+	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to prepare env from args: %w", err)
 	}
-
+	var envfiles []string
 	kongOpts := []kong.Option{kong.Vars{"version": Version}}
 
-	// load default options from lambroll.json or .jsonnet
-	defaultOpt, err := loadDefinitionFile[Option](nil, "", DefaultOptionFilenames)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			// ignore not found error
-		} else {
-			return "", nil, nil, fmt.Errorf("failed to load default options: %w", err)
+	// load default options
+	if optionFilePath != "" {
+		defaultOpt, err := loadDefinitionFile[Option](nil, optionFilePath, DefaultOptionFilenames)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("failed to load config file: %w", err)
 		}
-	} else {
 		defaultOptBytes, err := json.Marshal(defaultOpt)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to marshal default options: %w", err)
@@ -100,6 +98,10 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 			return "", nil, nil, fmt.Errorf("failed to parse default options: %w", err)
 		}
 		kongOpts = append(kongOpts, kong.Resolvers(resolver))
+		envfiles = defaultOpt.Envfile
+		envfiles = append(envfiles, argEnvfiles...)
+	} else {
+		envfiles = argEnvfiles
 	}
 
 	var opts CLIOptions
@@ -111,6 +113,7 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to parse args: %w", err)
 	}
+	opts.Envfile = lo.Uniq(envfiles) // envfiles are parsed before, so it's safe to overwrite
 
 	sub := strings.Fields(c.Command())[0]
 	return sub, &opts, func() { c.PrintUsage(true) }, nil
