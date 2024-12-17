@@ -28,6 +28,7 @@ var testCaseJsonnetNativeFuncs = []struct {
 		name: "env FOO not set",
 		env: map[string]string{
 			"BAR": "bar",
+			"FOO": "",
 		},
 		expected: map[string]string{
 			"foo": "default",
@@ -63,8 +64,9 @@ func TestJsonnetNativeFuncs(t *testing.T) {
 	for _, c := range testCaseJsonnetNativeFuncs {
 		t.Run(c.name, func(t *testing.T) {
 			for k, v := range c.env {
-				t.Setenv(k, v)
+				lambroll.Setenv(k, v)
 			}
+			defer lambroll.ResetEnv()
 			out, err := vm.EvaluateAnonymousSnippet("test.jsonnet", testSrcJsonnet)
 			if c.errExpected {
 				if err == nil {

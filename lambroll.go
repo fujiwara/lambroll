@@ -425,6 +425,8 @@ func newSnapStart(s *types.SnapStartResponse) *types.SnapStart {
 	}
 }
 
+var Setenv = os.Setenv
+
 func exportEnvFile(file string) error {
 	if file == "" {
 		return nil
@@ -441,7 +443,7 @@ func exportEnvFile(file string) error {
 		return err
 	}
 	for key, value := range envs {
-		os.Setenv(key, value)
+		Setenv(key, value)
 	}
 	return nil
 }

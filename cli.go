@@ -16,7 +16,7 @@ import (
 )
 
 type Option struct {
-	ConfigFilePath string `help:"config file path" env:"LAMBROLL_CONFIG" name:"config" json:"-"`
+	OptionFilePath string `help:"option file path" env:"LAMBROLL_OPTION" name:"option" json:"-"`
 	Function       string `help:"Function file path" env:"LAMBROLL_FUNCTION" json:"function,omitempty"`
 	LogLevel       string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:",trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL" json:"log_level"`
 	Color          bool   `help:"enable colored output" default:"true" env:"LAMBROLL_COLOR" negatable:"" json:"color,omitempty"`
@@ -66,7 +66,7 @@ func prepareCLI(args []string) (string, []string, error) {
 			return "", nil, fmt.Errorf("failed to load envfile: %w", err)
 		}
 	}
-	return opts.ConfigFilePath, opts.Envfile, nil
+	return opts.OptionFilePath, opts.Envfile, nil
 }
 
 func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
@@ -87,7 +87,7 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	if optionFilePath != "" {
 		defaultOpt, err := loadDefinitionFile[Option](nil, optionFilePath, DefaultOptionFilenames)
 		if err != nil {
-			return "", nil, nil, fmt.Errorf("failed to load config file: %w", err)
+			return "", nil, nil, fmt.Errorf("failed to load option file: %w", err)
 		}
 		defaultOptBytes, err := json.Marshal(defaultOpt)
 		if err != nil {

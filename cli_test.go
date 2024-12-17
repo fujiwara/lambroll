@@ -27,12 +27,12 @@ var cliTests = []struct {
 		},
 	},
 	{
-		args: []string{"render", "--config", "debug.jsonnet"},
+		args: []string{"render", "--option", "debug.jsonnet"},
 		sub:  "render",
 		option: &lambroll.Option{
 			LogLevel:       "debug",
 			Color:          true,
-			ConfigFilePath: "debug.jsonnet",
+			OptionFilePath: "debug.jsonnet",
 			Envfile:        []string{},
 		},
 	},
@@ -48,14 +48,14 @@ var cliTests = []struct {
 	{
 		args: []string{
 			"--envfile=envfile.local",
-			"--config", "global.jsonnet",
+			"--option", "global.jsonnet",
 			"--function", "function.jsonnet",
 			"render",
 		},
 		sub: "render",
 		option: &lambroll.Option{
 			Function:       "function.jsonnet",
-			ConfigFilePath: "global.jsonnet",
+			OptionFilePath: "global.jsonnet",
 			Color:          true,
 			Envfile:        []string{"envfile.global", "envfile.local"},
 		},
@@ -86,35 +86,35 @@ var cliTests = []struct {
 		},
 	},
 	{
-		args: []string{"render", "--config", "useenv.jsonnet", "--envfile=envfile.useenv"},
+		args: []string{"render", "--option", "useenv.jsonnet", "--envfile=envfile.useenv"},
 		sub:  "render",
 		option: &lambroll.Option{
-			ConfigFilePath: "useenv.jsonnet",
+			OptionFilePath: "useenv.jsonnet",
 			Function:       "hello",
 			Color:          true,
 			Envfile:        []string{"envfile.useenv"},
 		},
 	},
 	{
-		args: []string{"render", "--config", "useenv.jsonnet"},
+		args: []string{"render", "--option", "useenv.jsonnet"},
 		sub:  "render",
 		env: map[string]string{
 			"TEST_FUNCTION_NAME": "world",
 		},
 		option: &lambroll.Option{
-			ConfigFilePath: "useenv.jsonnet",
+			OptionFilePath: "useenv.jsonnet",
 			Function:       "world",
 			Color:          true,
 			Envfile:        []string{},
 		},
 	},
 	{
-		args: []string{"render", "--config", "missing.jsonnet"},
+		args: []string{"render", "--option", "missing.jsonnet"},
 		sub:  "render",
 		err:  os.ErrNotExist,
 	},
 	{
-		args: []string{"render", "--config", "missing.json"},
+		args: []string{"render", "--option", "missing.json"},
 		sub:  "render",
 		err:  os.ErrNotExist,
 	},
@@ -128,9 +128,9 @@ func TestParseCLI(t *testing.T) {
 	for _, tt := range cliTests {
 		t.Run(strings.Join(tt.args, "_"), func(t *testing.T) {
 			for k, v := range tt.env {
-				reset := setenv(k, v)
-				defer reset()
+				lambroll.Setenv(k, v)
 			}
+			defer lambroll.ResetEnv()
 			sub, opt, _, err := lambroll.ParseCLI(tt.args)
 			if err != nil {
 				if tt.err == nil {
@@ -152,17 +152,5 @@ func TestParseCLI(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func setenv(key, value string) func() {
-	orig, found := os.LookupEnv(key)
-	os.Setenv(key, value)
-	return func() {
-		if found {
-			os.Setenv(key, orig)
-		} else {
-			os.Unsetenv(key)
-		}
 	}
 }
