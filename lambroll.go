@@ -72,12 +72,6 @@ var (
 		"function_url.jsonnet",
 	}
 
-	// DefaultOptionFilenames defines file name for option definition.
-	DefaultOptionFilenames = []string{
-		"lambroll.json",
-		"lambroll.jsonnet",
-	}
-
 	// FunctionZipFilename defines file name for zip archive downloaded at init.
 	FunctionZipFilename = "function.zip"
 
@@ -88,8 +82,6 @@ var (
 		DefaultFunctionFilenames[1],
 		DefaultFunctionURLFilenames[0],
 		DefaultFunctionURLFilenames[1],
-		DefaultOptionFilenames[0],
-		DefaultOptionFilenames[1],
 		FunctionZipFilename,
 		".git/*",
 		".terraform/*",

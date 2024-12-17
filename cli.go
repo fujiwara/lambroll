@@ -85,7 +85,7 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 
 	// load default options
 	if optionFilePath != "" {
-		defaultOpt, err := loadDefinitionFile[Option](nil, optionFilePath, DefaultOptionFilenames)
+		defaultOpt, err := loadDefinitionFile[Option](nil, optionFilePath, nil)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to load option file: %w", err)
 		}
