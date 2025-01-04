@@ -29,3 +29,5 @@ jobs:
       - uses: fujiwara/lambroll@v1-actions-test
         with:
           version-file: .test-lambroll-version
+      - run: |
+          lambroll version 2>&1 | fgrep v1.1.3
