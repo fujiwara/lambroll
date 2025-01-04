@@ -82,6 +82,7 @@ jobs:
       - uses: fujiwara/lambroll@v1
         with:
           version: v1.1.0
+          # version-file: .lambroll-version
       - run: |
           lambroll deploy
 ```
@@ -89,6 +90,7 @@ jobs:
 Note:
 - `version` is not required, but it is recommended that the version be specified.
   - The default version is not fixed and may change in the future.
+- `version-file` can also be used to specify lambroll version by using the file that contains lambroll version (e.g. 1.1.0).
 - `os` and `arch` are automatically detected. (Some previous versions use `os` and `arch` as inputs, but they are deprecated.)
 
 ## Quick start
