@@ -26,6 +26,8 @@ jobs:
           version: v1.0.5
       - run: |
           lambroll version 2>&1 | fgrep v1.0.5
+      - run: |
+          echo 1.1.3 > .test-lambroll-version
       - uses: fujiwara/lambroll@v1-actions-test
         with:
           version-file: .test-lambroll-version
