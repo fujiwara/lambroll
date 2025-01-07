@@ -38,7 +38,7 @@ var retryPolicy = retry.Policy{
 
 // Function represents configuration of Lambda function
 // type Function = lambda.CreateFunctionInput
-type Function = lambda.CreateFunctionInput
+type Function lambda.CreateFunctionInput
 
 // Tags represents tags of function
 type Tags map[string]string
@@ -414,7 +414,7 @@ func exportEnvFile(file string) error {
 
 var errCannotUpdateImageAndZip = fmt.Errorf("cannot update function code between Image and Zip")
 
-func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCode *types.FunctionCodeLocation, newFn *lambda.CreateFunctionInput) error {
+func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCode *types.FunctionCodeLocation, newFn *Function) error {
 	if currentConf == nil {
 		// create new function
 		return nil

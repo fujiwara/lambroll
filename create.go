@@ -136,8 +136,9 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 	return nil
 }
 
-func (app *App) createFunction(ctx context.Context, fn *lambda.CreateFunctionInput) (*lambda.CreateFunctionOutput, error) {
-	if res, err := app.lambda.CreateFunction(ctx, fn); err != nil {
+func (app *App) createFunction(ctx context.Context, fn *Function) (*lambda.CreateFunctionOutput, error) {
+	in := lambda.CreateFunctionInput(*fn)
+	if res, err := app.lambda.CreateFunction(ctx, &in); err != nil {
 		return nil, fmt.Errorf("failed to create function: %w", err)
 	} else {
 		return res, app.waitForLastUpdateStatusSuccessful(ctx, *fn.FunctionName)

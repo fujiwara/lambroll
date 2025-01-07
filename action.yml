@@ -2,9 +2,22 @@ inputs:
   version:
     description: "A version to install lambroll"
     default: "v1.0.5"
+    required: false
+  version-file:
+    description: "File name that contains the lambroll version."
+    required: false
 runs:
   using: "composite"
   steps:
+    - name: Set lambroll version
+      id: set-lambroll-version
+      run: |
+        VERSION=${{ inputs.version }}
+        if [ -n "${{ inputs.version-file }}" ]; then
+          VERSION=v$(cat ${{ inputs.version-file }})
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+      shell: bash
     - name: Set file name
       id: set-filename
       run: |
@@ -20,12 +33,12 @@ runs:
           *) BIN_ARCH="amd64" ;;
         esac
 
-        FILENAME=lambroll_${{ inputs.version }}_${BIN_OS}_${BIN_ARCH}.tar.gz
+        FILENAME=lambroll_${{ steps.set-lambroll-version.outputs.VERSION }}_${BIN_OS}_${BIN_ARCH}.tar.gz
         echo "FILENAME=$FILENAME" >> $GITHUB_OUTPUT
       shell: bash
     - run: |
-        mkdir -p /tmp/lambroll-${{ inputs.version }}
-        cd /tmp/lambroll-${{ inputs.version }}
-        curl -sL https://github.com/fujiwara/lambroll/releases/download/${{ inputs.version }}/${{ steps.set-filename.outputs.FILENAME }} | tar zxvf -
+        mkdir -p /tmp/lambroll-${{ steps.set-lambroll-version.outputs.VERSION }}
+        cd /tmp/lambroll-${{ steps.set-lambroll-version.outputs.VERSION }}
+        curl -sL https://github.com/fujiwara/lambroll/releases/download/${{ steps.set-lambroll-version.outputs.VERSION }}/${{ steps.set-filename.outputs.FILENAME }} | tar zxvf -
         sudo install lambroll /usr/local/bin
       shell: bash
