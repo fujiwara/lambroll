@@ -1,7 +1,7 @@
 name: tagpr and release
 on:
   push:
-    branches: ["main"]
+    branches: ["v1"]
   workflow_dispatch:
     inputs:
       tag:
