@@ -191,9 +191,15 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		loader.Funcs(prefixedFuncs)
 	}
 
+	// load caller identity functions
 	callerIdentity := newCallerIdentity(v2cfg)
 	nativeFuncs = append(nativeFuncs, callerIdentity.JsonnetNativeFuncs(ctx)...)
 	loader.Funcs(callerIdentity.FuncMap(ctx))
+
+	// load layer functions
+	layerArnResolver := newLayerArnResolver(v2cfg)
+	nativeFuncs = append(nativeFuncs, layerArnResolver.JsonnetNativeFuncs(ctx)...)
+	loader.Funcs(layerArnResolver.FuncMap(ctx))
 
 	app := &App{
 		callerIdentity:   callerIdentity,
