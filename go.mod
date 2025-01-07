@@ -11,7 +11,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.69.2
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.71.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.3
-	github.com/fatih/color v1.17.0
+	github.com/fatih/color v1.18.0
 	github.com/fujiwara/logutils v1.1.2
 	github.com/fujiwara/ssm-lookup v0.1.0
 	github.com/fujiwara/tfstate-lookup v1.4.2
