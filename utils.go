@@ -99,7 +99,7 @@ func findDefinitionFile(preferred string, defaults []string) (string, error) {
 			return name, nil
 		}
 	}
-	return "", fmt.Errorf("function file (%s) not found", strings.Join(DefaultFunctionFilenames, " or "))
+	return "", fmt.Errorf("file (%s) not found: %w", strings.Join(DefaultFunctionFilenames, " or "), os.ErrNotExist)
 }
 
 func jsonToJsonnet(src []byte, filepath string) ([]byte, error) {

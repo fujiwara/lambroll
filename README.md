@@ -138,10 +138,11 @@ $ lambroll deploy
 ## Usage
 
 ```console
-Usage: lambroll <command>
+Usage: lambroll <command> [flags]
 
 Flags:
   -h, --help                              Show context-sensitive help.
+      --option=STRING                     option file path ($LAMBROLL_OPTION)
       --function=STRING                   Function file path ($LAMBROLL_FUNCTION)
       --log-level="info"                  log level (trace, debug, info, warn, error) ($LAMBROLL_LOGLEVEL)
       --[no-]color                        enable colored output ($LAMBROLL_COLOR)
@@ -197,6 +198,54 @@ Commands:
 
 Run "lambroll <command> --help" for more information on a command.
 ```
+
+### Global flags
+
+lambroll has global flags for all commands.
+
+These flags can be set by environment variables or option file (`--option`).
+
+#### Environment variables
+
+For example, `--log-level=debug` can be set by `LAMBROLL_LOGLEVEL=debug`.
+
+See the above usage for the environment variable names.
+
+#### Option file
+
+`--option=filename` can be used as an option file.
+
+If the option file is specified, lambroll reads the file and applies to the default values of global flags.
+
+The file format is JSON or Jsonnet.
+
+```jsonnet
+// option.jsonnet
+{
+  log_level: 'info',
+  color: true,
+  region: 'ap-northeast-1',
+  profile: 'default',
+  tfstate: 's3://my-bucket/terraform.tfstate',
+  prefixed_tfstate: {
+    my_first_: 's3://my-bucket/first.tfstate',
+    my_second_: 's3://my-bucket/second.tfstate',
+  },
+  endpoint: 'http://localhost:9001',
+  envfile: ['.env1', '.env2'],
+  ext_str: {
+    accountID: '0123456789012',
+  },
+  ext_code: {
+    memorySize: '128 * 4',
+  },
+}
+```
+
+All fields are optional. If the field is not defined, the default value is used.
+When command-line flags are specified, they take precedence over the options file.
+
+While parsing the option file, lambroll evaluates only the `{{env}}` and `{{must_env}}` template functions and `env` and `must_env` native functions in Jsonnet. Other functions are not available.
 
 ### Init
 

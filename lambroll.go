@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"reflect"
 	"text/template"
 	"time"
 
@@ -53,6 +54,9 @@ func (app *App) functionArn(ctx context.Context, name string) string {
 }
 
 var (
+	// DefaultLogLevel is default log level
+	DefaultLogLevel = "info"
+
 	// IgnoreFilename defines file name includes ignore patterns at creating zip archive.
 	IgnoreFilename = ".lambdaignore"
 
@@ -62,6 +66,7 @@ var (
 		"function.jsonnet",
 	}
 
+	// DefaultFunctionURLFilenames defines file name for function URL definition.
 	DefaultFunctionURLFilenames = []string{
 		"function_url.json",
 		"function_url.jsonnet",
@@ -220,6 +225,34 @@ func (app *App) AWSAccountID(ctx context.Context) string {
 	return app.callerIdentity.Account(ctx)
 }
 
+func (app *App) JsonnetVM() *jsonnet.VM {
+	vm := jsonnet.MakeVM()
+	if app == nil {
+		for _, f := range DefaultJsonnetNativeFuncs() {
+			vm.NativeFunction(f)
+		}
+		return vm
+	}
+	for _, f := range app.nativeFuncs {
+		vm.NativeFunction(f)
+	}
+	for k, v := range app.extStr {
+		vm.ExtVar(k, v)
+	}
+	for k, v := range app.extCode {
+		vm.ExtCode(k, v)
+	}
+	return vm
+}
+
+func (app *App) ConfigLoader() *config.Loader {
+	if app != nil {
+		return app.loader
+	} else {
+		return config.New()
+	}
+}
+
 func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, error) {
 	if path == "" {
 		p, err := findDefinitionFile("", defaults)
@@ -228,6 +261,9 @@ func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, er
 		}
 		path = p
 	}
+	var instance T
+	typeName := reflect.TypeOf(instance).Name()
+	log.Printf("[info] loading %s from %s", typeName, path)
 
 	var (
 		src []byte
@@ -235,26 +271,16 @@ func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, er
 	)
 	switch filepath.Ext(path) {
 	case ".jsonnet":
-		vm := jsonnet.MakeVM()
-		for _, f := range app.nativeFuncs {
-			vm.NativeFunction(f)
-		}
-		for k, v := range app.extStr {
-			vm.ExtVar(k, v)
-		}
-		for k, v := range app.extCode {
-			vm.ExtCode(k, v)
-		}
-		jsonStr, err := vm.EvaluateFile(path)
+		jsonStr, err := app.JsonnetVM().EvaluateFile(path)
 		if err != nil {
 			return nil, err
 		}
-		src, err = app.loader.ReadWithEnvBytes([]byte(jsonStr))
+		src, err = app.ConfigLoader().ReadWithEnvBytes([]byte(jsonStr))
 		if err != nil {
 			return nil, err
 		}
 	default:
-		src, err = app.loader.ReadWithEnv(path)
+		src, err = app.ConfigLoader().ReadWithEnv(path)
 		if err != nil {
 			return nil, err
 		}
@@ -397,6 +423,8 @@ func newSnapStart(s *types.SnapStartResponse) *types.SnapStart {
 	}
 }
 
+var Setenv = os.Setenv
+
 func exportEnvFile(file string) error {
 	if file == "" {
 		return nil
@@ -413,7 +441,7 @@ func exportEnvFile(file string) error {
 		return err
 	}
 	for key, value := range envs {
-		os.Setenv(key, value)
+		Setenv(key, value)
 	}
 	return nil
 }

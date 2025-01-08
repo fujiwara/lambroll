@@ -1,0 +1,3 @@
+{
+    envfile: ["envfile.global"],
+}

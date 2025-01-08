@@ -1,7 +1,9 @@
 package lambroll
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -10,21 +12,23 @@ import (
 	"github.com/alecthomas/kong"
 	"github.com/fatih/color"
 	"github.com/fujiwara/logutils"
+	"github.com/samber/lo"
 )
 
 type Option struct {
-	Function string `help:"Function file path" env:"LAMBROLL_FUNCTION"`
-	LogLevel string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:"trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL"`
-	Color    bool   `help:"enable colored output" default:"true" env:"LAMBROLL_COLOR" negatable:""`
+	OptionFilePath string `help:"option file path" env:"LAMBROLL_OPTION" name:"option" json:"-"`
+	Function       string `help:"Function file path" env:"LAMBROLL_FUNCTION" json:"function,omitempty"`
+	LogLevel       string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:",trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL" json:"log_level"`
+	Color          bool   `help:"enable colored output" default:"true" env:"LAMBROLL_COLOR" negatable:"" json:"color,omitempty"`
 
-	Region          *string           `help:"AWS region" env:"AWS_REGION"`
-	Profile         *string           `help:"AWS credential profile name" env:"AWS_PROFILE"`
-	TFState         *string           `name:"tfstate" help:"URL to terraform.tfstate" env:"LAMBROLL_TFSTATE"`
-	PrefixedTFState map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate" env:"LAMBROLL_PREFIXED_TFSTATE"`
-	Endpoint        *string           `help:"AWS API Lambda Endpoint" env:"AWS_LAMBDA_ENDPOINT"`
-	Envfile         []string          `help:"environment files" env:"LAMBROLL_ENVFILE"`
-	ExtStr          map[string]string `help:"external string values for Jsonnet" env:"LAMBROLL_EXTSTR"`
-	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE"`
+	Region          *string           `help:"AWS region" env:"AWS_REGION" json:"region,omitempty"`
+	Profile         *string           `help:"AWS credential profile name" env:"AWS_PROFILE" json:"profile,omitempty"`
+	TFState         *string           `name:"tfstate" help:"URL to terraform.tfstate" env:"LAMBROLL_TFSTATE" json:"tfstate,omitempty"`
+	PrefixedTFState map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate" env:"LAMBROLL_PREFIXED_TFSTATE" json:"prefixed_tfstate,omitempty"`
+	Endpoint        *string           `help:"AWS API Lambda Endpoint" env:"AWS_LAMBDA_ENDPOINT" json:"endpoint,omitempty"`
+	Envfile         []string          `help:"environment files" env:"LAMBROLL_ENVFILE" json:"envfile,omitempty"`
+	ExtStr          map[string]string `help:"external string values for Jsonnet" env:"LAMBROLL_EXTSTR" json:"extstr,omitempty"`
+	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE" json:"extcode,omitempty"`
 }
 
 type CLIOptions struct {
@@ -48,14 +52,60 @@ type CLIOptions struct {
 
 type CLIParseFunc func([]string) (string, *CLIOptions, func(), error)
 
+func prepareCLI(args []string) (string, []string, error) {
+	var opts CLIOptions
+	p, err := kong.New(&opts)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to new kong: %w", err)
+	}
+	if _, err := p.Parse(args); err != nil {
+		return "", nil, fmt.Errorf("failed to parse args: %w", err)
+	}
+	for _, envfile := range opts.Envfile {
+		if err := exportEnvFile(envfile); err != nil {
+			return "", nil, fmt.Errorf("failed to load envfile: %w", err)
+		}
+	}
+	return opts.OptionFilePath, opts.Envfile, nil
+}
+
 func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	// compatible with v1
 	if len(args) == 0 || len(args) > 0 && args[0] == "help" {
 		args = []string{"--help"}
 	}
 
+	// resolve envfile from args at first
+	optionFilePath, argEnvfiles, err := prepareCLI(args)
+	if err != nil {
+		return "", nil, nil, fmt.Errorf("failed to prepare env from args: %w", err)
+	}
+	var envfiles []string
+	kongOpts := []kong.Option{kong.Vars{"version": Version}}
+
+	// load default options
+	if optionFilePath != "" {
+		defaultOpt, err := loadDefinitionFile[Option](nil, optionFilePath, nil)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("failed to load option file: %w", err)
+		}
+		defaultOptBytes, err := json.Marshal(defaultOpt)
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("failed to marshal default options: %w", err)
+		}
+		resolver, err := kong.JSON(bytes.NewReader(defaultOptBytes))
+		if err != nil {
+			return "", nil, nil, fmt.Errorf("failed to parse default options: %w", err)
+		}
+		kongOpts = append(kongOpts, kong.Resolvers(resolver))
+		envfiles = defaultOpt.Envfile
+		envfiles = append(envfiles, argEnvfiles...)
+	} else {
+		envfiles = argEnvfiles
+	}
+
 	var opts CLIOptions
-	parser, err := kong.New(&opts, kong.Vars{"version": Version})
+	parser, err := kong.New(&opts, kongOpts...)
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to new kong: %w", err)
 	}
@@ -63,6 +113,8 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to parse args: %w", err)
 	}
+	opts.Envfile = lo.Uniq(envfiles) // envfiles are parsed before, so it's safe to overwrite
+
 	sub := strings.Fields(c.Command())[0]
 	return sub, &opts, func() { c.PrintUsage(true) }, nil
 }
@@ -74,6 +126,9 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	}
 
 	color.NoColor = !opts.Color
+	if opts.LogLevel == "" {
+		opts.LogLevel = DefaultLogLevel
+	}
 	filter := &logutils.LevelFilter{
 		Levels: []logutils.LogLevel{"trace", "debug", "info", "warn", "error"},
 		ModifierFuncs: []logutils.ModifierFunc{
