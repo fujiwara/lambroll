@@ -245,6 +245,12 @@ The file format is JSON or Jsonnet.
 All fields are optional. If the field is not defined, the default value is used.
 When command-line flags are specified, they take precedence over the options file.
 
+The priority of the option values is as follows:
+
+1. Command-line flags. (`--log-level=debug`)
+2. The values defined in the option file. (`{"log_level": "debug"}`)
+3. Environment variables. (`LAMBROLL_LOGLEVEL=debug`)
+
 While parsing the option file, lambroll evaluates only the `{{env}}` and `{{must_env}}` template functions and `env` and `must_env` native functions in Jsonnet. Other functions are not available.
 
 ### Init
