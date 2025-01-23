@@ -131,7 +131,26 @@ var cliTests = []struct {
 			OptionFilePath: "override.jsonnet",
 			Color:          true,
 			Envfile:        []string{},
-			LogLevel:       "trace", // priority is higher than env
+			LogLevel:       "trace", // option file's priority is higher than env
+			Profile:        ptr("mine"),
+			Region:         ptr("us-west-2"),
+		},
+	},
+	{
+		args: []string{"render",
+			"--profile", "mine",
+			"--region", "us-west-2",
+		},
+		env: map[string]string{
+			"LAMBROLL_OPTION":    "override.jsonnet",
+			"LAMBROLL_LOG_LEVEL": "debug",
+		},
+		sub: "render",
+		option: &lambroll.Option{
+			OptionFilePath: "override.jsonnet",
+			Color:          true,
+			Envfile:        []string{},
+			LogLevel:       "trace", // option file's priority is higher than env
 			Profile:        ptr("mine"),
 			Region:         ptr("us-west-2"),
 		},
