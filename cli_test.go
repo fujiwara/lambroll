@@ -131,7 +131,7 @@ var cliTests = []struct {
 			OptionFilePath: "override.jsonnet",
 			Color:          true,
 			Envfile:        []string{},
-			LogLevel:       "debug",
+			LogLevel:       "trace", // priority is higher than env
 			Profile:        ptr("mine"),
 			Region:         ptr("us-west-2"),
 		},
