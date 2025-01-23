@@ -128,7 +128,16 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		if err != nil {
 			return fmt.Errorf("failed to parse ignore query: %w", err)
 		}
-		q = jsondiff.WithUpdate(q)
+		// Use the del() function to ignore a given path
+		q = &gojq.Query{
+			Term: &gojq.Term{
+				Type: gojq.TermTypeFunc,
+				Func: &gojq.Func{
+					Name: "del",
+					Args: []*gojq.Query{q},
+				},
+			},
+		}
 		fnAny, _ := marshalAny(fn)
 		fnAny, err = jsondiff.ModifyValue(q, fnAny)
 		if err != nil {
