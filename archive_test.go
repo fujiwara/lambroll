@@ -4,8 +4,11 @@ import (
 	"archive/zip"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
+	"sort"
 	"testing"
+
 	"time"
 
 	"github.com/fujiwara/lambroll"
@@ -114,4 +117,31 @@ func TestLoadNotZipArchive(t *testing.T) {
 		t.Error("must be failed to load not a zip file")
 	}
 	t.Log(err)
+}
+
+func TestUnzip(t *testing.T) {
+	dest := t.TempDir()
+	if err := lambroll.Unzip("test/src.zip", dest, false); err != nil {
+		t.Error("failed to Unzip", err)
+	}
+	unzipEntries := []string{}
+	err := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, _ := filepath.Rel(dest, path)
+		unzipEntries = append(unzipEntries, rel)
+		return nil
+	})
+	if err != nil {
+		t.Error("failed to walk", err)
+	}
+	sort.Strings(unzipEntries)
+	expected := []string{"dir/sub.txt", "hello.txt", "world"}
+	if diff := cmp.Diff(unzipEntries, expected); diff != "" {
+		t.Errorf("unexpected unzip entries %s", diff)
+	}
 }
