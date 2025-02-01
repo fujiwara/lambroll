@@ -2,6 +2,7 @@ package lambroll_test
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -120,8 +121,9 @@ func TestLoadNotZipArchive(t *testing.T) {
 }
 
 func TestUnzip(t *testing.T) {
+	ctx := context.TODO()
 	dest := t.TempDir()
-	if err := lambroll.Unzip("test/src.zip", dest, false); err != nil {
+	if err := lambroll.Unzip(ctx, "test/src.zip", dest, false); err != nil {
 		t.Error("failed to Unzip", err)
 	}
 	unzipEntries := []string{}

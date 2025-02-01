@@ -464,7 +464,7 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, exists bool, 
 			return err
 		}
 	}
-	if err := app.saveFile(name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
+	if err := app.saveFile(ctx, name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
 		return err
 	}
 

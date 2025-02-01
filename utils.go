@@ -2,6 +2,7 @@ package lambroll
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,20 +15,26 @@ import (
 	"github.com/google/go-jsonnet/formatter"
 )
 
-func (app *App) saveFile(path string, b []byte, mode os.FileMode, force bool) error {
+func (app *App) saveFile(ctx context.Context, path string, b []byte, mode os.FileMode, force bool) error {
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			return nil
 		}
 	}
 	return os.WriteFile(path, b, mode)
 }
 
-func saveFileIO(path string, r io.Reader, mode os.FileMode, force bool) error {
+func saveFileIO(ctx context.Context, path string, r io.Reader, mode os.FileMode, force bool) error {
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			return nil
 		}
 	}

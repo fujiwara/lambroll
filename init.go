@@ -89,7 +89,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			return err
 		}
 		if opt.Unzip {
-			if err := unzipAfterInit(FunctionZipFilename, opt.Src, opt.ForceOverwrite); err != nil {
+			if err := unzipAfterInit(ctx, FunctionZipFilename, opt.Src, opt.ForceOverwrite); err != nil {
 				return err
 			}
 		}
@@ -97,6 +97,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 
 	log.Printf("[info] creating %s", IgnoreFilename)
 	err = app.saveFile(
+		ctx,
 		IgnoreFilename,
 		[]byte(strings.Join(DefaultExcludes, "\n")+"\n"),
 		os.FileMode(0644),
@@ -120,7 +121,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			return err
 		}
 	}
-	if err := app.saveFile(name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
+	if err := app.saveFile(ctx, name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
 		return err
 	}
 
@@ -147,9 +148,9 @@ func download(url, path string) error {
 	return err
 }
 
-func unzipAfterInit(path, dest string, force bool) error {
+func unzipAfterInit(ctx context.Context, path, dest string, force bool) error {
 	log.Printf("[info] unzipping %s to %s", path, dest)
-	if err := unzip(path, dest, force); err != nil {
+	if err := unzip(ctx, path, dest, force); err != nil {
 		return fmt.Errorf("failed to unzip %s: %w", path, err)
 	}
 	log.Printf("[info] removing %s", path)
@@ -159,7 +160,7 @@ func unzipAfterInit(path, dest string, force bool) error {
 	return nil
 }
 
-func unzip(src, dest string, force bool) error {
+func unzip(ctx context.Context, src, dest string, force bool) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
 		return err
@@ -188,7 +189,7 @@ func unzip(src, dest string, force bool) error {
 		if err != nil {
 			return err
 		}
-		if err := saveFileIO(fpath, fc, f.Mode(), force); err != nil {
+		if err := saveFileIO(ctx, fpath, fc, f.Mode(), force); err != nil {
 			return err
 		}
 	}
