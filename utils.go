@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -21,6 +22,22 @@ func (app *App) saveFile(path string, b []byte, mode os.FileMode, force bool) er
 		}
 	}
 	return os.WriteFile(path, b, mode)
+}
+
+func saveFileIO(path string, r io.Reader, mode os.FileMode, force bool) error {
+	if _, err := os.Stat(path); err == nil {
+		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
+		if !ok {
+			return nil
+		}
+	}
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, mode)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, r)
+	return err
 }
 
 func toGeneralMap(s any, omitEmpty bool) (any, error) {
