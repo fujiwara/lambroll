@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -194,7 +193,7 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 		}
 		if fi.Mode()&os.ModeSymlink != 0 {
 			// supports for symbolic link
-			if err := saveSymlinkIO(ctx, fpath, fc, f.Mode()); err != nil {
+			if err := saveSymlinkIO(ctx, fpath, fc); err != nil {
 				return err
 			}
 		} else {
@@ -208,14 +207,14 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 	return nil
 }
 
-func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser, mode fs.FileMode) error {
+func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser) error {
 	defer r.Close()
 	l, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
 	linkTo := string(l)
-	log.Printf("[debug] writing symlink %s -> %s mode %s", fpath, linkTo, mode)
+	log.Printf("[debug] writing symlink %s -> %s", fpath, linkTo)
 
 	cwd, err := os.Getwd()
 	if err != nil {
