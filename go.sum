@@ -116,8 +116,8 @@ github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2
 github.com/felixge/httpsnoop v1.0.4/go.mod h1:m8KPJKqk1gH5J9DgRY2ASl2lWCfGKXixSwevea8zH2U=
 github.com/fujiwara/logutils v1.1.2 h1:nYVRyTj+5SyCvpZUrYIZU4kubqNycGTxFXMKJBKe0Sg=
 github.com/fujiwara/logutils v1.1.2/go.mod h1:pdb/Uk70rjQWEmFm/OvYH7OG8meZt1fEIqC0qZbvro4=
-github.com/fujiwara/ssm-lookup v0.1.0 h1:30dFvRurr1cvBq6KZL0QJrN1e5y80p6EUAari6LoL3Y=
-github.com/fujiwara/ssm-lookup v0.1.0/go.mod h1:ssVwS1FrHAKouOMEmYC6j07XRKqBGdABRmv6gBKewVg=
+github.com/fujiwara/ssm-lookup v0.1.1 h1:Cwx7Y6A0HbIKyAzS60DYcf/TZ5KZHY/vTlCtUoythfQ=
+github.com/fujiwara/ssm-lookup v0.1.1/go.mod h1:ssVwS1FrHAKouOMEmYC6j07XRKqBGdABRmv6gBKewVg=
 github.com/fujiwara/tfstate-lookup v1.4.2 h1:Mmsf+li1h+bfeqgKwFw4lz74g89ooMlDp99cOb3aZ4c=
 github.com/fujiwara/tfstate-lookup v1.4.2/go.mod h1:C/n3SgmKG5Q3R/CuoOJLkSwtUDp6pUIVwShLPSFcZCw=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
