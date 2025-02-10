@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"archive/zip"
 	"context"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -19,6 +21,8 @@ import (
 type InitOption struct {
 	FunctionName   *string `help:"Function name for init" required:"true" default:""`
 	DownloadZip    bool    `name:"download" help:"Download function.zip" default:"false"`
+	Unzip          bool    `help:"Unzip function.zip and delete it" default:"false"`
+	Src            string  `help:"Source directory for unzipping function.zip" default:"."`
 	Jsonnet        bool    `help:"render function.json as jsonnet" default:"false"`
 	Qualifier      *string `help:"function version or alias"`
 	FunctionURL    bool    `help:"create function url definition file" default:"false"`
@@ -79,15 +83,21 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	}
 	fn := newFunctionFrom(c, code, tags)
 
-	if opt.DownloadZip && res.Code != nil && *res.Code.RepositoryType == "S3" {
+	if (opt.DownloadZip || opt.Unzip) && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
 		if err := download(*res.Code.Location, FunctionZipFilename); err != nil {
 			return err
+		}
+		if opt.Unzip {
+			if err := unzipAfterInit(ctx, FunctionZipFilename, opt.Src, opt.ForceOverwrite); err != nil {
+				return err
+			}
 		}
 	}
 
 	log.Printf("[info] creating %s", IgnoreFilename)
 	err = app.saveFile(
+		ctx,
 		IgnoreFilename,
 		[]byte(strings.Join(DefaultExcludes, "\n")+"\n"),
 		os.FileMode(0644),
@@ -111,7 +121,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			return err
 		}
 	}
-	if err := app.saveFile(name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
+	if err := app.saveFile(ctx, name, b, os.FileMode(0644), opt.ForceOverwrite); err != nil {
 		return err
 	}
 
@@ -136,4 +146,85 @@ func download(url, path string) error {
 	}
 	_, err = io.Copy(f, resp.Body)
 	return err
+}
+
+func unzipAfterInit(ctx context.Context, path, dest string, force bool) error {
+	log.Printf("[info] unzipping %s to %s", path, dest)
+	if err := unzip(ctx, path, dest, force); err != nil {
+		return fmt.Errorf("failed to unzip %s: %w", path, err)
+	}
+	log.Printf("[info] removing %s", path)
+	if err := os.Remove(path); err != nil {
+		return fmt.Errorf("failed to remove %s: %w", path, err)
+	}
+	return nil
+}
+
+func unzip(ctx context.Context, src, dest string, force bool) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	if err := os.MkdirAll(dest, 0755); err != nil {
+		return err
+	}
+
+	for _, f := range r.File {
+		fpath := filepath.Join(dest, f.Name)
+		fi := f.FileInfo()
+		if fi.IsDir() {
+			log.Printf("[debug] creating directory %s", fpath)
+			if err := os.MkdirAll(fpath, f.Mode()); err != nil {
+				return err
+			}
+			continue
+		}
+
+		log.Printf("[debug] extracting %s", fpath)
+		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
+			return err
+		}
+
+		fc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		if fi.Mode()&os.ModeSymlink != 0 {
+			// supports for symbolic link
+			if err := saveSymlinkIO(ctx, fpath, fc); err != nil {
+				return err
+			}
+		} else {
+			// normal file
+			if err := saveFileIO(ctx, fpath, fc, f.Mode(), force); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser) error {
+	defer r.Close()
+	l, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	linkTo := string(l)
+	log.Printf("[debug] writing symlink %s -> %s", fpath, linkTo)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	defer os.Chdir(cwd)
+	if err := os.Chdir(filepath.Dir(fpath)); err != nil {
+		return err
+	}
+	name := filepath.Base(fpath)
+	log.Printf("[debug] creating symlink %s -> %s", name, linkTo)
+	return os.Symlink(linkTo, name)
 }

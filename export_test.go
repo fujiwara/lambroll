@@ -15,6 +15,7 @@ var (
 	MarshalJSON       = marshalJSON
 	NewFunctionFrom   = newFunctionFrom
 	NewCallerIdentity = newCallerIdentity
+	Unzip             = unzip
 )
 
 type VersionsOutput = versionsOutput

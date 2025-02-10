@@ -2,8 +2,10 @@ package lambroll
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -13,14 +15,39 @@ import (
 	"github.com/google/go-jsonnet/formatter"
 )
 
-func (app *App) saveFile(path string, b []byte, mode os.FileMode, force bool) error {
+func (app *App) saveFile(ctx context.Context, path string, b []byte, mode os.FileMode, force bool) error {
+	log.Printf("[debug] writing file to %s mode %s", path, mode)
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
 			return nil
 		}
 	}
 	return os.WriteFile(path, b, mode)
+}
+
+func saveFileIO(ctx context.Context, path string, r io.ReadCloser, mode os.FileMode, force bool) error {
+	log.Printf("[debug] writing file to %s mode %s", path, mode)
+	defer r.Close()
+	if _, err := os.Stat(path); err == nil {
+		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
+		if !ok {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return nil
+		}
+	}
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE, mode)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = io.Copy(f, r)
+	return err
 }
 
 func toGeneralMap(s any, omitEmpty bool) (any, error) {

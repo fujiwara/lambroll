@@ -2,10 +2,15 @@ package lambroll_test
 
 import (
 	"archive/zip"
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"slices"
+	"sort"
 	"testing"
+
 	"time"
 
 	"github.com/fujiwara/lambroll"
@@ -114,4 +119,52 @@ func TestLoadNotZipArchive(t *testing.T) {
 		t.Error("must be failed to load not a zip file")
 	}
 	t.Log(err)
+}
+
+func TestUnzip(t *testing.T) {
+	ctx := context.TODO()
+	dest := t.TempDir()
+	if err := lambroll.Unzip(ctx, "test/src.zip", dest, false); err != nil {
+		t.Error("failed to Unzip", err)
+	}
+	unzipEntries := []string{}
+	err := filepath.WalkDir(dest, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, _ := filepath.Rel(dest, path)
+		unzipEntries = append(unzipEntries, rel)
+		return nil
+	})
+	if err != nil {
+		t.Error("failed to walk", err)
+	}
+	sort.Strings(unzipEntries)
+	expected := []string{"dir.symlink", "dir/sub.txt", "hello.symlink", "hello.txt", "world"}
+	if diff := cmp.Diff(unzipEntries, expected); diff != "" {
+		t.Errorf("unexpected unzip entries %s", diff)
+	}
+
+	// debug
+	o, _ := exec.Command("ls", "-lR", dest).Output()
+	t.Log(string(o))
+
+	// check symlink
+	fi, err := os.Lstat(filepath.Join(dest, "hello.symlink"))
+	if err != nil {
+		t.Error("failed to stat hello.symlink", err)
+	}
+	if fi.Mode()&os.ModeSymlink == 0 {
+		t.Error("hello.symlink must be symlink", fi.Mode())
+	}
+	linkTarget, err := os.Readlink(filepath.Join(dest, "hello.symlink"))
+	if err != nil {
+		t.Error("failed to readlink hello.symlink", err)
+	}
+	if diff := cmp.Diff(linkTarget, "hello.txt"); diff != "" {
+		t.Errorf("unexpected symlink target %s", diff)
+	}
 }
