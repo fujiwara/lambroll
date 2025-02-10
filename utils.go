@@ -16,6 +16,7 @@ import (
 )
 
 func (app *App) saveFile(ctx context.Context, path string, b []byte, mode os.FileMode, force bool) error {
+	log.Printf("[debug] writing file to %s mode %s", path, mode)
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {
@@ -28,7 +29,9 @@ func (app *App) saveFile(ctx context.Context, path string, b []byte, mode os.Fil
 	return os.WriteFile(path, b, mode)
 }
 
-func saveFileIO(ctx context.Context, path string, r io.Reader, mode os.FileMode, force bool) error {
+func saveFileIO(ctx context.Context, path string, r io.ReadCloser, mode os.FileMode, force bool) error {
+	log.Printf("[debug] writing file to %s mode %s", path, mode)
+	defer r.Close()
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {

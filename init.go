@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -173,7 +174,8 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 
 	for _, f := range r.File {
 		fpath := filepath.Join(dest, f.Name)
-		if f.FileInfo().IsDir() {
+		fi := f.FileInfo()
+		if fi.IsDir() {
 			log.Printf("[debug] creating directory %s", fpath)
 			if err := os.MkdirAll(fpath, f.Mode()); err != nil {
 				return err
@@ -185,14 +187,45 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
 			return err
 		}
+
 		fc, err := f.Open()
 		if err != nil {
 			return err
 		}
-		if err := saveFileIO(ctx, fpath, fc, f.Mode(), force); err != nil {
-			return err
+		if fi.Mode()&os.ModeSymlink != 0 {
+			// supports for symbolic link
+			if err := saveSymlinkIO(ctx, fpath, fc, f.Mode()); err != nil {
+				return err
+			}
+		} else {
+			// normal file
+			if err := saveFileIO(ctx, fpath, fc, f.Mode(), force); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser, mode fs.FileMode) error {
+	defer r.Close()
+	l, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+	linkTo := string(l)
+	log.Printf("[debug] writing symlink %s -> %s mode %s", fpath, linkTo, mode)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	defer os.Chdir(cwd)
+	if err := os.Chdir(filepath.Dir(fpath)); err != nil {
+		return err
+	}
+	name := filepath.Base(fpath)
+	log.Printf("[debug] creating symlink %s -> %s", name, linkTo)
+	return os.Symlink(linkTo, name)
 }
