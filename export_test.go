@@ -6,16 +6,17 @@ import (
 )
 
 var (
-	CreateZipArchive  = createZipArchive
-	ExpandExcludeFile = expandExcludeFile
-	LoadZipArchive    = loadZipArchive
-	MergeTags         = mergeTags
-	FillDefaultValues = fillDefaultValues
-	JSONStr           = jsonStr
-	MarshalJSON       = marshalJSON
-	NewFunctionFrom   = newFunctionFrom
-	NewCallerIdentity = newCallerIdentity
-	Unzip             = unzip
+	CreateZipArchive        = createZipArchive
+	ExpandExcludeFile       = expandExcludeFile
+	LoadZipArchive          = loadZipArchive
+	MergeTags               = mergeTags
+	FillDefaultValues       = fillDefaultValues
+	JSONStr                 = jsonStr
+	MarshalJSON             = marshalJSON
+	NewFunctionFrom         = newFunctionFrom
+	NewCallerIdentity       = newCallerIdentity
+	Unzip                   = unzip
+	ExtractExitCodeAndError = extractExitCodeAndError
 )
 
 type VersionsOutput = versionsOutput
