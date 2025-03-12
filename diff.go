@@ -27,6 +27,7 @@ type DiffOption struct {
 	Qualifier   *string `help:"the qualifier to compare"`
 	FunctionURL string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
 	Ignore      string  `help:"ignore diff by jq query" default:""`
+	ExitCode    bool    `help:"exit with code 2 if there are differences" default:"false"`
 
 	ZipOption
 }
@@ -93,6 +94,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	remoteJSON, _ := marshalAny(remoteFunc)
 	newJSON, _ := marshalAny(newFunc)
 	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
+	hasDiff := false
 
 	if diff, err := jsondiff.Diff(
 		&jsondiff.Input{Name: remoteArn, X: remoteJSON},
@@ -101,6 +103,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	); err != nil {
 		return fmt.Errorf("failed to diff: %w", err)
 	} else if diff != "" {
+		hasDiff = true
 		fmt.Print(coloredDiff(diff))
 	}
 
@@ -126,25 +129,33 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
 			fmt.Println(color.GreenString("+++" + "--src=" + opt.Src))
 			fmt.Println(coloredDiff(ds))
+			hasDiff = true
 		}
 	}
 
-	if opt.FunctionURL == "" {
-		return nil
+	if opt.FunctionURL != "" {
+		if d, err := app.diffFunctionURL(ctx, name, opt); err != nil {
+			return err
+		} else if d {
+			hasDiff = true
+		}
 	}
 
-	if err := app.diffFunctionURL(ctx, name, opt); err != nil {
-		return err
+	if hasDiff && opt.ExitCode {
+		// exit with code 2 if there are differences
+		// but actually, it's not an error
+		return ErrDiff
 	}
 	return nil
 }
 
-func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) error {
+func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) (bool, error) {
 	var remote, local *types.FunctionUrlConfig
+	var hasDiff bool
 
 	fu, err := app.loadFunctionUrl(opt.FunctionURL, name)
 	if err != nil {
-		return fmt.Errorf("failed to load function-url: %w", err)
+		return hasDiff, fmt.Errorf("failed to load function-url: %w", err)
 	} else {
 		fillDefaultValuesFunctionUrlConfig(fu.Config)
 		local = &types.FunctionUrlConfig{
@@ -170,7 +181,7 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 			// empty
 			remote = &types.FunctionUrlConfig{}
 		} else {
-			return fmt.Errorf("failed to get function url config: %w", err)
+			return hasDiff, fmt.Errorf("failed to get function url config: %w", err)
 		}
 	} else {
 		log.Println("[debug] FunctionUrlConfig found")
@@ -187,15 +198,16 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 		&jsondiff.Input{Name: fqName, X: r},
 		&jsondiff.Input{Name: opt.FunctionURL, X: l},
 	); err != nil {
-		return fmt.Errorf("failed to diff: %w", err)
+		return hasDiff, fmt.Errorf("failed to diff: %w", err)
 	} else if diff != "" {
+		hasDiff = true
 		fmt.Print(coloredDiff(diff))
 	}
 
 	// permissions
 	adds, removes, err := app.calcFunctionURLPermissionsDiff(ctx, fu)
 	if err != nil {
-		return err
+		return hasDiff, err
 	}
 	var addsB []byte
 	for _, in := range adds {
@@ -211,9 +223,10 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 		fmt.Println(color.RedString("--- permissions"))
 		fmt.Println(color.GreenString("+++ permissions"))
 		fmt.Print(coloredDiff(ds))
+		hasDiff = true
 	}
 
-	return nil
+	return hasDiff, nil
 }
 
 func coloredDiff(src string) string {

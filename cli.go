@@ -122,7 +122,7 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	sub, opts, usage, err := parse(os.Args[1:])
 	if err != nil {
-		return 1, err
+		return extractExitCodeAndError(err)
 	}
 
 	color.NoColor = !opts.Color
@@ -143,10 +143,8 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	}
 	log.SetOutput(filter)
 
-	if err := dispatchCLI(ctx, sub, usage, opts); err != nil {
-		return 1, err
-	}
-	return 0, nil
+	err = dispatchCLI(ctx, sub, usage, opts)
+	return extractExitCodeAndError(err)
 }
 
 func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions) error {
