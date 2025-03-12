@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.2.1](https://github.com/fujiwara/lambroll/compare/v1.2.0...v1.2.1) - 2025-03-12
+- Add diff --exit-code by @fujiwara in https://github.com/fujiwara/lambroll/pull/486
+
 ## [v1.2.0](https://github.com/fujiwara/lambroll/compare/v1.1.3...v1.2.0) - 2025-02-10
 - remove type alias by @fujiwara in https://github.com/fujiwara/lambroll/pull/450
 - load envfile opts first by @ijin in https://github.com/fujiwara/lambroll/pull/456
