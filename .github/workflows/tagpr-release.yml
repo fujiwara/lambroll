@@ -31,7 +31,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23"
+          go-version: "1.24"
         if: ${{ steps.tagpr.outputs.tag != '' || github.event_name == 'workflow_dispatch' }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
