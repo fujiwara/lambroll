@@ -85,7 +85,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 
 	if (opt.DownloadZip || opt.Unzip) && res.Code != nil && *res.Code.RepositoryType == "S3" {
 		log.Printf("[info] downloading %s", FunctionZipFilename)
-		if err := download(*res.Code.Location, FunctionZipFilename); err != nil {
+		if err := download(ctx, *res.Code.Location, FunctionZipFilename); err != nil {
 			return err
 		}
 		if opt.Unzip {
@@ -134,8 +134,12 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	return nil
 }
 
-func download(url, path string) error {
-	resp, err := http.Get(url)
+func download(ctx context.Context, url, path string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to new request: %w", err)
+	}
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to get %s: %w", url, err)
 	}
