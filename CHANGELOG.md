@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.2.2](https://github.com/fujiwara/lambroll/compare/v1.2.1...v1.2.2) - 2025-03-19
+- Bump golang.org/x/net from 0.34.0 to 0.36.0 by @dependabot in https://github.com/fujiwara/lambroll/pull/488
+- Fix download function to use context for HTTP requests by @fujiwara in https://github.com/fujiwara/lambroll/pull/489
+- Fixed error handling for --keep-versions by @mashiike in https://github.com/fujiwara/lambroll/pull/491
+
 ## [v1.2.1](https://github.com/fujiwara/lambroll/compare/v1.2.0...v1.2.1) - 2025-03-12
 - Add diff --exit-code by @fujiwara in https://github.com/fujiwara/lambroll/pull/486
 
