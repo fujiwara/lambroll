@@ -226,7 +226,9 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		}
 	}
 	if opt.KeepVersions > 0 { // Ignore zero-value.
-		return app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions)
+		if err := app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions); err != nil {
+			return err
+		}
 	}
 
 	if err := deployFunctionURL(ctx); err != nil {
