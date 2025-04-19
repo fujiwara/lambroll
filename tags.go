@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/samber/lo"
 )
 
 func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption) error {
@@ -31,6 +33,13 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	log.Printf("[debug] %d tags found", len(tags.Tags))
 
 	setTags, removeTagKeys := mergeTags(tags.Tags, fn.Tags)
+	// ignore AWS managed tags because they are not allowed to be modified
+	setTags = lo.OmitBy(setTags, func(tag string, _ string) bool {
+		return isAWSManagedTag(tag)
+	})
+	removeTagKeys = lo.Reject(removeTagKeys, func(tag string, _ int) bool {
+		return isAWSManagedTag(tag)
+	})
 
 	if len(setTags) == 0 && len(removeTagKeys) == 0 {
 		log.Println("[debug] no need to update tags (unchanged)")
@@ -88,4 +97,12 @@ func mergeTags(oldTags, newTags Tags) (sets Tags, removes []string) {
 		}
 	}
 	return
+}
+
+func isAWSManagedTag(tag string) bool {
+	if strings.HasPrefix(strings.ToLower(tag), "aws:") {
+		log.Printf("[info] ignoring AWS managed tag %s", tag)
+		return true
+	}
+	return false
 }

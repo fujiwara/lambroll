@@ -58,3 +58,29 @@ func TestMergeTags(t *testing.T) {
 		}
 	}
 }
+
+var testTags = []struct {
+	name         string
+	isAWSManaged bool
+}{
+	{
+		name:         "aws:cloudformation:stack-name",
+		isAWSManaged: true,
+	},
+	{
+		name:         "AWS:cloudformation:logical-id",
+		isAWSManaged: true,
+	},
+	{
+		name:         "foo:bar",
+		isAWSManaged: false,
+	},
+}
+
+func TestIsAWSManagedTags(t *testing.T) {
+	for _, c := range testTags {
+		if lambroll.IsAWSManagedTag(c.name) != c.isAWSManaged {
+			t.Errorf("unexpected result for tag name %s", c.name)
+		}
+	}
+}
