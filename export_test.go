@@ -17,7 +17,7 @@ var (
 	NewCallerIdentity       = newCallerIdentity
 	Unzip                   = unzip
 	ExtractExitCodeAndError = extractExitCodeAndError
-	IsAWSManagedTags        = isAWSManagedTags
+	IsAWSManagedTag         = isAWSManagedTag
 )
 
 type VersionsOutput = versionsOutput

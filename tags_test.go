@@ -79,7 +79,7 @@ var testTags = []struct {
 
 func TestIsAWSManagedTags(t *testing.T) {
 	for _, c := range testTags {
-		if lambroll.IsAWSManagedTags(c.name) != c.isAWSManaged {
+		if lambroll.IsAWSManagedTag(c.name) != c.isAWSManaged {
 			t.Errorf("unexpected result for tag name %s", c.name)
 		}
 	}

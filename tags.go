@@ -35,10 +35,10 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	setTags, removeTagKeys := mergeTags(tags.Tags, fn.Tags)
 	// ignore AWS managed tags because they are not allowed to be modified
 	setTags = lo.OmitBy(setTags, func(tag string, _ string) bool {
-		return isAWSManagedTags(tag)
+		return isAWSManagedTag(tag)
 	})
 	removeTagKeys = lo.Reject(removeTagKeys, func(tag string, _ int) bool {
-		return isAWSManagedTags(tag)
+		return isAWSManagedTag(tag)
 	})
 
 	if len(setTags) == 0 && len(removeTagKeys) == 0 {
@@ -99,7 +99,7 @@ func mergeTags(oldTags, newTags Tags) (sets Tags, removes []string) {
 	return
 }
 
-func isAWSManagedTags(tag string) bool {
+func isAWSManagedTag(tag string) bool {
 	if strings.HasPrefix(strings.ToLower(tag), "aws:") {
 		log.Printf("[info] ignoring AWS managed tag %s", tag)
 		return true
