@@ -27,7 +27,7 @@ type DeployOption struct {
 	KeepVersions      int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
 	Ignore            string `help:"ignore fields by jq queries in function.json" default:""`
 	FunctionURL       string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
-	SkipConfiguration bool   `help:"skip to update a configuration. deploy a function code and aliases only" default:"false"`
+	SkipConfiguration bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false"`
 	SkipFunction      bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
 	ZipOption
