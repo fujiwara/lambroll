@@ -292,7 +292,7 @@ Flags:
       --ignore=""                 ignore fields by jq queries in function.json
       --function-url=""           path to function-url definition
                                   ($LAMBROLL_FUNCTION_URL)
-      --skip-configuration        skip to update a configuration. deploy a function
+      --skip-configuration        skip updating function configuration, deploy function
                                   code and aliases only
       --skip-function             skip to deploy a function. deploy function-url only
       --exclude-file=".lambdaignore"
