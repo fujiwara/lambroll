@@ -1,5 +1,17 @@
 # Changelog
 
+## [v1.3.0](https://github.com/fujiwara/lambroll/compare/v1.2.2...v1.3.0) - 2025-04-22
+- Bump golang.org/x/net from 0.36.0 to 0.38.0 by @dependabot in https://github.com/fujiwara/lambroll/pull/496
+- Bump github.com/golang-jwt/jwt/v4 from 4.5.1 to 4.5.2 by @dependabot in https://github.com/fujiwara/lambroll/pull/493
+- Bump github.com/golang-jwt/jwt/v5 from 5.2.1 to 5.2.2 by @dependabot in https://github.com/fujiwara/lambroll/pull/492
+- Bump github.com/aereal/jsondiff from 0.4.0 to 0.4.1 by @dependabot in https://github.com/fujiwara/lambroll/pull/481
+- Bump golang.org/x/sys from 0.30.0 to 0.31.0 by @dependabot in https://github.com/fujiwara/lambroll/pull/494
+- Bump the aws-sdk-go-v2 group across 1 directory with 5 updates by @dependabot in https://github.com/fujiwara/lambroll/pull/484
+- Bump github.com/alecthomas/kong from 1.6.1 to 1.10.0 by @dependabot in https://github.com/fujiwara/lambroll/pull/495
+- Bump github.com/samber/lo from 1.47.0 to 1.49.1 by @dependabot in https://github.com/fujiwara/lambroll/pull/482
+- ignore AWS managed tags for tag/untag operation. by @fujiwara in https://github.com/fujiwara/lambroll/pull/500
+- add --skip-configuration to deploy command. by @fujiwara in https://github.com/fujiwara/lambroll/pull/499
+
 ## [v1.2.2](https://github.com/fujiwara/lambroll/compare/v1.2.1...v1.2.2) - 2025-03-19
 - Bump golang.org/x/net from 0.34.0 to 0.36.0 by @dependabot in https://github.com/fujiwara/lambroll/pull/488
 - Fix download function to use context for HTTP requests by @fujiwara in https://github.com/fujiwara/lambroll/pull/489
