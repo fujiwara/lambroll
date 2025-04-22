@@ -18,16 +18,17 @@ import (
 
 // DeployOption represents an option for Deploy()
 type DeployOption struct {
-	Src           string `help:"function zip archive or src dir" default:"."`
-	Publish       bool   `help:"publish function" default:"true"`
-	AliasName     string `name:"alias" help:"alias name for publish" default:"current"`
-	AliasToLatest bool   `help:"set alias to unpublished $LATEST version" default:"false"`
-	DryRun        bool   `help:"dry run" default:"false"`
-	SkipArchive   bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
-	KeepVersions  int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
-	Ignore        string `help:"ignore fields by jq queries in function.json" default:""`
-	FunctionURL   string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
-	SkipFunction  bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
+	Src               string `help:"function zip archive or src dir" default:"."`
+	Publish           bool   `help:"publish function" default:"true"`
+	AliasName         string `name:"alias" help:"alias name for publish" default:"current"`
+	AliasToLatest     bool   `help:"set alias to unpublished $LATEST version" default:"false"`
+	DryRun            bool   `help:"dry run" default:"false"`
+	SkipArchive       bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
+	KeepVersions      int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
+	Ignore            string `help:"ignore fields by jq queries in function.json" default:""`
+	FunctionURL       string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
+	SkipConfiguration bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false"`
+	SkipFunction      bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
 	ZipOption
 }
@@ -148,6 +149,47 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		unmarshalJSON(src, &fn, app.functionFilePath)
 	}
 
+	// update function configuration
+	if opt.SkipConfiguration {
+		log.Println("[info] skip to deploy function configuration", opt.label())
+	} else {
+		if err := app.deployFunctionConfiguration(ctx, fn, opt); err != nil {
+			return fmt.Errorf("failed to deploy function configuration: %w", err)
+		}
+	}
+
+	// update function code
+	newerVersion, err := app.deployFunctionCode(ctx, fn, opt)
+	if err != nil {
+		return fmt.Errorf("failed to deploy function code: %w", err)
+	}
+
+	if opt.DryRun {
+		return nil
+	}
+
+	// update function aliases
+	if opt.Publish || opt.AliasToLatest {
+		err := app.updateAliases(ctx, *fn.FunctionName, versionAlias{newerVersion, opt.AliasName})
+		if err != nil {
+			return err
+		}
+	}
+	if opt.KeepVersions > 0 { // Ignore zero-value.
+		if err := app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions); err != nil {
+			return err
+		}
+	}
+
+	// deploy function-url
+	if err := deployFunctionURL(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, opt *DeployOption) error {
 	log.Println("[info] updating function configuration", opt.label())
 	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig:  fn.DeadLetterConfig,
@@ -171,7 +213,6 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	}
 	log.Printf("[debug] %s", jsonStr(confIn))
 
-	var newerVersion string
 	if !opt.DryRun {
 		proc := func(ctx context.Context) error {
 			return app.updateFunctionConfiguration(ctx, confIn)
@@ -183,7 +224,10 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if err := app.updateTags(ctx, fn, opt); err != nil {
 		return err
 	}
+	return nil
+}
 
+func (app *App) deployFunctionCode(ctx context.Context, fn *Function, opt *DeployOption) (string, error) {
 	codeIn := &lambda.UpdateFunctionCodeInput{
 		Architectures:   fn.Architectures,
 		FunctionName:    fn.FunctionName,
@@ -207,8 +251,9 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return err
 	}
 	if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function code", proc, opt.label()); err != nil {
-		return err
+		return "", err
 	}
+	var newerVersion string
 	if res.Version != nil {
 		newerVersion = *res.Version
 		log.Printf("[info] deployed version %s %s", *res.Version, opt.label())
@@ -216,26 +261,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		newerVersion = versionLatest
 		log.Printf("[info] deployed version %s %s", newerVersion, opt.label())
 	}
-	if opt.DryRun {
-		return nil
-	}
-	if opt.Publish || opt.AliasToLatest {
-		err := app.updateAliases(ctx, *fn.FunctionName, versionAlias{newerVersion, opt.AliasName})
-		if err != nil {
-			return err
-		}
-	}
-	if opt.KeepVersions > 0 { // Ignore zero-value.
-		if err := app.deleteVersions(ctx, *fn.FunctionName, opt.KeepVersions); err != nil {
-			return err
-		}
-	}
-
-	if err := deployFunctionURL(ctx); err != nil {
-		return err
-	}
-
-	return nil
+	return newerVersion, nil
 }
 
 func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.UpdateFunctionConfigurationInput) error {

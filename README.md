@@ -280,18 +280,24 @@ Usage: lambroll deploy
 deploy or create function
 
 Flags:
-      --src="."                           function zip archive or src dir
-      --publish                           publish function
-      --alias="current"                   alias name for publish
-      --alias-to-latest                   set alias to unpublished $LATEST version
-      --dry-run                           dry run
-      --skip-archive                      skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition
-      --keep-versions=0                   Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0).
-      --ignore=""                         ignore fields by jq queries in function.json
-      --function-url=""                   path to function-url definition ($LAMBROLL_FUNCTION_URL)
-      --skip-function                     skip to deploy a function. deploy function-url only
-      --exclude-file=".lambdaignore"      exclude file
-      --symlink                           keep symlink (same as zip --symlink,-y)
+      --src="."                   function zip archive or src dir
+      --publish                   publish function
+      --alias="current"           alias name for publish
+      --alias-to-latest           set alias to unpublished $LATEST version
+      --dry-run                   dry run
+      --skip-archive              skip to create zip archive. requires Code.S3Bucket
+                                  and Code.S3Key in function definition
+      --keep-versions=0           Number of latest versions to keep. Older versions
+                                  will be deleted. (Optional value: default 0).
+      --ignore=""                 ignore fields by jq queries in function.json
+      --function-url=""           path to function-url definition
+                                  ($LAMBROLL_FUNCTION_URL)
+      --skip-configuration        skip updating function configuration, deploy function
+                                  code and aliases only
+      --skip-function             skip to deploy a function. deploy function-url only
+      --exclude-file=".lambdaignore"
+                                  exclude file
+      --symlink                   keep symlink (same as zip --symlink,-y)
 ```
 
 `deploy` works as below.
@@ -299,8 +305,27 @@ Flags:
 - Create a zip archive from `--src` directory.
   - Excludes files matched (wildcard pattern) in `--exclude-file`.
 - Create / Update Lambda function
+  - If the function does not exist, create a new function.
+  - If the function exists, update the function code.
+  - Create / Update function configuration
+    - If `--skip-configuration` is specified, skip to update the configuration.
+  - Create / Update function code
 - Create an alias to the published version when `--publish` (default).
 
+#### Ignore some configurations
+
+lambroll can ignore some fields in function.json by using `--ignore` flag.
+
+```console
+$ lambroll deploy --ignore='.Tags, .Environment'
+```
+When `--ignore` is specified, lambroll ignores the fields in function.json.
+
+To confirm the ignored fields, you can use `lambroll diff` command.
+
+```console
+$ lambroll diff --ignore='.Tags, .Environment'
+```
 
 #### Deploy via S3
 
