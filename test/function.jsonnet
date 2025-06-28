@@ -2,13 +2,21 @@ local prefix1_tfstate = std.native('prefix1_tfstate');
 local tfstate = std.native('tfstate');
 local must_env = std.native('must_env');
 local caller = std.native('caller_identity')();
+
+// Test variables for ext_str and ext_code support (issue #507)
+local description = std.extVar("description");
+local architecture = std.extVar("architecture");
+local memory_size = std.extVar("memory_size");
+local storage_size = std.extVar("storage_size");
+local timeout = std.extVar("timeout");
+
 {
   Architectures: [
-    'x86_64',
+    architecture,
   ],
-  Description: std.extVar('Description'),
+  Description: description,
   EphemeralStorage: {
-    Size: 1024,
+    Size: storage_size,
   },
   Environment: {
     Variables: {
@@ -31,10 +39,10 @@ local caller = std.native('caller_identity')();
     LogGroup: '/aws/lambda/{{ must_env `FUNCTION_NAME` }}/json',
     SystemLogLevel: 'INFO',
   },
-  MemorySize: std.extVar('MemorySize'),
+  MemorySize: memory_size,
   Role: tfstate('data.aws_iam_role.lambda.arn'),
   Runtime: 'nodejs16.x',
-  Timeout: 5,
+  Timeout: timeout,
   TracingConfig: {
     Mode: 'PassThrough',
   },
