@@ -1,6 +1,6 @@
 module github.com/fujiwara/lambroll
 
-go 1.23.0
+go 1.23.7
 
 toolchain go1.24.2
 
@@ -19,7 +19,7 @@ require (
 	github.com/fujiwara/tfstate-lookup v1.4.2
 	github.com/go-test/deep v1.1.1
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-jsonnet v0.20.0
+	github.com/google/go-jsonnet v0.21.0
 	github.com/hashicorp/go-envparse v0.0.0-20200406174449-d9cfd743a15e
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/itchyny/gojq v0.12.17
@@ -114,5 +114,5 @@ require (
 	google.golang.org/grpc v1.62.1 // indirect
 	google.golang.org/protobuf v1.33.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	sigs.k8s.io/yaml v1.1.0 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
