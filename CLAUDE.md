@@ -21,6 +21,10 @@ This document provides guidelines for developing lambroll with AI assistance.
 - Create a new branch for each feature or fix
 - Use descriptive branch names (e.g., `fix-ext-str-compatibility`)
 - When committing, use `git add` with specific files rather than `git add -A`
+  - Only add files that are directly related to your change
+  - Review `git status` to see all modified files
+  - Add files individually: `git add file1.go file2_test.go`
+  - This prevents accidentally committing unrelated changes
 - Include clear commit messages that explain the "why" not just the "what"
 
 ## Pull Requests
