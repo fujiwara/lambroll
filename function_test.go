@@ -106,7 +106,7 @@ func TestLoadFunction(t *testing.T) {
 		expectedJSON, _ := lambroll.MarshalJSON(expected)
 		fnJSON, _ := lambroll.MarshalJSON(fn)
 		if diff := cmp.Diff(string(expectedJSON), string(fnJSON), ignore); diff != "" {
-			t.Errorf("unexpected function got %s", diff)
+			t.Errorf("%s: unexpected function got %s", f, diff)
 		}
 	}
 }

@@ -173,6 +173,24 @@ var cliTests = []struct {
 			},
 		},
 	},
+	{
+		args: []string{"render", "--option", "ext_legacy.jsonnet"},
+		sub:  "render",
+		option: &lambroll.Option{
+			OptionFilePath: "ext_legacy.jsonnet",
+			Color:          true,
+			Envfile:        []string{},
+			ExtStr: map[string]string{
+				"architecture": "arm64",
+				"description":  "Legacy format test function",
+			},
+			ExtCode: map[string]string{
+				"memory_size":  "256",
+				"storage_size": "1024",
+				"timeout":      "10",
+			},
+		},
+	},
 }
 
 func TestParseCLI(t *testing.T) {
