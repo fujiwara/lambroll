@@ -32,6 +32,7 @@ type Option struct {
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling to support both old and new field names
+// TODO: Remove backward compatibility for extstr/extcode fields in v2
 func (o *Option) UnmarshalJSON(data []byte) error {
 	// Define a type alias to avoid infinite recursion
 	type Alias Option
