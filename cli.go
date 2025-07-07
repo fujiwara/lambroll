@@ -31,6 +31,34 @@ type Option struct {
 	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE" json:"ext_code,omitempty"`
 }
 
+// UnmarshalJSON implements custom JSON unmarshaling to support both old and new field names
+func (o *Option) UnmarshalJSON(data []byte) error {
+	// Define a type alias to avoid infinite recursion
+	type Alias Option
+	aux := &struct {
+		*Alias
+		// Support old field names
+		OldExtStr  map[string]string `json:"extstr,omitempty"`
+		OldExtCode map[string]string `json:"extcode,omitempty"`
+	}{
+		Alias: (*Alias)(o),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// If old field names are used and new ones are empty, copy the values
+	if o.ExtStr == nil && aux.OldExtStr != nil {
+		o.ExtStr = aux.OldExtStr
+	}
+	if o.ExtCode == nil && aux.OldExtCode != nil {
+		o.ExtCode = aux.OldExtCode
+	}
+
+	return nil
+}
+
 type CLIOptions struct {
 	Option
 
