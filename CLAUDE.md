@@ -18,6 +18,7 @@ This document provides guidelines for developing lambroll with AI assistance.
 
 ## Git Workflow
 
+- **Never commit directly to main/master/v1 branches** - always create a feature branch first
 - Create a new branch for each feature or fix
 - Use descriptive branch names (e.g., `fix-ext-str-compatibility`)
 - When committing, use `git add` with specific files rather than `git add -A`
