@@ -1,5 +1,16 @@
 # Changelog
 
+## [v1.3.1](https://github.com/fujiwara/lambroll/compare/v1.3.0...v1.3.1) - 2025-08-16
+- Fix ext_str and ext_code support in option files by @jirtosterone in https://github.com/fujiwara/lambroll/pull/508
+- Add backward compatibility for extstr/extcode fields by @fujiwara in https://github.com/fujiwara/lambroll/pull/514
+- Add branch policy to development guidelines by @fujiwara in https://github.com/fujiwara/lambroll/pull/515
+- Bump github.com/fujiwara/tfstate-lookup from 1.4.2 to 1.7.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/520
+- Bump github.com/alecthomas/kong from 1.10.0 to 1.12.1 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/519
+- Bump github.com/google/go-jsonnet from 0.20.0 to 0.21.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/511
+- Bump the aws-sdk-go-v2 group across 1 directory with 5 updates by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/512
+- Bump github.com/samber/lo from 1.49.1 to 1.51.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/509
+- Bump github.com/google/go-cmp from 0.6.0 to 0.7.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/505
+
 ## [v1.3.0](https://github.com/fujiwara/lambroll/compare/v1.2.2...v1.3.0) - 2025-04-22
 - Bump golang.org/x/net from 0.36.0 to 0.38.0 by @dependabot in https://github.com/fujiwara/lambroll/pull/496
 - Bump github.com/golang-jwt/jwt/v4 from 4.5.1 to 4.5.2 by @dependabot in https://github.com/fujiwara/lambroll/pull/493
