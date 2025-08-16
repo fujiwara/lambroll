@@ -33,10 +33,13 @@ func TestLoadFunction(t *testing.T) {
 		},
 		Envfile: []string{"test/env"},
 		ExtStr: map[string]string{
-			"Description": "hello function",
+			"description":    "hello function",
+			"architecture":   "x86_64",
 		},
 		ExtCode: map[string]string{
-			"MemorySize": "64 * 2", // == 128
+			"memory_size":    "64 * 2", // == 128
+			"storage_size":   "1024",
+			"timeout":        "5",
 		},
 	})
 	if err != nil {
@@ -103,7 +106,7 @@ func TestLoadFunction(t *testing.T) {
 		expectedJSON, _ := lambroll.MarshalJSON(expected)
 		fnJSON, _ := lambroll.MarshalJSON(fn)
 		if diff := cmp.Diff(string(expectedJSON), string(fnJSON), ignore); diff != "" {
-			t.Errorf("unexpected function got %s", diff)
+			t.Errorf("%s: unexpected function got %s", f, diff)
 		}
 	}
 }

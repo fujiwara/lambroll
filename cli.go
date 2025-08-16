@@ -27,8 +27,39 @@ type Option struct {
 	PrefixedTFState map[string]string `name:"prefixed-tfstate" help:"key value pair of the prefix for template function name and URL to terraform.tfstate" env:"LAMBROLL_PREFIXED_TFSTATE" json:"prefixed_tfstate,omitempty"`
 	Endpoint        *string           `help:"AWS API Lambda Endpoint" env:"AWS_LAMBDA_ENDPOINT" json:"endpoint,omitempty"`
 	Envfile         []string          `help:"environment files" env:"LAMBROLL_ENVFILE" json:"envfile,omitempty"`
-	ExtStr          map[string]string `help:"external string values for Jsonnet" env:"LAMBROLL_EXTSTR" json:"extstr,omitempty"`
-	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE" json:"extcode,omitempty"`
+	ExtStr          map[string]string `help:"external string values for Jsonnet" env:"LAMBROLL_EXTSTR" json:"ext_str,omitempty"`
+	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE" json:"ext_code,omitempty"`
+}
+
+// UnmarshalJSON implements custom JSON unmarshaling to support both old and new field names
+// TODO: Remove backward compatibility for extstr/extcode fields in v2
+func (o *Option) UnmarshalJSON(data []byte) error {
+	// Define a type alias to avoid infinite recursion
+	type Alias Option
+	aux := &struct {
+		*Alias
+		// Support old field names
+		OldExtStr  map[string]string `json:"extstr,omitempty"`
+		OldExtCode map[string]string `json:"extcode,omitempty"`
+	}{
+		Alias: (*Alias)(o),
+	}
+
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	// If old field names are used and new ones are empty, copy the values
+	if o.ExtStr == nil && aux.OldExtStr != nil {
+		o.ExtStr = aux.OldExtStr
+		log.Printf("[warn] Using deprecated field name 'extstr' in option file. Please use 'ext_str' instead.")
+	}
+	if o.ExtCode == nil && aux.OldExtCode != nil {
+		o.ExtCode = aux.OldExtCode
+		log.Printf("[warn] Using deprecated field name 'extcode' in option file. Please use 'ext_code' instead.")
+	}
+
+	return nil
 }
 
 type CLIOptions struct {
