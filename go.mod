@@ -29,7 +29,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/samber/lo v1.51.0
 	github.com/shogo82148/go-retry v1.3.1
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.35.0
 )
 
 require (
