@@ -20,6 +20,7 @@ builds:
       - arm64
 release:
   prerelease: "true"
+  use_existing_draft: true
 archives:
   - name_template: "{{ .ProjectName }}_v{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 checksum:
