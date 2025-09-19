@@ -2,7 +2,7 @@ module github.com/fujiwara/lambroll
 
 go 1.23.7
 
-toolchain go1.24.2
+toolchain go1.24.7
 
 require (
 	github.com/Songmu/prompter v0.5.1
