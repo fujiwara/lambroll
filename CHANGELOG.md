@@ -1,5 +1,8 @@
 # Changelog
 
+## [v1.3.2](https://github.com/fujiwara/lambroll/compare/v1.3.1...v1.3.2) - 2025-09-19
+- Immutable release by @fujiwara in https://github.com/fujiwara/lambroll/pull/525
+
 ## [v1.3.1](https://github.com/fujiwara/lambroll/compare/v1.3.0...v1.3.1) - 2025-08-16
 - Fix ext_str and ext_code support in option files by @jirtosterone in https://github.com/fujiwara/lambroll/pull/508
 - Add backward compatibility for extstr/extcode fields by @fujiwara in https://github.com/fujiwara/lambroll/pull/514
