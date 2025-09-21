@@ -6,6 +6,10 @@ inputs:
   version-file:
     description: "File name that contains the lambroll version."
     required: false
+  args:
+    description: "Arguments to pass to lambroll"
+    required: false
+    default: ""
 runs:
   using: "composite"
   steps:
@@ -42,3 +46,8 @@ runs:
         curl -sL https://github.com/fujiwara/lambroll/releases/download/${{ steps.set-lambroll-version.outputs.VERSION }}/${{ steps.set-filename.outputs.FILENAME }} | tar zxvf -
         sudo install lambroll /usr/local/bin
       shell: bash
+    - name: Run lambroll
+      run: |
+        lambroll ${{ inputs.args }}
+      shell: bash
+      if: ${{ inputs.args != '' }}
