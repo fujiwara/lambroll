@@ -431,7 +431,7 @@ If the payload is a concatenation of multiple JSON payloads, `lambroll invoke` w
 Outputs from the function invoked are printed to STDOUT.
 
 ```console
-$ lambroll invoke --payload='{"foo":1} --log-tail'
+$ lambroll invoke --payload='{"foo":1}' --log-tail
 {"success": true, "payload": {"foo":1}}
 2019/10/28 23:16:43 [info] StatusCode:200 ExecutionVersion:$LATEST
 START RequestId: aa38233f-a179-4192-8469-c86414fe463c Version: $LATEST
