@@ -1,6 +1,6 @@
 module github.com/fujiwara/lambroll
 
-go 1.23.7
+go 1.24.0
 
 toolchain go1.24.7
 
@@ -29,7 +29,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/samber/lo v1.51.0
 	github.com/shogo82148/go-retry v1.3.1
-	golang.org/x/sys v0.33.0
+	golang.org/x/sys v0.36.0
 )
 
 require (
