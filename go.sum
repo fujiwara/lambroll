@@ -124,8 +124,8 @@ github.com/fujiwara/logutils v1.1.2 h1:nYVRyTj+5SyCvpZUrYIZU4kubqNycGTxFXMKJBKe0
 github.com/fujiwara/logutils v1.1.2/go.mod h1:pdb/Uk70rjQWEmFm/OvYH7OG8meZt1fEIqC0qZbvro4=
 github.com/fujiwara/ssm-lookup v0.1.1 h1:Cwx7Y6A0HbIKyAzS60DYcf/TZ5KZHY/vTlCtUoythfQ=
 github.com/fujiwara/ssm-lookup v0.1.1/go.mod h1:ssVwS1FrHAKouOMEmYC6j07XRKqBGdABRmv6gBKewVg=
-github.com/fujiwara/tfstate-lookup v1.7.0 h1:LLGy0A+TCeyHy8U5CtchGfEwD/94pJvSyd3oa4I/oAU=
-github.com/fujiwara/tfstate-lookup v1.7.0/go.mod h1:D1/ehHmOvN06Hdpob66BUg6851257fxzNrpRilhnwxQ=
+github.com/fujiwara/tfstate-lookup v1.7.1 h1:zuZj5tSHIkD5HJG2ZyPL1H3bmlb6sgj5M46YBhwnevw=
+github.com/fujiwara/tfstate-lookup v1.7.1/go.mod h1:D1/ehHmOvN06Hdpob66BUg6851257fxzNrpRilhnwxQ=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.3.0 h1:2y3SDp0ZXuc6/cjLSZ+Q3ir+QB9T/iG5yYRXqsagWSY=
 github.com/go-logr/logr v1.3.0/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
