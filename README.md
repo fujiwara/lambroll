@@ -24,6 +24,47 @@ lambroll does not,
 
 When you hope to manage these resources, we recommend other deployment tools ([AWS SAM](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/), etc.).
 
+## Table of Contents
+
+- [Differences of lambroll v0 and v1](#differences-of-lambroll-v0-and-v1)
+- [Install](#install)
+  - [Homebrew (macOS and Linux)](#homebrew-macos-and-linux)
+  - [aqua](#aqua)
+  - [Binary packages](#binary-packages)
+  - [CircleCI Orb](#circleci-orb)
+  - [GitHub Actions](#github-actions)
+- [Quick start](#quick-start)
+- [Usage](#usage)
+  - [Commands](#commands)
+  - [Global flags](#global-flags)
+  - [Init](#init)
+  - [Deploy](#deploy)
+  - [Rollback](#rollback)
+  - [Invoke](#invoke)
+  - [List](#list)
+  - [Diff](#diff)
+  - [Status](#status)
+  - [Logs](#logs)
+  - [Archive](#archive)
+  - [Render](#render)
+  - [Versions](#versions)
+  - [Delete](#delete)
+- [Configuration](#configuration)
+  - [function.json](#functionjson)
+  - [Tags](#tags)
+  - [Environment variables from envfile](#environment-variables-from-envfile)
+  - [Jsonnet support for function configuration](#jsonnet-support-for-function-configuration)
+  - [Expand SSM parameter values](#expand-ssm-parameter-values)
+  - [Expand environment variables](#expand-environment-variables)
+  - [Resolve AWS caller identity](#resolve-aws-caller-identity)
+  - [Resolve Lambda layer ARN](#resolve-lambda-layer-arn)
+  - [Lookup resource attributes in tfstate](#lookup-resource-attributes-in-tfstate-terraform-state)
+  - [.lambdaignore](#lambdaignore)
+- [Advanced Features](#advanced-features)
+  - [Lambda@Edge support](#lambdaedge-support)
+  - [Lambda function URLs support](#lambda-function-urls-support)
+- [LICENSE](#license)
+
 ## Differences of lambroll v0 and v1.
 
 See [docs/v0-v1.md](docs/v0-v1.md).
