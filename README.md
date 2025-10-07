@@ -24,6 +24,47 @@ lambroll does not,
 
 When you hope to manage these resources, we recommend other deployment tools ([AWS SAM](https://aws.amazon.com/serverless/sam/), [Serverless Framework](https://serverless.com/), etc.).
 
+## Table of Contents
+
+- [Differences of lambroll v0 and v1](#differences-of-lambroll-v0-and-v1)
+- [Install](#install)
+  - [Homebrew (macOS and Linux)](#homebrew-macos-and-linux)
+  - [aqua](#aqua)
+  - [Binary packages](#binary-packages)
+  - [CircleCI Orb](#circleci-orb)
+  - [GitHub Actions](#github-actions)
+- [Quick start](#quick-start)
+- [Usage](#usage)
+  - [Commands](#commands)
+  - [Global flags](#global-flags)
+  - [Init](#init)
+  - [Deploy](#deploy)
+  - [Rollback](#rollback)
+  - [Invoke](#invoke)
+  - [List](#list)
+  - [Diff](#diff)
+  - [Status](#status)
+  - [Logs](#logs)
+  - [Archive](#archive)
+  - [Render](#render)
+  - [Versions](#versions)
+  - [Delete](#delete)
+- [Configuration](#configuration)
+  - [function.json](#functionjson)
+  - [Tags](#tags)
+  - [Environment variables from envfile](#environment-variables-from-envfile)
+  - [Jsonnet support for function configuration](#jsonnet-support-for-function-configuration)
+  - [Expand SSM parameter values](#expand-ssm-parameter-values)
+  - [Expand environment variables](#expand-environment-variables)
+  - [Resolve AWS caller identity](#resolve-aws-caller-identity)
+  - [Resolve Lambda layer ARN](#resolve-lambda-layer-arn)
+  - [Lookup resource attributes in tfstate](#lookup-resource-attributes-in-tfstate-terraform-state)
+  - [.lambdaignore](#lambdaignore)
+- [Advanced Features](#advanced-features)
+  - [Lambda@Edge support](#lambdaedge-support)
+  - [Lambda function URLs support](#lambda-function-urls-support)
+- [LICENSE](#license)
+
 ## Differences of lambroll v0 and v1.
 
 See [docs/v0-v1.md](docs/v0-v1.md).
@@ -210,6 +251,21 @@ Commands:
 Run "lambroll <command> --help" for more information on a command.
 ```
 
+### Commands
+
+- [init](#init) - Initialize function.json from an existing function
+- [deploy](#deploy) - Deploy or create a Lambda function
+- [rollback](#rollback) - Rollback a function to a previous version
+- [invoke](#invoke) - Invoke a function with payloads
+- [list](#list) - List all Lambda functions in your account
+- [diff](#diff) - Show differences between local and remote function
+- [status](#status) - Show current status of a function
+- [logs](#logs) - Show CloudWatch Logs for a function
+- [archive](#archive) - Create a zip archive for deployment
+- [render](#render) - Render function.json with template variables expanded
+- [versions](#versions) - List and manage function versions
+- [delete](#delete) - Delete a function
+
 ### Global flags
 
 lambroll has global flags for all commands.
@@ -264,7 +320,7 @@ The priority of the option values is as follows:
 
 While parsing the option file, lambroll evaluates only the `{{env}}` and `{{must_env}}` template functions and `env` and `must_env` native functions in Jsonnet. Other functions are not available.
 
-### Init
+#### Init
 
 `lambroll init` initialize function.json by existing function.
 
@@ -283,7 +339,7 @@ Flags:
 
 `init` creates `function.json` as a configuration file of the function.
 
-### Deploy
+#### Deploy
 
 ```console
 Usage: lambroll deploy
@@ -323,7 +379,7 @@ Flags:
   - Create / Update function code
 - Create an alias to the published version when `--publish` (default).
 
-#### Ignore some configurations
+##### Ignore some configurations
 
 lambroll can ignore some fields in function.json by using `--ignore` flag.
 
@@ -338,7 +394,7 @@ To confirm the ignored fields, you can use `lambroll diff` command.
 $ lambroll diff --ignore='.Tags, .Environment'
 ```
 
-#### Deploy via S3
+##### Deploy via S3
 
 When the zip archive is too large to upload directly, you can deploy via S3.
 
@@ -355,7 +411,7 @@ Set `Code.S3Bucket` and `Code.S3Key` in function.json. lambroll uploads the zip 
 
 If you want to upload the zip archive yourself, you can skip creating the zip archive by using the `--skip-archive` flag.
 
-#### Deploy container image
+##### Deploy container image
 
 lambroll also support to deploy a container image for Lambda.
 
@@ -383,7 +439,7 @@ lambroll also support to deploy a container image for Lambda.
 }
 ```
 
-### Rollback
+#### Rollback
 
 ```
 Usage: lambroll rollback
@@ -410,7 +466,7 @@ If you add multiple aliases to the function, `lambroll rollback --alias={some-al
 
 So you should specify the version to rollback with `--version` flag to clear the ambiguity.
 
-### Invoke
+#### Invoke
 
 ```
 Usage: lambroll invoke
@@ -451,6 +507,118 @@ END RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f
 REPORT RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f	Duration: 597.87 ms	Billed Duration: 600 ms	Memory Size: 128 MB	Max Memory Used: 50 MB
 2019/10/28 23:16:43 [info] completed
 ```
+
+#### List
+
+```console
+$ lambroll list
+```
+
+Lists all Lambda functions in your AWS account and outputs their configurations as JSON to STDOUT.
+
+#### Diff
+
+```console
+$ lambroll diff
+```
+
+Shows differences between the local function.json and the deployed function configuration.
+
+```console
+$ lambroll diff --code        # Compare code SHA256
+$ lambroll diff --qualifier current  # Compare with specific version/alias
+$ lambroll diff --ignore='.Environment.Variables.TIMESTAMP'  # Ignore specific fields
+$ lambroll diff --exit-code   # Exit with code 2 if differences exist
+```
+
+Use `--ignore` with jq query syntax to ignore specific fields when comparing.
+
+#### Status
+
+```console
+$ lambroll status
+```
+
+Displays the current status of the function including:
+- FunctionName, FunctionArn, Version
+- Runtime, PackageType
+- State, LastUpdateState
+- FunctionURL (if exists)
+
+```console
+$ lambroll status --output json  # Output as JSON instead of table
+```
+
+#### Logs
+
+```console
+$ lambroll logs
+```
+
+Displays CloudWatch Logs for the function. This command internally executes `aws logs tail`.
+
+```console
+$ lambroll logs --follow              # Follow new logs
+$ lambroll logs --since 1h            # Show logs from last 1 hour
+$ lambroll logs --format short        # Change output format
+$ lambroll logs --filter-pattern ERROR  # Filter logs by pattern
+```
+
+#### Archive
+
+```console
+$ lambroll archive
+```
+
+Creates a zip archive from the source directory (respects `.lambdaignore`).
+
+```console
+$ lambroll archive --src ./src --dest function.zip
+$ lambroll archive --dest - > function.zip  # Output to stdout
+```
+
+#### Render
+
+```console
+$ lambroll render
+```
+
+Renders `function.json` with all template variables expanded and outputs to STDOUT.
+
+```console
+$ lambroll render --jsonnet              # Convert output to Jsonnet format
+$ lambroll render --function-url path    # Render function URL config instead
+```
+
+Useful for debugging template variable expansion.
+
+#### Versions
+
+```console
+$ lambroll versions
+```
+
+Lists all versions of the function with their aliases and last modified time.
+
+```console
+$ lambroll versions --output json        # Output as JSON
+$ lambroll versions --delete --keep-versions 3  # Delete old versions, keep latest 3
+```
+
+#### Delete
+
+```console
+$ lambroll delete
+```
+
+Deletes the Lambda function (prompts for confirmation by default).
+
+```console
+$ lambroll delete --force       # Skip confirmation prompt
+$ lambroll delete --dry-run     # Show what would be deleted
+```
+
+## Configuration
 
 ### function.json
 
@@ -496,7 +664,7 @@ The template functions is available in `{{ }}`.
 - `env` function expands environment variables.
 - `must_env` function expands environment variables. If the environment variable is not defined, lambroll will panic and abort.
 
-#### Tags
+### Tags
 
 When "Tags" key exists in function.json, lambroll set / remove tags to the lambda function at deploy.
 
@@ -513,7 +681,7 @@ When "Tags" key exists in function.json, lambroll set / remove tags to the lambd
 When "Tags" key does not exist, lambroll doesn't manage tags.
 If you hope to remove all tags, set `"Tags": {}` expressly.
 
-#### Environment variables from envfile
+### Environment variables from envfile
 
 `lambroll --envfile .env1 .env2` reads files named .env1 and .env2 as environment files and export variables in these files.
 
@@ -524,7 +692,7 @@ FOO=foo
 export BAR="bar"
 ```
 
-#### Jsonnet support for function configuration
+### Jsonnet support for function configuration
 
 lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) format instead of plain JSON.
 
@@ -551,7 +719,7 @@ $ lambroll \
 
 v1.1.0 and later, lambroll supports Jsonnet native functions. See below for details.
 
-#### Expand SSM parameter values
+### Expand SSM parameter values
 
 At reading the file, lambroll evaluates `{{ ssm }}` syntax in JSON.
 
@@ -576,7 +744,7 @@ local ssm = std.native('ssm');
 }
 ```
 
-#### Expand environment variables
+### Expand environment variables
 
 At reading the file, lambroll evaluates `{{ env }}` and `{{ must_env }}` syntax in JSON.
 
@@ -621,7 +789,7 @@ local must_env = std.native('must_env');
 }
 ```
 
-#### Resolve AWS caller identity
+### Resolve AWS caller identity
 
 The `caller_identity` template function resolves the AWS caller identity.
 
@@ -648,7 +816,7 @@ The `caller_identity` function returns an object containing the following fields
 
 This object is the same as the result of [GetCallerIdentity](https://docs.aws.amazon.com/STS/latest/APIReference/API_GetCallerIdentity.html) API.
 
-#### Resolve Lambda layer ARN
+### Resolve Lambda layer ARN
 
 The `layer_arn` template/Jsonnet function resolves the Lambda layer ARN.
 
@@ -673,7 +841,7 @@ The `layer_arn` function takes two string arguments: `LayerName` and `Version`.
 - `LayerName` is the name of the Lambda layer.
 - `Version` is the version of the Lambda layer. If `Version` is empty or `latest`, the latest version is used. Otherwise, the specified version is used.
 
-#### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
+### Lookup resource attributes in tfstate ([Terraform state](https://www.terraform.io/docs/state/index.html))
 
 When `--tfstate` option set to an URL to `terraform.tfstate`, tfstate template function enabled.
 
@@ -793,6 +961,8 @@ For example,
 ```
 
 For each line in `.lambdaignore` are evaluated as Go's [`path/filepath#Match`](https://godoc.org/path/filepath#Match).
+
+## Advanced Features
 
 ### Lambda@Edge support
 
