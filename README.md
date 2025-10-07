@@ -210,6 +210,21 @@ Commands:
 Run "lambroll <command> --help" for more information on a command.
 ```
 
+### Commands
+
+- [init](#init) - Initialize function.json from an existing function
+- [deploy](#deploy) - Deploy or create a Lambda function
+- [rollback](#rollback) - Rollback a function to a previous version
+- [invoke](#invoke) - Invoke a function with payloads
+- [list](#list) - List all Lambda functions in your account
+- [diff](#diff) - Show differences between local and remote function
+- [status](#status) - Show current status of a function
+- [logs](#logs) - Show CloudWatch Logs for a function
+- [archive](#archive) - Create a zip archive for deployment
+- [render](#render) - Render function.json with template variables expanded
+- [versions](#versions) - List and manage function versions
+- [delete](#delete) - Delete a function
+
 ### Global flags
 
 lambroll has global flags for all commands.
@@ -450,6 +465,116 @@ START RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f Version: $LATEST
 END RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f
 REPORT RequestId: dcc584f5-ceaf-4109-b405-8e59ca7ae92f	Duration: 597.87 ms	Billed Duration: 600 ms	Memory Size: 128 MB	Max Memory Used: 50 MB
 2019/10/28 23:16:43 [info] completed
+```
+
+### List
+
+```console
+$ lambroll list
+```
+
+Lists all Lambda functions in your AWS account and outputs their configurations as JSON to STDOUT.
+
+### Diff
+
+```console
+$ lambroll diff
+```
+
+Shows differences between the local function.json and the deployed function configuration.
+
+```console
+$ lambroll diff --code        # Compare code SHA256
+$ lambroll diff --qualifier current  # Compare with specific version/alias
+$ lambroll diff --ignore='.Environment.Variables.TIMESTAMP'  # Ignore specific fields
+$ lambroll diff --exit-code   # Exit with code 2 if differences exist
+```
+
+Use `--ignore` with jq query syntax to ignore specific fields when comparing.
+
+### Status
+
+```console
+$ lambroll status
+```
+
+Displays the current status of the function including:
+- FunctionName, FunctionArn, Version
+- Runtime, PackageType
+- State, LastUpdateState
+- FunctionURL (if exists)
+
+```console
+$ lambroll status --output json  # Output as JSON instead of table
+```
+
+### Logs
+
+```console
+$ lambroll logs
+```
+
+Displays CloudWatch Logs for the function. This command internally executes `aws logs tail`.
+
+```console
+$ lambroll logs --follow              # Follow new logs
+$ lambroll logs --since 1h            # Show logs from last 1 hour
+$ lambroll logs --format short        # Change output format
+$ lambroll logs --filter-pattern ERROR  # Filter logs by pattern
+```
+
+### Archive
+
+```console
+$ lambroll archive
+```
+
+Creates a zip archive from the source directory (respects `.lambdaignore`).
+
+```console
+$ lambroll archive --src ./src --dest function.zip
+$ lambroll archive --dest - > function.zip  # Output to stdout
+```
+
+### Render
+
+```console
+$ lambroll render
+```
+
+Renders `function.json` with all template variables expanded and outputs to STDOUT.
+
+```console
+$ lambroll render --jsonnet              # Convert output to Jsonnet format
+$ lambroll render --function-url path    # Render function URL config instead
+```
+
+Useful for debugging template variable expansion.
+
+### Versions
+
+```console
+$ lambroll versions
+```
+
+Lists all versions of the function with their aliases and last modified time.
+
+```console
+$ lambroll versions --output json        # Output as JSON
+$ lambroll versions --delete --keep-versions 3  # Delete old versions, keep latest 3
+```
+
+### Delete
+
+```console
+$ lambroll delete
+```
+
+Deletes the Lambda function (prompts for confirmation by default).
+
+```console
+$ lambroll delete --force       # Skip confirmation prompt
+$ lambroll delete --dry-run     # Show what would be deleted
 ```
 
 ### function.json
