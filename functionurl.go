@@ -9,9 +9,7 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"sort"
 	"strings"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
@@ -40,9 +38,7 @@ func (f *FunctionURL) Validate(functionName string) error {
 	case types.FunctionUrlAuthTypeNone:
 		if len(f.Permissions) == 0 {
 			f.Permissions = append(f.Permissions, &FunctionURLPermission{
-				AddPermissionInput: lambda.AddPermissionInput{
-					Principal: aws.String("*"),
-				},
+				Principal: aws.String("*"),
 			})
 		}
 	case types.FunctionUrlAuthTypeAwsIam:
@@ -53,20 +49,6 @@ func (f *FunctionURL) Validate(functionName string) error {
 		return fmt.Errorf("unknown function url 'AuthType': %s", f.Config.AuthType)
 	}
 	return nil
-}
-
-func (fc *FunctionURL) AddPermissionInput(p *FunctionURLPermission) *lambda.AddPermissionInput {
-	return &lambda.AddPermissionInput{
-		Action:              aws.String("lambda:InvokeFunctionUrl"),
-		FunctionName:        fc.Config.FunctionName,
-		Qualifier:           fc.Config.Qualifier,
-		FunctionUrlAuthType: fc.Config.AuthType,
-		StatementId:         aws.String(p.Sid()),
-		Principal:           p.Principal,
-		PrincipalOrgID:      p.PrincipalOrgID,
-		SourceArn:           p.SourceArn,
-		SourceAccount:       p.SourceAccount,
-	}
 }
 
 func (fc *FunctionURL) RemovePermissionInput(sid string) *lambda.RemovePermissionInput {
@@ -81,44 +63,60 @@ type FunctionURLConfig = lambda.CreateFunctionUrlConfigInput
 
 type FunctionURLPermissions []*FunctionURLPermission
 
-func (ps FunctionURLPermissions) Sids() []string {
-	sids := make([]string, 0, len(ps))
-	for _, p := range ps {
-		sids = append(sids, p.Sid())
-	}
-	sort.Strings(sids)
-	return sids
-}
-
-func (ps FunctionURLPermissions) Find(sid string) *FunctionURLPermission {
-	for _, p := range ps {
-		if p.Sid() == sid {
-			return p
-		}
-	}
-	return nil
-}
-
 type FunctionURLPermission struct {
-	lambda.AddPermissionInput
+	Principal      *string `json:"Principal,omitempty"`
+	PrincipalOrgID *string `json:"PrincipalOrgID,omitempty"`
+	SourceArn      *string `json:"SourceArn,omitempty"`
+	SourceAccount  *string `json:"SourceAccount,omitempty"`
 
-	sid  string
-	once sync.Once
+	actualSids map[string]string // action -> sid(on remote)
 }
 
-func (p *FunctionURLPermission) Sid() string {
-	if p.sid != "" {
-		return p.sid
-	} else if p.StatementId != nil {
-		return *p.StatementId
+func (p *FunctionURLPermission) Equals(o *FunctionURLPermission) bool {
+	return aws.ToString(p.Principal) == aws.ToString(o.Principal) &&
+		aws.ToString(p.PrincipalOrgID) == aws.ToString(o.PrincipalOrgID) &&
+		aws.ToString(p.SourceArn) == aws.ToString(o.SourceArn) &&
+		aws.ToString(p.SourceAccount) == aws.ToString(o.SourceAccount)
+}
+
+func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.AddPermissionInput {
+	perms := []*lambda.AddPermissionInput{
+		{
+			Action:              aws.String("lambda:InvokeFunctionUrl"),
+			FunctionName:        fc.Config.FunctionName,
+			Qualifier:           fc.Config.Qualifier,
+			FunctionUrlAuthType: fc.Config.AuthType,
+			Principal:           p.Principal,
+			PrincipalOrgID:      p.PrincipalOrgID,
+			SourceArn:           p.SourceArn,
+			SourceAccount:       p.SourceAccount,
+		},
+		{
+			Action:                aws.String("lambda:InvokeFunction"),
+			FunctionName:          fc.Config.FunctionName,
+			Qualifier:             fc.Config.Qualifier,
+			Principal:             p.Principal,
+			PrincipalOrgID:        p.PrincipalOrgID,
+			SourceArn:             p.SourceArn,
+			SourceAccount:         p.SourceAccount,
+			InvokedViaFunctionUrl: aws.Bool(true),
+		},
 	}
-	p.once.Do(func() {
-		b, _ := json.Marshal(p)
-		h := sha1.Sum(b)
-		p.sid = fmt.Sprintf(SidFormat, h)
-		p.StatementId = aws.String(p.sid)
-	})
-	return p.sid
+	for _, perm := range perms {
+		// use actual StatementId if exists
+		if p.actualSids != nil {
+			if sid, ok := p.actualSids[aws.ToString(perm.Action)]; ok {
+				perm.StatementId = aws.String(sid)
+				continue
+			}
+		}
+		// generate StatementId based on permission content
+		b, _ := marshalJSON(perm)
+		sha1sum := sha1.Sum(b)
+		sid := fmt.Sprintf(SidFormat, sha1sum)
+		perm.StatementId = aws.String(sid)
+	}
+	return perms
 }
 
 type PolicyOutput struct {
@@ -191,6 +189,10 @@ func (ps *PolicyStatement) PrincipalOrgID() *string {
 		return aws.String(v)
 	}
 	return nil
+}
+
+func (ps *PolicyStatement) SourceAccount() *string {
+	return nil // TODO
 }
 
 func (ps *PolicyStatement) SourceArn() *string {
@@ -313,58 +315,79 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 
 	log.Printf("[info] adding %d permissions %s", len(adds), opt.label())
 	if !opt.DryRun {
-		for _, p := range adds {
-			if _, err := app.lambda.AddPermission(ctx, fc.AddPermissionInput(p)); err != nil {
+		for _, perm := range adds {
+			if _, err := app.lambda.AddPermission(ctx, perm); err != nil {
 				return fmt.Errorf("failed to add permission: %w", err)
 			}
-			log.Printf("[info] added permission Sid: %s", p.Sid())
+			log.Printf("[info] added permission Sid:%s Action:%s",
+				aws.ToString(perm.StatementId), aws.ToString(perm.Action),
+			)
 		}
 	}
 
 	log.Printf("[info] removing %d permissions %s", len(removes), opt.label())
 	if !opt.DryRun {
-		for _, p := range removes {
-			if _, err := app.lambda.RemovePermission(ctx, fc.RemovePermissionInput(*p.StatementId)); err != nil {
+		for _, perm := range removes {
+			if _, err := app.lambda.RemovePermission(ctx, &lambda.RemovePermissionInput{
+				FunctionName: perm.FunctionName,
+				Qualifier:    perm.Qualifier,
+				StatementId:  perm.StatementId,
+			}); err != nil {
+				var nfe *types.ResourceNotFoundException
+				if errors.As(err, &nfe) {
+					log.Printf("[warn] permission Sid: %s not found. skipped removing.", *perm.StatementId)
+					continue
+				}
 				return fmt.Errorf("failed to remove permission: %w", err)
 			}
-			log.Printf("[info] removed permission Sid: %s", *p.StatementId)
+			log.Printf("[info] removed permission Sid: %s", *perm.StatementId)
 		}
 	}
 	return nil
 }
 
-func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *FunctionURL) (FunctionURLPermissions, FunctionURLPermissions, error) {
-	existsPermissions, err := app.getFunctionURLPermissions(ctx, *fc.Config.FunctionName, fc.Config.Qualifier)
+func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *FunctionURL) ([]*lambda.AddPermissionInput, []*lambda.AddPermissionInput, error) {
+	remotePermissions, err := app.getFunctionURLPermissions(ctx, *fc.Config.FunctionName, fc.Config.Qualifier)
 	if err != nil {
 		return nil, nil, err
 	}
-	existsSids := lo.Map(existsPermissions, func(p *FunctionURLPermission, _ int) string {
-		return p.Sid()
-	})
+	remote := make(map[string]*lambda.AddPermissionInput)
+	remoteSids := make([]string, 0)
+	for _, p := range remotePermissions {
+		perms := p.AddPermissionInputs(fc)
+		for _, perm := range perms {
+			sid := aws.ToString(perm.StatementId)
+			remote[sid] = perm
+			remoteSids = append(remoteSids, sid)
+		}
+	}
 
-	removeSids, addSids := lo.Difference(existsSids, fc.Permissions.Sids())
+	// local permissions to be applied
+	local := make(map[string]*lambda.AddPermissionInput)
+	localSids := make([]string, 0)
+	for _, p := range fc.Permissions {
+		perms := p.AddPermissionInputs(fc)
+		for _, perm := range perms {
+			sid := aws.ToString(perm.StatementId)
+			local[sid] = perm
+			localSids = append(localSids, sid)
+		}
+	}
+
+	// calculate difference
+	removeSids, addSids := lo.Difference(remoteSids, localSids)
 	if len(removeSids) == 0 && len(addSids) == 0 {
 		return nil, nil, nil
 	}
 
-	var adds FunctionURLPermissions
+	var adds []*lambda.AddPermissionInput
 	for _, sid := range addSids {
-		p := fc.Permissions.Find(sid)
-		if p == nil {
-			// should not happen
-			panic(fmt.Sprintf("permission not found for adding: %s", sid))
-		}
-		adds = append(adds, p)
+		adds = append(adds, local[sid])
 	}
 
-	var removes FunctionURLPermissions
+	var removes []*lambda.AddPermissionInput
 	for _, sid := range removeSids {
-		p := existsPermissions.Find(sid)
-		if p == nil {
-			// should not happen
-			panic(fmt.Sprintf("permission not found for removal: %s", sid))
-		}
-		removes = append(removes, p)
+		removes = append(removes, remote[sid])
 	}
 
 	return adds, removes, nil
@@ -385,28 +408,38 @@ func (app *App) getFunctionURLPermissions(ctx context.Context, functionName stri
 		}
 	}
 	ps := make(FunctionURLPermissions, 0)
-	if res != nil {
-		log.Printf("[debug] policy for %s: %s", fqFunctionName, *res.Policy)
-		var policy PolicyOutput
-		if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal policy: %w", err)
+	if res == nil {
+		return ps, nil
+	}
+	log.Printf("[debug] policy for %s: %s", fqFunctionName, *res.Policy)
+	var policy PolicyOutput
+	if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal policy: %w", err)
+	}
+	for _, s := range policy.Statement {
+		if (s.Action == "lambda:InvokeFunctionUrl" || s.Action == "lambda:InvokeFunction") && s.Effect == "Allow" {
+			// lambda function url policy
+		} else {
+			continue
 		}
-		for _, s := range policy.Statement {
-			if s.Action != "lambda:InvokeFunctionUrl" || s.Effect != "Allow" {
-				// not a lambda function url policy
-				continue
+		p := &FunctionURLPermission{
+			Principal:      s.PrincipalString(),
+			PrincipalOrgID: s.PrincipalOrgID(),
+			SourceArn:      s.SourceArn(),
+			SourceAccount:  s.SourceAccount(),
+			actualSids:     map[string]string{s.Action: s.Sid},
+		}
+		// if existing permission, merge actualSids
+		var found bool
+		for _, e := range ps {
+			if p.Equals(e) {
+				// merge actualSids
+				e.actualSids[s.Action] = s.Sid
+				found = true
 			}
-			st, _ := json.Marshal(s)
-			log.Println("[debug] exists sid", s.Sid, string(st))
-			ps = append(ps, &FunctionURLPermission{
-				sid: s.Sid,
-				AddPermissionInput: lambda.AddPermissionInput{
-					StatementId:    aws.String(s.Sid),
-					Principal:      s.PrincipalString(),
-					PrincipalOrgID: s.PrincipalOrgID(),
-					SourceArn:      s.SourceArn(),
-				},
-			})
+		}
+		if !found {
+			ps = append(ps, p)
 		}
 	}
 	return ps, nil
