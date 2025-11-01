@@ -33,13 +33,13 @@ func TestLoadFunction(t *testing.T) {
 		},
 		Envfile: []string{"test/env"},
 		ExtStr: map[string]string{
-			"description":    "hello function",
-			"architecture":   "x86_64",
+			"description":  "hello function",
+			"architecture": "x86_64",
 		},
 		ExtCode: map[string]string{
-			"memory_size":    "64 * 2", // == 128
-			"storage_size":   "1024",
-			"timeout":        "5",
+			"memory_size":  "64 * 2", // == 128
+			"storage_size": "1024",
+			"timeout":      "5",
 		},
 	})
 	if err != nil {

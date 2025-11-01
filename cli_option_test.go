@@ -50,9 +50,9 @@ func TestOptionUnmarshalJSON(t *testing.T) {
 			},
 		},
 		{
-			name: "empty fields",
+			name:     "empty fields",
 			jsonData: `{}`,
-			want: lambroll.Option{},
+			want:     lambroll.Option{},
 		},
 		{
 			name: "with other fields",
