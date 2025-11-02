@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -72,19 +72,19 @@ PAYLOAD:
 			Payload:        b,
 		}
 		in.Qualifier = opt.Qualifier
-		log.Println("[debug] invoking function", in)
+		slog.Debug("invoking function", "input", in)
 		res, err := app.lambda.Invoke(ctx, in)
 		if err != nil {
-			log.Println("[error] failed to invoke function", err.Error())
+			slog.Error("failed to invoke function", "error", err)
 			continue PAYLOAD
 		}
 		stdout.Write(res.Payload)
 		stdout.Write([]byte("\n"))
 		stdout.Flush()
 
-		log.Printf("[info] StatusCode:%d", res.StatusCode)
+		slog.Info("invoke result", "statusCode", res.StatusCode)
 		if res.ExecutedVersion != nil {
-			log.Printf("[info] ExecutionVersion:%s", *res.ExecutedVersion)
+			slog.Info("execution version", "version", *res.ExecutedVersion)
 		}
 		if res.LogResult != nil {
 			b, _ := base64.StdEncoding.DecodeString(*res.LogResult)

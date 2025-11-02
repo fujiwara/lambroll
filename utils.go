@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -16,7 +16,7 @@ import (
 )
 
 func (app *App) saveFile(ctx context.Context, path string, b []byte, mode os.FileMode, force bool) error {
-	log.Printf("[debug] writing file to %s mode %s", path, mode)
+	slog.Debug("writing file", "path", path, "mode", mode)
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
 		if !ok {
@@ -30,7 +30,7 @@ func (app *App) saveFile(ctx context.Context, path string, b []byte, mode os.Fil
 }
 
 func saveFileIO(ctx context.Context, path string, r io.ReadCloser, mode os.FileMode, force bool) error {
-	log.Printf("[debug] writing file to %s mode %s", path, mode)
+	slog.Debug("writing file", "path", path, "mode", mode)
 	defer r.Close()
 	if _, err := os.Stat(path); err == nil {
 		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", path), false)
@@ -68,7 +68,7 @@ func toGeneralMap(s any, omitEmpty bool) (any, error) {
 func jsonStr(s any) string {
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
-		log.Printf("[warn] failed to marshal json: %s", err)
+		slog.Warn("failed to marshal json", "error", err)
 	}
 	return string(b)
 }
@@ -104,7 +104,7 @@ func unmarshalJSON(src []byte, v interface{}, path string) error {
 		if !strings.Contains(err.Error(), "unknown field") {
 			return err
 		}
-		log.Printf("[warn] %s in %s", err, path)
+		slog.Warn("unknown field in file", "error", err, "path", path)
 
 		// unknown field -> try lax decoder
 		lax := json.NewDecoder(bytes.NewReader(src))

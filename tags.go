@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -15,7 +15,7 @@ import (
 
 func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption) error {
 	if fn.Tags == nil {
-		log.Println("[debug] Tags not defined in function.json skip updating tags")
+		slog.Debug("Tags not defined in function.json skip updating tags")
 		return nil
 	}
 	arn := app.functionArn(ctx, *fn.FunctionName)
@@ -30,7 +30,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 			return fmt.Errorf("failed to list tags of %s: %w", arn, err)
 		}
 	}
-	log.Printf("[debug] %d tags found", len(tags.Tags))
+	slog.Debug("tags found", "count", len(tags.Tags))
 
 	setTags, removeTagKeys := mergeTags(tags.Tags, fn.Tags)
 	// ignore AWS managed tags because they are not allowed to be modified
@@ -42,12 +42,12 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	})
 
 	if len(setTags) == 0 && len(removeTagKeys) == 0 {
-		log.Println("[debug] no need to update tags (unchanged)")
+		slog.Debug("no need to update tags (unchanged)")
 		return nil
 	}
 
 	if n := len(setTags); n > 0 {
-		log.Printf("[info] setting %d tags %s", n, opt.label())
+		slog.Info("setting tags", "count", n, "label", opt.label())
 		if !opt.DryRun {
 			_, err = app.lambda.TagResource(ctx, &lambda.TagResourceInput{
 				Resource: aws.String(arn),
@@ -60,7 +60,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	}
 
 	if n := len(removeTagKeys); n > 0 {
-		log.Printf("[info] removing %d tags %s", n, opt.label())
+		slog.Info("removing tags", "count", n, "label", opt.label())
 		if !opt.DryRun {
 			_, err = app.lambda.UntagResource(ctx, &lambda.UntagResourceInput{
 				Resource: aws.String(arn),
@@ -82,17 +82,17 @@ func mergeTags(oldTags, newTags Tags) (sets Tags, removes []string) {
 	for key, oldValue := range oldTags {
 		if newValue, ok := newTags[key]; ok {
 			if newValue != oldValue {
-				log.Printf("[debug] update tag %s=%s", key, newValue)
+				slog.Debug("update tag", "key", key, "value", newValue)
 				sets[key] = newValue
 			}
 		} else {
-			log.Printf("[debug] remove tag %s", key)
+			slog.Debug("remove tag", "key", key)
 			removes = append(removes, key)
 		}
 	}
 	for key, newValue := range newTags {
 		if _, ok := oldTags[key]; !ok {
-			log.Printf("[debug] add tag %s=%s", key, newValue)
+			slog.Debug("add tag", "key", key, "value", newValue)
 			sets[key] = newValue
 		}
 	}
@@ -101,7 +101,7 @@ func mergeTags(oldTags, newTags Tags) (sets Tags, removes []string) {
 
 func isAWSManagedTag(tag string) bool {
 	if strings.HasPrefix(strings.ToLower(tag), "aws:") {
-		log.Printf("[info] ignoring AWS managed tag %s", tag)
+		slog.Info("ignoring AWS managed tag", "tag", tag)
 		return true
 	}
 	return false

@@ -3,7 +3,7 @@ package lambroll
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/Songmu/prompter"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -29,14 +29,14 @@ func (app *App) Delete(ctx context.Context, opt *DeleteOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
-	log.Println("[info] deleting function", *fn.FunctionName, opt.label())
+	slog.Info("deleting function", "function", *fn.FunctionName, "label", opt.label())
 
 	if opt.DryRun {
 		return nil
 	}
 
 	if !opt.Force && !prompter.YN("Do you want to delete the function?", false) {
-		log.Println("[info] canceled to delete function", *fn.FunctionName)
+		slog.Info("canceled to delete function", "function", *fn.FunctionName)
 		return nil
 	}
 
@@ -47,7 +47,7 @@ func (app *App) Delete(ctx context.Context, opt *DeleteOption) error {
 		return fmt.Errorf("failed to delete function: %w", err)
 	}
 
-	log.Println("[info] completed to delete function", *fn.FunctionName)
+	slog.Info("completed to delete function", "function", *fn.FunctionName)
 
 	return nil
 }

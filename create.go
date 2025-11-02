@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -39,7 +39,7 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOpt
 			return fmt.Errorf("PackageType=Image requires Code.ImageUri in function definition")
 		}
 		// deploy docker image. no need to prepare
-		log.Printf("[info] using docker image %s", *fn.Code.ImageUri)
+		slog.Info("using docker image", "image", *fn.Code.ImageUri)
 
 		if fn.ImageConfig == nil {
 			fn.ImageConfig = &types.ImageConfig{} // reset explicitly
@@ -62,16 +62,16 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOpt
 
 	if fn.Code != nil {
 		if bucket, key := fn.Code.S3Bucket, fn.Code.S3Key; bucket != nil && key != nil {
-			log.Printf("[info] uploading function %d bytes to s3://%s/%s", info.Size(), *bucket, *key)
+			slog.Info("uploading function to s3", "bytes", info.Size(), "bucket", *bucket, "key", *key)
 			versionID, err := app.uploadFunctionToS3(ctx, zipfile, *bucket, *key)
 			if err != nil {
 				return fmt.Errorf("failed to upload function zip to s3://%s/%s: %w", *bucket, *key, err)
 			}
 			if versionID != "" {
-				log.Printf("[info] object created as version %s", versionID)
+				slog.Info("object created", "version", versionID)
 				fn.Code.S3ObjectVersion = aws.String(versionID)
 			} else {
-				log.Printf("[info] object created")
+				slog.Info("object created")
 				fn.Code.S3ObjectVersion = nil
 			}
 		} else {
@@ -96,7 +96,7 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 	if err != nil {
 		return fmt.Errorf("failed to prepare function code: %w", err)
 	}
-	log.Println("[info] creating function", opt.label())
+	slog.Info("creating function", "label", opt.label())
 
 	version := "(created)"
 	if !opt.DryRun {
@@ -107,9 +107,9 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 		}
 		if res.Version != nil {
 			version = *res.Version
-			log.Printf("[info] deployed function version %s", version)
+			slog.Info("deployed function", "version", version)
 		} else {
-			log.Println("[info] deployed")
+			slog.Info("deployed")
 		}
 	}
 
@@ -121,7 +121,7 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 		return nil
 	}
 
-	log.Printf("[info] creating alias set %s to version %s %s", opt.AliasName, version, opt.label())
+	slog.Info("creating alias", "name", opt.AliasName, "version", version, "label", opt.label())
 	if !opt.DryRun {
 		_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,
@@ -131,7 +131,7 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 		if err != nil {
 			return fmt.Errorf("failed to create alias: %w", err)
 		}
-		log.Println("[info] alias created")
+		slog.Info("alias created")
 	}
 	return nil
 }

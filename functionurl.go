@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"regexp"
 	"strings"
@@ -116,7 +116,7 @@ func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.A
 				ret = append(ret, perm)
 			} else {
 				// not exists on remote, do not add
-				log.Println("[debug] not found actual StatementId for action:", aws.ToString(perm.Action))
+				slog.Debug("not found actual StatementId for action", "action", aws.ToString(perm.Action))
 			}
 			continue
 		}
@@ -268,7 +268,7 @@ func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL,
 }
 
 func (app *App) deployFunctionURL(ctx context.Context, fc *FunctionURL, opt *DeployOption) error {
-	log.Printf("[info] deploying function url... %s", opt.label())
+	slog.Info("deploying function url...", "label", opt.label())
 
 	if err := app.deployFunctionURLConfig(ctx, fc, opt); err != nil {
 		return fmt.Errorf("failed to deploy function url config: %w", err)
@@ -278,7 +278,7 @@ func (app *App) deployFunctionURL(ctx context.Context, fc *FunctionURL, opt *Dep
 		return fmt.Errorf("failed to deploy function url permissions: %w", err)
 	}
 
-	log.Println("[info] deployed function url", opt.label())
+	slog.Info("deployed function url", "label", opt.label())
 	return nil
 }
 
@@ -292,7 +292,7 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 	if err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			log.Printf("[info] function url config for %s not found. creating %s", fqFunctionName, opt.label())
+			slog.Info("function url config not found. creating", "function", fqFunctionName, "label", opt.label())
 			create = true
 		} else {
 			return fmt.Errorf("failed to get function url config: %w", err)
@@ -300,7 +300,7 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 	}
 
 	if opt.DryRun {
-		log.Println("[info] dry-run mode. skipping function url config deployment")
+		slog.Info("dry-run mode. skipping function url config deployment")
 		return nil
 	}
 
@@ -309,10 +309,10 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 		if err != nil {
 			return fmt.Errorf("failed to create function url config: %w", err)
 		}
-		log.Printf("[info] created function url config for %s", fqFunctionName)
-		log.Printf("[info] Function URL: %s", *res.FunctionUrl)
+		slog.Info("created function url config", "function", fqFunctionName)
+		slog.Info("Function URL", "url", *res.FunctionUrl)
 	} else {
-		log.Printf("[info] updating function url config for %s", fqFunctionName)
+		slog.Info("updating function url config", "function", fqFunctionName)
 		if functionUrlConfig.Cors != nil && fc.Config.Cors == nil {
 			// reset cors config
 			fc.Config.Cors = &types.Cors{}
@@ -327,8 +327,8 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 		if err != nil {
 			return fmt.Errorf("failed to update function url config: %w", err)
 		}
-		log.Printf("[info] updated function url config for %s", fqFunctionName)
-		log.Printf("[info] Function URL: %s", *res.FunctionUrl)
+		slog.Info("updated function url config", "function", fqFunctionName)
+		slog.Info("Function URL", "url", *res.FunctionUrl)
 	}
 	return nil
 }
@@ -339,23 +339,21 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 		return err
 	}
 	if len(adds) == 0 && len(removes) == 0 {
-		log.Println("[info] no changes in permissions.")
+		slog.Info("no changes in permissions")
 		return nil
 	}
 
-	log.Printf("[info] adding %d permissions %s", len(adds), opt.label())
+	slog.Info("adding permissions", "count", len(adds), "label", opt.label())
 	if !opt.DryRun {
 		for _, perm := range adds {
 			if _, err := app.lambda.AddPermission(ctx, perm); err != nil {
 				return fmt.Errorf("failed to add permission: %w", err)
 			}
-			log.Printf("[info] added permission Action:%s Sid:%s",
-				aws.ToString(perm.Action), aws.ToString(perm.StatementId),
-			)
+			slog.Info("added permission", "action", aws.ToString(perm.Action), "sid", aws.ToString(perm.StatementId))
 		}
 	}
 
-	log.Printf("[info] removing %d permissions %s", len(removes), opt.label())
+	slog.Info("removing permissions", "count", len(removes), "label", opt.label())
 	if !opt.DryRun {
 		for _, perm := range removes {
 			if _, err := app.lambda.RemovePermission(ctx, &lambda.RemovePermissionInput{
@@ -365,12 +363,12 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 			}); err != nil {
 				var nfe *types.ResourceNotFoundException
 				if errors.As(err, &nfe) {
-					log.Printf("[warn] permission Sid: %s not found. skipped removing.", *perm.StatementId)
+					slog.Warn("permission Sid not found. skipped removing", "sid", *perm.StatementId)
 					continue
 				}
 				return fmt.Errorf("failed to remove permission: %w", err)
 			}
-			log.Printf("[info] removed permission Sid: %s", *perm.StatementId)
+			slog.Info("removed permission", "sid", *perm.StatementId)
 		}
 	}
 	return nil
@@ -386,7 +384,7 @@ func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *Function
 	for _, p := range remotePermissions {
 		inputs := p.AddPermissionInputs(fc)
 		for _, in := range inputs {
-			log.Printf("[debug] remote permission: %s %s", aws.ToString(in.StatementId), aws.ToString(in.Action))
+			slog.Debug("remote permission", "sid", aws.ToString(in.StatementId), "action", aws.ToString(in.Action))
 			sid := aws.ToString(in.StatementId)
 			remote[sid] = in
 		}
@@ -397,7 +395,7 @@ func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *Function
 	for _, p := range fc.Permissions {
 		inputs := p.AddPermissionInputs(fc)
 		for _, in := range inputs {
-			log.Printf("[debug] local permission: %s %s", aws.ToString(in.StatementId), aws.ToString(in.Action))
+			slog.Debug("local permission", "sid", aws.ToString(in.StatementId), "action", aws.ToString(in.Action))
 			sid := aws.ToString(in.StatementId)
 			local[sid] = in
 		}
@@ -406,11 +404,11 @@ func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *Function
 	// calculate difference
 	removeSids, addSids := lo.Difference(lo.Keys(remote), lo.Keys(local))
 	if len(removeSids) == 0 && len(addSids) == 0 {
-		log.Println("[debug] no changes in permissions.")
+		slog.Debug("no changes in permissions")
 		return nil, nil, nil
 	}
-	log.Println("[debug] SIDs to be added:", addSids)
-	log.Println("[debug] SIDs to be removed:", removeSids)
+	slog.Debug("SIDs to be added", "sids", addSids)
+	slog.Debug("SIDs to be removed", "sids", removeSids)
 
 	var adds []*lambda.AddPermissionInput
 	for _, sid := range addSids {
@@ -443,7 +441,7 @@ func (app *App) getFunctionURLPermissions(ctx context.Context, functionName stri
 	if res == nil {
 		return ps, nil
 	}
-	log.Printf("[debug] policy for %s: %s", fqFunctionName, *res.Policy)
+	slog.Debug("policy", "function", fqFunctionName, "policy", *res.Policy)
 	var policy PolicyOutput
 	if err := json.Unmarshal([]byte(*res.Policy), &policy); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal policy: %w", err)
@@ -486,10 +484,10 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, exists bool, 
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
 			if exists {
-				log.Printf("[warn] function url config for %s not found", *fn.FunctionName)
+				slog.Warn("function url config not found", "function", *fn.FunctionName)
 				return nil
 			} else {
-				log.Printf("[info] initializing function url config for %s", *fn.FunctionName)
+				slog.Info("initializing function url config", "function", *fn.FunctionName)
 				// default settings will be used
 				fc = &lambda.GetFunctionUrlConfigOutput{
 					AuthType: types.FunctionUrlAuthTypeNone,
@@ -521,7 +519,7 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, exists bool, 
 	} else {
 		name = DefaultFunctionURLFilenames[0]
 	}
-	log.Printf("[info] creating %s", name)
+	slog.Info("creating file", "name", name)
 	b, _ := marshalJSON(fu)
 	if opt.Jsonnet {
 		b, err = jsonToJsonnet(b, name)

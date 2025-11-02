@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"strconv"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -34,7 +34,7 @@ func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
-	log.Printf("[info] starting rollback function %s:%s", *fn.FunctionName, opt.Alias)
+	slog.Info("starting rollback function", "function", *fn.FunctionName, "alias", opt.Alias)
 
 	res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{
 		FunctionName: fn.FunctionName,
@@ -55,7 +55,7 @@ func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
 		}
 	}
 
-	log.Printf("[info] rolling back function version %s to %s %s", currentVersion, prevVersion, opt.label())
+	slog.Info("rolling back function version", "from", currentVersion, "to", prevVersion, "label", opt.label())
 	if opt.DryRun {
 		return nil
 	}
@@ -84,7 +84,7 @@ func (app *App) findPreviousVersion(ctx context.Context, name, currentVersion st
 	var prevVersion string
 VERSIONS:
 	for v := cv - 1; v > 0; v-- {
-		log.Printf("[debug] get function version %d", v)
+		slog.Debug("get function version", "version", v)
 		vs := strconv.FormatInt(v, 10)
 		res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 			FunctionName: aws.String(name),
@@ -93,7 +93,7 @@ VERSIONS:
 		if err != nil {
 			var nfe *types.ResourceNotFoundException
 			if errors.As(err, &nfe) {
-				log.Printf("[debug] version %s not found", vs)
+				slog.Debug("version not found", "version", vs)
 				continue VERSIONS
 			} else {
 				return "", fmt.Errorf("failed to get function: %w", err)
@@ -101,7 +101,7 @@ VERSIONS:
 		}
 		if pv := *res.Configuration.Version; aliases[pv] != nil {
 			// skip if the version has alias
-			log.Printf("[info] version %s has alias %v, skipping", pv, aliases[pv])
+			slog.Info("version has alias, skipping", "version", pv, "aliases", aliases[pv])
 			continue VERSIONS
 		}
 		prevVersion = *res.Configuration.Version
@@ -114,7 +114,7 @@ VERSIONS:
 }
 
 func (app *App) deleteFunctionVersion(ctx context.Context, functionName, version string) error {
-	log.Printf("[info] deleting function version %s", version)
+	slog.Info("deleting function version", "version", version)
 	_, err := app.lambda.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 		FunctionName: aws.String(functionName),
 		Qualifier:    aws.String(version),

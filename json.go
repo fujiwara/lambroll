@@ -2,7 +2,7 @@ package lambroll
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 )
 
 func isEmptyValue(value interface{}) bool {
@@ -57,7 +57,7 @@ func omitEmptyValues(data interface{}) interface{} {
 func ToJSONString(v interface{}) string {
 	b, err := json.Marshal(v)
 	if err != nil {
-		log.Println("[warn] failed to marshal json:", err)
+		slog.Warn("failed to marshal json", "error", err)
 		return ""
 	}
 	return string(b)
