@@ -24,8 +24,6 @@ import (
 	"github.com/shogo82148/go-retry"
 )
 
-var Version string
-
 const (
 	versionLatest    = "$LATEST"
 	packageTypeImage = "Image"
