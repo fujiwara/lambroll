@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.4.0](https://github.com/fujiwara/lambroll/compare/v1.3.2...v1.4.0) - 2025-11-02
+- Add args inputs to run lambroll after installation. by @fujiwara in https://github.com/fujiwara/lambroll/pull/527
+- Fix invoke command example by @ss49919201 in https://github.com/fujiwara/lambroll/pull/529
+- Add comprehensive documentation to README by @fujiwara in https://github.com/fujiwara/lambroll/pull/534
+- Add both InvokeFunctionUrl and InvokeFunction permissions for Function URLs by @fujiwara in https://github.com/fujiwara/lambroll/pull/536
+- add diff --skip-function option. by @fujiwara in https://github.com/fujiwara/lambroll/pull/539
+- Migrate from logutils to sloghandler and refactor logging by @fujiwara in https://github.com/fujiwara/lambroll/pull/540
+- Add --log-format option (text|json) by @fujiwara in https://github.com/fujiwara/lambroll/pull/541
+- use version.go by @fujiwara in https://github.com/fujiwara/lambroll/pull/542
+
 ## [v1.3.2](https://github.com/fujiwara/lambroll/compare/v1.3.1...v1.3.2) - 2025-09-19
 - Immutable release by @fujiwara in https://github.com/fujiwara/lambroll/pull/525
 
