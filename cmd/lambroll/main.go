@@ -11,15 +11,11 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-// Version number
-var Version = "current"
-
 func main() {
 	os.Exit(_main())
 }
 
 func _main() int {
-	lambroll.Version = Version
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, unix.SIGTERM)
 	defer stop()
 
