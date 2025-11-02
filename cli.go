@@ -6,12 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/fatih/color"
-	"github.com/fujiwara/logutils"
+	"github.com/fujiwara/sloghandler"
 	"github.com/samber/lo"
 )
 
@@ -160,19 +161,29 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	if opts.LogLevel == "" {
 		opts.LogLevel = DefaultLogLevel
 	}
-	filter := &logutils.LevelFilter{
-		Levels: []logutils.LogLevel{"trace", "debug", "info", "warn", "error"},
-		ModifierFuncs: []logutils.ModifierFunc{
-			logutils.Color(color.FgHiWhite), // trace
-			logutils.Color(color.FgHiBlack), // debug
-			nil,                             // info
-			logutils.Color(color.FgYellow),  // warn
-			logutils.Color(color.FgRed),     // error
-		},
-		MinLevel: logutils.LogLevel(opts.LogLevel),
-		Writer:   os.Stderr,
+	logLevel := new(slog.LevelVar)
+	switch opts.LogLevel {
+	case "trace":
+		logLevel.Set(slog.LevelDebug)
+	case "debug":
+		logLevel.Set(slog.LevelDebug)
+	case "info":
+		logLevel.Set(slog.LevelInfo)
+	case "warn":
+		logLevel.Set(slog.LevelWarn)
+	case "error":
+		logLevel.Set(slog.LevelError)
+	default:
+		logLevel.Set(slog.LevelInfo)
 	}
-	log.SetOutput(filter)
+	slogHandlerOptions := &sloghandler.HandlerOptions{
+		Color: opts.Color,
+		HandlerOptions: slog.HandlerOptions{
+			Level: logLevel,
+		},
+	}
+	logger := slog.New(sloghandler.NewLogHandler(os.Stderr, slogHandlerOptions))
+	slog.SetDefault(logger)
 
 	err = dispatchCLI(ctx, sub, usage, opts)
 	return extractExitCodeAndError(err)

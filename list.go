@@ -3,7 +3,7 @@ package lambroll
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,7 +26,7 @@ func (app *App) List(ctx context.Context, opt *ListOption) error {
 		}
 		for _, c := range res.Functions {
 			arn := app.functionArn(ctx, *c.FunctionName)
-			log.Printf("[debug] listing tags of %s", arn)
+			slog.Debug("listing tags", "arn", arn)
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				Resource: aws.String(arn),
 			})

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 
 	"github.com/aereal/jsondiff"
@@ -22,7 +22,6 @@ type DeployOption struct {
 	Publish           bool   `help:"publish function" default:"true"`
 	AliasName         string `name:"alias" help:"alias name for publish" default:"current"`
 	AliasToLatest     bool   `help:"set alias to unpublished $LATEST version" default:"false"`
-	DryRun            bool   `help:"dry run" default:"false"`
 	SkipArchive       bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
 	KeepVersions      int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
 	Ignore            string `help:"ignore fields by jq queries in function.json" default:""`
@@ -30,14 +29,8 @@ type DeployOption struct {
 	SkipConfiguration bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false"`
 	SkipFunction      bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
 
+	DryRunOption
 	ZipOption
-}
-
-func (opt DeployOption) label() string {
-	if opt.DryRun {
-		return "**DRY RUN**"
-	}
-	return ""
 }
 
 type versionAlias struct {
@@ -74,10 +67,12 @@ func (opt *DeployOption) String() string {
 
 // Deploy deploys a new lambda function code
 func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
+	logger := opt.logger()
+
 	if err := opt.Expand(); err != nil {
 		return err
 	}
-	log.Printf("[debug] %s", opt.String())
+	logger.Debug("deploy options", "options", opt.String())
 
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
@@ -100,7 +95,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return deployFunctionURL(ctx)
 	}
 
-	log.Printf("[info] starting deploy function %s", *fn.FunctionName)
+	logger.Info("starting deploy function", "function", *fn.FunctionName)
 	if current, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
 	}); err != nil {
@@ -151,7 +146,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 
 	// update function configuration
 	if opt.SkipConfiguration {
-		log.Println("[info] skip to deploy function configuration", opt.label())
+		logger.Info("skip to deploy function configuration")
 	} else {
 		if err := app.deployFunctionConfiguration(ctx, fn, opt); err != nil {
 			return fmt.Errorf("failed to deploy function configuration: %w", err)
@@ -190,7 +185,9 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 }
 
 func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, opt *DeployOption) error {
-	log.Println("[info] updating function configuration", opt.label())
+	logger := opt.logger()
+
+	logger.Info("updating function configuration")
 	confIn := &lambda.UpdateFunctionConfigurationInput{
 		DeadLetterConfig:  fn.DeadLetterConfig,
 		Description:       fn.Description,
@@ -211,13 +208,13 @@ func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, o
 		ImageConfig:       fn.ImageConfig,
 		SnapStart:         fn.SnapStart,
 	}
-	log.Printf("[debug] %s", jsonStr(confIn))
+	slog.Debug("update function configuration input", "input", jsonStr(confIn))
 
 	if !opt.DryRun {
 		proc := func(ctx context.Context) error {
 			return app.updateFunctionConfiguration(ctx, confIn)
 		}
-		if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function configuration", proc, opt.label()); err != nil {
+		if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function configuration", proc, logger); err != nil {
 			return fmt.Errorf("failed to update function configuration: %w", err)
 		}
 	}
@@ -228,6 +225,8 @@ func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, o
 }
 
 func (app *App) deployFunctionCode(ctx context.Context, fn *Function, opt *DeployOption) (string, error) {
+	logger := opt.logger()
+
 	codeIn := &lambda.UpdateFunctionCodeInput{
 		Architectures:   fn.Architectures,
 		FunctionName:    fn.FunctionName,
@@ -250,16 +249,16 @@ func (app *App) deployFunctionCode(ctx context.Context, fn *Function, opt *Deplo
 		res, err = app.updateFunctionCode(ctx, codeIn)
 		return err
 	}
-	if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function code", proc, opt.label()); err != nil {
+	if err := app.ensureLastUpdateStatusSuccessful(ctx, *fn.FunctionName, "updating function code", proc, logger); err != nil {
 		return "", err
 	}
 	var newerVersion string
 	if res.Version != nil {
 		newerVersion = *res.Version
-		log.Printf("[info] deployed version %s %s", *res.Version, opt.label())
+		logger.Info("deployed version", "version", *res.Version)
 	} else {
 		newerVersion = versionLatest
-		log.Printf("[info] deployed version %s %s", newerVersion, opt.label())
+		logger.Info("deployed version", "version", newerVersion)
 	}
 	return newerVersion, nil
 }
@@ -271,7 +270,7 @@ func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.Upda
 		if err != nil {
 			var rce *types.ResourceConflictException
 			if errors.As(err, &rce) {
-				log.Println("[debug] retrying", rce.Error())
+				slog.Debug("retrying", "error", rce.Error())
 				continue
 			}
 			return fmt.Errorf("failed to update function configuration: %w", err)
@@ -290,7 +289,7 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 		if err != nil {
 			var rce *types.ResourceConflictException
 			if errors.As(err, &rce) {
-				log.Println("[debug] retrying", err)
+				slog.Debug("retrying", "error", err)
 				continue
 			}
 			return nil, fmt.Errorf("failed to update function code: %w", err)
@@ -300,19 +299,19 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 	return res, nil
 }
 
-func (app *App) ensureLastUpdateStatusSuccessful(ctx context.Context, name string, msg string, code func(ctx context.Context) error, label string) error {
-	log.Println("[info]", msg, "...", label)
+func (app *App) ensureLastUpdateStatusSuccessful(ctx context.Context, name string, msg string, code func(ctx context.Context) error, logger *slog.Logger) error {
+	logger.Info(msg + " ...")
 	if err := app.waitForLastUpdateStatusSuccessful(ctx, name); err != nil {
 		return err
 	}
 	if err := code(ctx); err != nil {
 		return err
 	}
-	log.Println("[info]", msg, "accepted. waiting for LastUpdateStatus to be successful.", label)
+	logger.Info(msg + " accepted. waiting for LastUpdateStatus to be successful.")
 	if err := app.waitForLastUpdateStatusSuccessful(ctx, name); err != nil {
 		return err
 	}
-	log.Println("[info]", msg, "successfully", label)
+	logger.Info(msg + " successfully")
 	return nil
 }
 
@@ -323,16 +322,16 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 			FunctionName: aws.String(name),
 		})
 		if err != nil {
-			log.Println("[warn] failed to get function, retrying", err)
+			slog.Warn("failed to get function, retrying", "error", err)
 			continue
 		} else {
 			state := res.Configuration.State
 			last := res.Configuration.LastUpdateStatus
-			log.Printf("[info] State:%s LastUpdateStatus:%s", state, last)
+			slog.Info("function status", "state", state, "lastUpdateStatus", last)
 			if last == types.LastUpdateStatusSuccessful {
 				return nil
 			}
-			log.Printf("[info] waiting for LastUpdateStatus %s", types.LastUpdateStatusSuccessful)
+			slog.Info("waiting for LastUpdateStatus", "status", types.LastUpdateStatusSuccessful)
 		}
 	}
 	return fmt.Errorf("max retries reached")
@@ -340,7 +339,7 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 
 func (app *App) updateAliases(ctx context.Context, functionName string, vs ...versionAlias) error {
 	for _, v := range vs {
-		log.Printf("[info] updating alias set %s to version %s", v.Name, v.Version)
+		slog.Info("updating alias", "name", v.Name, "version", v.Version)
 		_, err := app.lambda.UpdateAlias(ctx, &lambda.UpdateAliasInput{
 			FunctionName:    aws.String(functionName),
 			FunctionVersion: aws.String(v.Version),
@@ -349,7 +348,7 @@ func (app *App) updateAliases(ctx context.Context, functionName string, vs ...ve
 		if err != nil {
 			var nfe *types.ResourceNotFoundException
 			if errors.As(err, &nfe) {
-				log.Printf("[info] alias %s is not found. creating alias", v.Name)
+				slog.Info("alias not found. creating alias", "name", v.Name)
 				_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 					FunctionName:    aws.String(functionName),
 					FunctionVersion: aws.String(v.Version),
@@ -362,14 +361,14 @@ func (app *App) updateAliases(ctx context.Context, functionName string, vs ...ve
 				return fmt.Errorf("failed to update alias: %w", err)
 			}
 		}
-		log.Println("[info] alias updated")
+		slog.Info("alias updated")
 	}
 	return nil
 }
 
 func (app *App) deleteVersions(ctx context.Context, functionName string, keepVersions int) error {
 	if keepVersions <= 0 {
-		log.Printf("[info] specify --keep-versions")
+		slog.Info("specify --keep-versions")
 		return nil
 	}
 
@@ -401,7 +400,7 @@ func (app *App) deleteVersions(ctx context.Context, functionName string, keepVer
 			break
 		}
 
-		log.Printf("[info] deleting function version: %s", *v.Version)
+		slog.Info("deleting function version", "version", *v.Version)
 		_, err := app.lambda.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
 			FunctionName: aws.String(functionName),
 			Qualifier:    v.Version,
@@ -411,6 +410,6 @@ func (app *App) deleteVersions(ctx context.Context, functionName string, keepVer
 		}
 	}
 
-	log.Printf("[info] except %d latest versions are deleted", keepVersions)
+	slog.Info("versions deleted", "kept", keepVersions)
 	return nil
 }

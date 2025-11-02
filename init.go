@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -40,7 +40,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	if err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			log.Printf("[info] function %s is not found", *opt.FunctionName)
+			slog.Info("function not found", "function", *opt.FunctionName)
 			c = &types.FunctionConfiguration{
 				FunctionName: opt.FunctionName,
 				MemorySize:   aws.Int32(128),
@@ -60,14 +60,14 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			return fmt.Errorf("failed to GetFunction %s: %w", *opt.FunctionName, err)
 		}
 	} else {
-		log.Printf("[info] function %s found", *opt.FunctionName)
+		slog.Info("function found", "function", *opt.FunctionName)
 		c = res.Configuration
 	}
 
 	var tags Tags
 	if exists {
 		arn := app.functionArn(ctx, *c.FunctionName)
-		log.Printf("[debug] listing tags of %s", arn)
+		slog.Debug("listing tags", "arn", arn)
 		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 			Resource: aws.String(arn), // tags are not supported for alias
 		})
@@ -84,7 +84,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	fn := newFunctionFrom(c, code, tags)
 
 	if (opt.DownloadZip || opt.Unzip) && res.Code != nil && *res.Code.RepositoryType == "S3" {
-		log.Printf("[info] downloading %s", FunctionZipFilename)
+		slog.Info("downloading file", "file", FunctionZipFilename)
 		if err := download(ctx, *res.Code.Location, FunctionZipFilename); err != nil {
 			return err
 		}
@@ -95,7 +95,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		}
 	}
 
-	log.Printf("[info] creating %s", IgnoreFilename)
+	slog.Info("creating file", "name", IgnoreFilename)
 	err = app.saveFile(
 		ctx,
 		IgnoreFilename,
@@ -113,7 +113,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	} else {
 		name = DefaultFunctionFilenames[0]
 	}
-	log.Printf("[info] creating %s", name)
+	slog.Info("creating file", "name", name)
 	b, _ := marshalJSON(fn)
 	if opt.Jsonnet {
 		b, err = jsonToJsonnet(b, name)
@@ -153,11 +153,11 @@ func download(ctx context.Context, url, path string) error {
 }
 
 func unzipAfterInit(ctx context.Context, path, dest string, force bool) error {
-	log.Printf("[info] unzipping %s to %s", path, dest)
+	slog.Info("unzipping file", "file", path, "dest", dest)
 	if err := unzip(ctx, path, dest, force); err != nil {
 		return fmt.Errorf("failed to unzip %s: %w", path, err)
 	}
-	log.Printf("[info] removing %s", path)
+	slog.Info("removing file", "file", path)
 	if err := os.Remove(path); err != nil {
 		return fmt.Errorf("failed to remove %s: %w", path, err)
 	}
@@ -179,14 +179,14 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 		fpath := filepath.Join(dest, f.Name)
 		fi := f.FileInfo()
 		if fi.IsDir() {
-			log.Printf("[debug] creating directory %s", fpath)
+			slog.Debug("creating directory", "path", fpath)
 			if err := os.MkdirAll(fpath, f.Mode()); err != nil {
 				return err
 			}
 			continue
 		}
 
-		log.Printf("[debug] extracting %s", fpath)
+		slog.Debug("extracting file", "path", fpath)
 		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
 			return err
 		}
@@ -218,7 +218,7 @@ func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser) error {
 		return err
 	}
 	linkTo := string(l)
-	log.Printf("[debug] writing symlink %s -> %s", fpath, linkTo)
+	slog.Debug("writing symlink", "path", fpath, "target", linkTo)
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -229,6 +229,6 @@ func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser) error {
 		return err
 	}
 	name := filepath.Base(fpath)
-	log.Printf("[debug] creating symlink %s -> %s", name, linkTo)
+	slog.Debug("creating symlink", "name", name, "target", linkTo)
 	return os.Symlink(linkTo, name)
 }

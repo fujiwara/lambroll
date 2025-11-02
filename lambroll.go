@@ -3,7 +3,7 @@ package lambroll
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -263,7 +263,7 @@ func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, er
 	}
 	var instance T
 	typeName := reflect.TypeOf(instance).Name()
-	log.Printf("[info] loading %s from %s", typeName, path)
+	slog.Info("loading "+typeName, "path", path)
 
 	var (
 		src []byte
@@ -347,7 +347,7 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 	}
 
 	if (code != nil && aws.ToString(code.RepositoryType) == "ECR") || fn.PackageType == types.PackageTypeImage {
-		log.Printf("[debug] Image URL=%s", *code.ImageUri)
+		slog.Debug("Image URL", "url", *code.ImageUri)
 		fn.PackageType = types.PackageTypeImage
 		fn.Code = &types.FunctionCode{
 			ImageUri: code.ImageUri,

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"strings"
 
 	"github.com/aereal/jsondiff"
@@ -83,7 +83,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	}); err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			log.Printf("[info] function %s is not found. lambroll deploy will create a new function.", name)
+			slog.Info("function not found. lambroll deploy will create a new function", "function", name)
 		} else {
 			return false, fmt.Errorf("failed to GetFunction %s: %w", name, err)
 		}
@@ -91,7 +91,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		remote = res.Configuration
 		code = res.Code
 		{
-			log.Println("[debug] list tags Resource", app.functionArn(ctx, name))
+			slog.Debug("list tags", "resource", app.functionArn(ctx, name))
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				// Tagging operations are permitted on Lambda functions only.
 				// Tags on aliases and versions are not supported.
@@ -200,7 +200,7 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 			return hasDiff, fmt.Errorf("failed to get function url config: %w", err)
 		}
 	} else {
-		log.Println("[debug] FunctionUrlConfig found")
+		slog.Debug("FunctionUrlConfig found")
 		remote = &types.FunctionUrlConfig{
 			AuthType:   res.AuthType,
 			Cors:       res.Cors,

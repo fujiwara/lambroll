@@ -3,7 +3,7 @@ package lambroll
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,7 +48,7 @@ func (app *App) Logs(ctx context.Context, opt *LogsOption) error {
 	if err != nil {
 		return err
 	}
-	log.Println("[debug] invoking command", strings.Join(command, " "))
+	slog.Debug("invoking command", "command", strings.Join(command, " "))
 	if err := syscall.Exec(bin, command, os.Environ()); err != nil {
 		return fmt.Errorf("failed to invoke aws logs tail: %w", err)
 	}

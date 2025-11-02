@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -26,9 +26,9 @@ func _main() int {
 	exitCode, err := lambroll.CLI(ctx, lambroll.ParseCLI)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {
-			log.Println("[warn] Interrupted")
+			slog.Warn("Interrupted")
 		} else {
-			log.Printf("[error] FAILED. %s", err)
+			slog.Error("FAILED", "error", err)
 		}
 	}
 	return exitCode
