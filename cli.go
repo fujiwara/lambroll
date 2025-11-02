@@ -20,6 +20,7 @@ type Option struct {
 	OptionFilePath string `help:"option file path" env:"LAMBROLL_OPTION" name:"option" json:"-"`
 	Function       string `help:"Function file path" env:"LAMBROLL_FUNCTION" json:"function,omitempty"`
 	LogLevel       string `help:"log level (trace, debug, info, warn, error)" default:"info" enum:",trace,debug,info,warn,error" env:"LAMBROLL_LOGLEVEL" json:"log_level"`
+	LogFormat      string `help:"log format (text, json)" default:"text" enum:",text,json" env:"LAMBROLL_LOGFORMAT" json:"log_format"`
 	Color          bool   `help:"enable colored output" default:"true" env:"LAMBROLL_COLOR" negatable:"" json:"color,omitempty"`
 
 	Region          *string           `help:"AWS region" env:"AWS_REGION" json:"region,omitempty"`
@@ -161,6 +162,9 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	if opts.LogLevel == "" {
 		opts.LogLevel = DefaultLogLevel
 	}
+	if opts.LogFormat == "" {
+		opts.LogFormat = "text"
+	}
 	logLevel := new(slog.LevelVar)
 	switch opts.LogLevel {
 	case "trace":
@@ -176,13 +180,24 @@ func CLI(ctx context.Context, parse CLIParseFunc) (int, error) {
 	default:
 		logLevel.Set(slog.LevelInfo)
 	}
-	slogHandlerOptions := &sloghandler.HandlerOptions{
-		Color: opts.Color,
-		HandlerOptions: slog.HandlerOptions{
+
+	var logger *slog.Logger
+	switch opts.LogFormat {
+	case "json":
+		logger = slog.New(slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 			Level: logLevel,
-		},
+		}))
+	case "text":
+		fallthrough
+	default:
+		slogHandlerOptions := &sloghandler.HandlerOptions{
+			Color: opts.Color,
+			HandlerOptions: slog.HandlerOptions{
+				Level: logLevel,
+			},
+		}
+		logger = slog.New(sloghandler.NewLogHandler(os.Stderr, slogHandlerOptions))
 	}
-	logger := slog.New(sloghandler.NewLogHandler(os.Stderr, slogHandlerOptions))
 	slog.SetDefault(logger)
 
 	err = dispatchCLI(ctx, sub, usage, opts)
