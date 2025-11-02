@@ -1,10 +1,6 @@
-GIT_VER := $(shell git describe --tags)
-DATE := $(shell date +%Y-%m-%dT%H:%M:%S%z)
-export GO111MODULE := on
-
 .PHONY: test binary install clean dist
 cmd/lambroll/lambroll: *.go cmd/lambroll/*.go go.mod go.sum
-	cd cmd/lambroll && go build -ldflags "-s -w -X main.Version=${GIT_VER}" -gcflags="-trimpath=${PWD}"
+	cd cmd/lambroll && go build -ldflags "-s -w" -gcflags="-trimpath=${PWD}"
 
 install: cmd/lambroll/lambroll
 	install cmd/lambroll/lambroll ${GOPATH}/bin
