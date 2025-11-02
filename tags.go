@@ -14,8 +14,10 @@ import (
 )
 
 func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption) error {
+	logger := opt.logger()
+
 	if fn.Tags == nil {
-		slog.Debug("Tags not defined in function.json skip updating tags")
+		logger.Debug("Tags not defined in function.json skip updating tags")
 		return nil
 	}
 	arn := app.functionArn(ctx, *fn.FunctionName)
@@ -30,7 +32,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 			return fmt.Errorf("failed to list tags of %s: %w", arn, err)
 		}
 	}
-	slog.Debug("tags found", "count", len(tags.Tags))
+	logger.Debug("tags found", "count", len(tags.Tags))
 
 	setTags, removeTagKeys := mergeTags(tags.Tags, fn.Tags)
 	// ignore AWS managed tags because they are not allowed to be modified
@@ -42,12 +44,12 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	})
 
 	if len(setTags) == 0 && len(removeTagKeys) == 0 {
-		slog.Debug("no need to update tags (unchanged)")
+		logger.Debug("no need to update tags (unchanged)")
 		return nil
 	}
 
 	if n := len(setTags); n > 0 {
-		slog.Info("setting tags", "count", n, "label", opt.label())
+		logger.Info("setting tags", "count", n)
 		if !opt.DryRun {
 			_, err = app.lambda.TagResource(ctx, &lambda.TagResourceInput{
 				Resource: aws.String(arn),
@@ -60,7 +62,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	}
 
 	if n := len(removeTagKeys); n > 0 {
-		slog.Info("removing tags", "count", n, "label", opt.label())
+		logger.Info("removing tags", "count", n)
 		if !opt.DryRun {
 			_, err = app.lambda.UntagResource(ctx, &lambda.UntagResourceInput{
 				Resource: aws.String(arn),

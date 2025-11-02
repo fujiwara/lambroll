@@ -92,11 +92,13 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOpt
 }
 
 func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) error {
+	logger := opt.logger()
+
 	err := app.prepareFunctionCodeForDeploy(ctx, opt, fn)
 	if err != nil {
 		return fmt.Errorf("failed to prepare function code: %w", err)
 	}
-	slog.Info("creating function", "label", opt.label())
+	logger.Info("creating function")
 
 	version := "(created)"
 	if !opt.DryRun {
@@ -107,9 +109,9 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 		}
 		if res.Version != nil {
 			version = *res.Version
-			slog.Info("deployed function", "version", version)
+			logger.Info("deployed function", "version", version)
 		} else {
-			slog.Info("deployed")
+			logger.Info("deployed")
 		}
 	}
 
@@ -121,7 +123,7 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 		return nil
 	}
 
-	slog.Info("creating alias", "name", opt.AliasName, "version", version, "label", opt.label())
+	logger.Info("creating alias", "name", opt.AliasName, "version", version)
 	if !opt.DryRun {
 		_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,

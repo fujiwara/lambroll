@@ -268,21 +268,23 @@ func (app *App) loadFunctionUrl(path string, functionName string) (*FunctionURL,
 }
 
 func (app *App) deployFunctionURL(ctx context.Context, fc *FunctionURL, opt *DeployOption) error {
-	slog.Info("deploying function url...", "label", opt.label())
+	logger := opt.logger()
 
-	if err := app.deployFunctionURLConfig(ctx, fc, opt); err != nil {
+	logger.Info("deploying function url...")
+
+	if err := app.deployFunctionURLConfig(ctx, fc, opt, logger); err != nil {
 		return fmt.Errorf("failed to deploy function url config: %w", err)
 	}
 
-	if err := app.deployFunctionURLPermissions(ctx, fc, opt); err != nil {
+	if err := app.deployFunctionURLPermissions(ctx, fc, opt, logger); err != nil {
 		return fmt.Errorf("failed to deploy function url permissions: %w", err)
 	}
 
-	slog.Info("deployed function url", "label", opt.label())
+	logger.Info("deployed function url")
 	return nil
 }
 
-func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, opt *DeployOption) error {
+func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, opt *DeployOption, logger *slog.Logger) error {
 	create := false
 	fqFunctionName := fullQualifiedFunctionName(*fc.Config.FunctionName, fc.Config.Qualifier)
 	functionUrlConfig, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
@@ -292,7 +294,7 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 	if err != nil {
 		var nfe *types.ResourceNotFoundException
 		if errors.As(err, &nfe) {
-			slog.Info("function url config not found. creating", "function", fqFunctionName, "label", opt.label())
+			logger.Info("function url config not found. creating", "function", fqFunctionName)
 			create = true
 		} else {
 			return fmt.Errorf("failed to get function url config: %w", err)
@@ -300,7 +302,7 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 	}
 
 	if opt.DryRun {
-		slog.Info("dry-run mode. skipping function url config deployment")
+		logger.Info("dry-run mode. skipping function url config deployment")
 		return nil
 	}
 
@@ -333,27 +335,27 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 	return nil
 }
 
-func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionURL, opt *DeployOption) error {
+func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionURL, opt *DeployOption, logger *slog.Logger) error {
 	adds, removes, err := app.calcFunctionURLPermissionsDiff(ctx, fc)
 	if err != nil {
 		return err
 	}
 	if len(adds) == 0 && len(removes) == 0 {
-		slog.Info("no changes in permissions")
+		logger.Info("no changes in permissions")
 		return nil
 	}
 
-	slog.Info("adding permissions", "count", len(adds), "label", opt.label())
+	logger.Info("adding permissions", "count", len(adds))
 	if !opt.DryRun {
 		for _, perm := range adds {
 			if _, err := app.lambda.AddPermission(ctx, perm); err != nil {
 				return fmt.Errorf("failed to add permission: %w", err)
 			}
-			slog.Info("added permission", "action", aws.ToString(perm.Action), "sid", aws.ToString(perm.StatementId))
+			logger.Info("added permission", "action", aws.ToString(perm.Action), "sid", aws.ToString(perm.StatementId))
 		}
 	}
 
-	slog.Info("removing permissions", "count", len(removes), "label", opt.label())
+	logger.Info("removing permissions", "count", len(removes))
 	if !opt.DryRun {
 		for _, perm := range removes {
 			if _, err := app.lambda.RemovePermission(ctx, &lambda.RemovePermissionInput{
@@ -368,7 +370,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 				}
 				return fmt.Errorf("failed to remove permission: %w", err)
 			}
-			slog.Info("removed permission", "sid", *perm.StatementId)
+			logger.Info("removed permission", "sid", *perm.StatementId)
 		}
 	}
 	return nil

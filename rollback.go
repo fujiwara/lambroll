@@ -14,27 +14,23 @@ import (
 
 // RollbackOption represents option for Rollback()
 type RollbackOption struct {
-	DryRun        bool   `default:"false" help:"dry run"`
 	Alias         string `default:"current" help:"alias to rollback"`
 	Version       string `default:"" help:"version to rollback (default: previous version auto detected)"`
 	DeleteVersion bool   `default:"false" help:"delete rolled back version"`
-}
 
-func (opt RollbackOption) label() string {
-	if opt.DryRun {
-		return "**DRY RUN**"
-	}
-	return ""
+	DryRunOption
 }
 
 // Rollback rollbacks function
 func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
+	logger := opt.logger()
+
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
-	slog.Info("starting rollback function", "function", *fn.FunctionName, "alias", opt.Alias)
+	logger.Info("starting rollback function", "function", *fn.FunctionName, "alias", opt.Alias)
 
 	res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{
 		FunctionName: fn.FunctionName,
@@ -55,7 +51,7 @@ func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
 		}
 	}
 
-	slog.Info("rolling back function version", "from", currentVersion, "to", prevVersion, "label", opt.label())
+	logger.Info("rolling back function version", "from", currentVersion, "to", prevVersion)
 	if opt.DryRun {
 		return nil
 	}

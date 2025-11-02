@@ -3,7 +3,6 @@ package lambroll
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/Songmu/prompter"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -11,32 +10,28 @@ import (
 
 // DeleteOption represents options for Delete()
 type DeleteOption struct {
-	DryRun bool `help:"dry run" default:"false" negatable:""`
-	Force  bool `help:"delete without confirmation" default:"false"`
-}
+	Force bool `help:"delete without confirmation" default:"false"`
 
-func (opt DeleteOption) label() string {
-	if opt.DryRun {
-		return "**DRY RUN**"
-	}
-	return ""
+	DryRunOption
 }
 
 // Delete deletes function
 func (app *App) Delete(ctx context.Context, opt *DeleteOption) error {
+	logger := opt.logger()
+
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
 
-	slog.Info("deleting function", "function", *fn.FunctionName, "label", opt.label())
+	logger.Info("deleting function", "function", *fn.FunctionName)
 
 	if opt.DryRun {
 		return nil
 	}
 
 	if !opt.Force && !prompter.YN("Do you want to delete the function?", false) {
-		slog.Info("canceled to delete function", "function", *fn.FunctionName)
+		logger.Info("canceled to delete function", "function", *fn.FunctionName)
 		return nil
 	}
 
@@ -47,7 +42,7 @@ func (app *App) Delete(ctx context.Context, opt *DeleteOption) error {
 		return fmt.Errorf("failed to delete function: %w", err)
 	}
 
-	slog.Info("completed to delete function", "function", *fn.FunctionName)
+	logger.Info("completed to delete function", "function", *fn.FunctionName)
 
 	return nil
 }

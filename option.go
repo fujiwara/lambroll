@@ -1,8 +1,23 @@
 package lambroll
 
-import "fmt"
+import (
+	"fmt"
+	"log/slog"
+)
 
 // Option represents common option.
+
+type DryRunOption struct {
+	DryRun bool `default:"false" help:"dry run"`
+}
+
+func (opt DryRunOption) logger() *slog.Logger {
+	logger := slog.Default()
+	if opt.DryRun {
+		logger = logger.With("mode", "**DRY RUN**")
+	}
+	return logger
+}
 
 type ZipOption struct {
 	ExcludeFile string `help:"exclude file" default:".lambdaignore"`
