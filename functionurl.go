@@ -72,6 +72,11 @@ type FunctionURLPermission struct {
 	actualSids map[string]string // action -> sid(on remote)
 }
 
+func (p *FunctionURLPermission) String() string {
+	b, _ := marshalJSON(p)
+	return string(b)
+}
+
 func (p *FunctionURLPermission) Equals(o *FunctionURLPermission) bool {
 	return aws.ToString(p.Principal) == aws.ToString(o.Principal) &&
 		aws.ToString(p.PrincipalOrgID) == aws.ToString(o.PrincipalOrgID) &&
@@ -102,21 +107,26 @@ func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.A
 			InvokedViaFunctionUrl: aws.Bool(true),
 		},
 	}
+	ret := make([]*lambda.AddPermissionInput, 0, len(perms))
 	for _, perm := range perms {
 		// use actual StatementId if exists
 		if p.actualSids != nil {
 			if sid, ok := p.actualSids[aws.ToString(perm.Action)]; ok {
 				perm.StatementId = aws.String(sid)
-				continue
+				ret = append(ret, perm)
+			} else {
+				// not exists on remote, do not add
+				log.Println("[debug] not found actual StatementId for action:", aws.ToString(perm.Action))
 			}
+			continue
 		}
 		// generate StatementId based on permission content
 		b, _ := marshalJSON(perm)
-		sha1sum := sha1.Sum(b)
-		sid := fmt.Sprintf(SidFormat, sha1sum)
+		sid := fmt.Sprintf(SidFormat, sha1.Sum(b))
 		perm.StatementId = aws.String(sid)
+		ret = append(ret, perm)
 	}
-	return perms
+	return ret
 }
 
 type PolicyOutput struct {
@@ -319,8 +329,8 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 			if _, err := app.lambda.AddPermission(ctx, perm); err != nil {
 				return fmt.Errorf("failed to add permission: %w", err)
 			}
-			log.Printf("[info] added permission Sid:%s Action:%s",
-				aws.ToString(perm.StatementId), aws.ToString(perm.Action),
+			log.Printf("[info] added permission Action:%s Sid:%s",
+				aws.ToString(perm.Action), aws.ToString(perm.StatementId),
 			)
 		}
 	}
@@ -347,38 +357,40 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 }
 
 func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *FunctionURL) ([]*lambda.AddPermissionInput, []*lambda.AddPermissionInput, error) {
+	// remote permissions to be compared
 	remotePermissions, err := app.getFunctionURLPermissions(ctx, *fc.Config.FunctionName, fc.Config.Qualifier)
 	if err != nil {
 		return nil, nil, err
 	}
 	remote := make(map[string]*lambda.AddPermissionInput)
-	remoteSids := make([]string, 0)
 	for _, p := range remotePermissions {
-		perms := p.AddPermissionInputs(fc)
-		for _, perm := range perms {
-			sid := aws.ToString(perm.StatementId)
-			remote[sid] = perm
-			remoteSids = append(remoteSids, sid)
+		inputs := p.AddPermissionInputs(fc)
+		for _, in := range inputs {
+			log.Printf("[debug] remote permission: %s %s", aws.ToString(in.StatementId), aws.ToString(in.Action))
+			sid := aws.ToString(in.StatementId)
+			remote[sid] = in
 		}
 	}
 
 	// local permissions to be applied
 	local := make(map[string]*lambda.AddPermissionInput)
-	localSids := make([]string, 0)
 	for _, p := range fc.Permissions {
-		perms := p.AddPermissionInputs(fc)
-		for _, perm := range perms {
-			sid := aws.ToString(perm.StatementId)
-			local[sid] = perm
-			localSids = append(localSids, sid)
+		inputs := p.AddPermissionInputs(fc)
+		for _, in := range inputs {
+			log.Printf("[debug] local permission: %s %s", aws.ToString(in.StatementId), aws.ToString(in.Action))
+			sid := aws.ToString(in.StatementId)
+			local[sid] = in
 		}
 	}
 
 	// calculate difference
-	removeSids, addSids := lo.Difference(remoteSids, localSids)
+	removeSids, addSids := lo.Difference(lo.Keys(remote), lo.Keys(local))
 	if len(removeSids) == 0 && len(addSids) == 0 {
+		log.Println("[debug] no changes in permissions.")
 		return nil, nil, nil
 	}
+	log.Println("[debug] SIDs to be added:", addSids)
+	log.Println("[debug] SIDs to be removed:", removeSids)
 
 	var adds []*lambda.AddPermissionInput
 	for _, sid := range addSids {
