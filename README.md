@@ -197,6 +197,7 @@ Flags:
       --option=STRING                     option file path ($LAMBROLL_OPTION)
       --function=STRING                   Function file path ($LAMBROLL_FUNCTION)
       --log-level="info"                  log level (trace, debug, info, warn, error) ($LAMBROLL_LOGLEVEL)
+      --log-format="text"                 log format (text, json) ($LAMBROLL_LOGFORMAT)
       --[no-]color                        enable colored output ($LAMBROLL_COLOR)
       --region=REGION                     AWS region ($AWS_REGION)
       --profile=PROFILE                   AWS credential profile name ($AWS_PROFILE)
@@ -274,7 +275,7 @@ These flags can be set by environment variables or option file (`--option`).
 
 #### Environment variables
 
-For example, `--log-level=debug` can be set by `LAMBROLL_LOGLEVEL=debug`.
+For example, `--log-level=debug` can be set by `LAMBROLL_LOGLEVEL=debug`, and `--log-format=json` can be set by `LAMBROLL_LOGFORMAT=json`.
 
 See the above usage for the environment variable names.
 
@@ -290,6 +291,7 @@ The file format is JSON or Jsonnet.
 // option.jsonnet
 {
   log_level: 'info',
+  log_format: 'text',  // or 'json'
   color: true,
   region: 'ap-northeast-1',
   profile: 'default',
@@ -314,9 +316,9 @@ When command-line flags are specified, they take precedence over the options fil
 
 The priority of the option values is as follows:
 
-1. Command-line flags. (`--log-level=debug`)
-2. The values defined in the option file. (`{"log_level": "debug"}`)
-3. Environment variables. (`LAMBROLL_LOGLEVEL=debug`)
+1. Command-line flags. (`--log-level=debug`, `--log-format=json`)
+2. The values defined in the option file. (`{"log_level": "debug", "log_format": "json"}`)
+3. Environment variables. (`LAMBROLL_LOGLEVEL=debug`, `LAMBROLL_LOGFORMAT=json`)
 
 While parsing the option file, lambroll evaluates only the `{{env}}` and `{{must_env}}` template functions and `env` and `must_env` native functions in Jsonnet. Other functions are not available.
 

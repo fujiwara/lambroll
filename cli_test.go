@@ -21,9 +21,10 @@ var cliTests = []struct {
 		args: []string{"render"},
 		sub:  "render",
 		option: &lambroll.Option{
-			LogLevel: "info",
-			Color:    true,
-			Envfile:  []string{},
+			LogLevel:  "info",
+			LogFormat: "text",
+			Color:     true,
+			Envfile:   []string{},
 		},
 	},
 	{
@@ -40,9 +41,10 @@ var cliTests = []struct {
 		args: []string{"render", "--envfile=envfile.global"},
 		sub:  "render",
 		option: &lambroll.Option{
-			LogLevel: "info",
-			Color:    true,
-			Envfile:  []string{"envfile.global"},
+			LogLevel:  "info",
+			LogFormat: "text",
+			Color:     true,
+			Envfile:   []string{"envfile.global"},
 		},
 	},
 	{
@@ -67,9 +69,10 @@ var cliTests = []struct {
 		},
 		sub: "render",
 		option: &lambroll.Option{
-			LogLevel: "info",
-			Color:    true,
-			Envfile:  []string{"envfile.global", "envfile.local"},
+			LogLevel:  "info",
+			LogFormat: "text",
+			Color:     true,
+			Envfile:   []string{"envfile.global", "envfile.local"},
 		},
 	},
 	{
@@ -80,9 +83,10 @@ var cliTests = []struct {
 			"LAMBROLL_COLOR":    "false",
 		},
 		option: &lambroll.Option{
-			LogLevel: "error",
-			Color:    false,
-			Envfile:  []string{},
+			LogLevel:  "error",
+			LogFormat: "text",
+			Color:     false,
+			Envfile:   []string{},
 		},
 	},
 	{
