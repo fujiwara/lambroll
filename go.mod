@@ -14,7 +14,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.87.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.37.0
 	github.com/fatih/color v1.18.0
-	github.com/fujiwara/logutils v1.1.2
 	github.com/fujiwara/ssm-lookup v0.1.1
 	github.com/fujiwara/tfstate-lookup v1.7.0
 	github.com/go-test/deep v1.1.1
@@ -31,6 +30,8 @@ require (
 	github.com/shogo82148/go-retry v1.3.1
 	golang.org/x/sys v0.33.0
 )
+
+require github.com/fujiwara/sloghandler v0.0.5
 
 require (
 	cloud.google.com/go v0.112.0 // indirect
