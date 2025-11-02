@@ -202,7 +202,27 @@ func (ps *PolicyStatement) PrincipalOrgID() *string {
 }
 
 func (ps *PolicyStatement) SourceAccount() *string {
-	return nil // TODO
+	if ps.Condition == nil {
+		return nil
+	}
+	m, ok := ps.Condition.(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	if m["StringEquals"] == nil {
+		return nil
+	}
+	mm, ok := m["StringEquals"].(map[string]interface{})
+	if !ok {
+		return nil
+	}
+	if mm["aws:SourceAccount"] == nil {
+		return nil
+	}
+	if v, ok := mm["aws:SourceAccount"].(string); ok {
+		return aws.String(v)
+	}
+	return nil
 }
 
 func (ps *PolicyStatement) SourceArn() *string {
