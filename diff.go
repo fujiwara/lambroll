@@ -22,12 +22,13 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src         string  `help:"function zip archive or src dir" default:"."`
-	CodeSha256  bool    `name:"code" help:"diff of code sha256" default:"false"`
-	Qualifier   *string `help:"the qualifier to compare"`
-	FunctionURL string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
-	Ignore      string  `help:"ignore diff by jq query" default:""`
-	ExitCode    bool    `help:"exit with code 2 if there are differences" default:"false"`
+	Src          string  `help:"function zip archive or src dir" default:"."`
+	CodeSha256   bool    `name:"code" help:"diff of code sha256" default:"false"`
+	Qualifier    *string `help:"the qualifier to compare"`
+	FunctionURL  string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
+	Ignore       string  `help:"ignore diff by jq query" default:""`
+	ExitCode     bool    `help:"exit with code 2 if there are differences" default:"false"`
+	SkipFunction bool    `help:"skip function diff. shows function-url only" default:"false"`
 
 	ZipOption
 }
@@ -37,14 +38,39 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	if err := opt.Expand(); err != nil {
 		return err
 	}
-
-	newFunc, err := app.loadFunction(app.functionFilePath)
+	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
-	fillDefaultValues(newFunc)
-	name := *newFunc.FunctionName
+	fillDefaultValues(fn)
+	name := aws.ToString(fn.FunctionName)
 
+	// function diff
+	hasDiff, err := app.diffFunction(ctx, fn, opt)
+	if err != nil {
+		return err
+	}
+
+	// function-url diff
+	if d, err := app.diffFunctionURL(ctx, name, opt); err != nil {
+		return err
+	} else if d {
+		hasDiff = true
+	}
+
+	if hasDiff && opt.ExitCode {
+		// exit with code 2 if there are differences
+		// but actually, it's not an error
+		return ErrDiff
+	}
+	return nil
+}
+
+func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption) (bool, error) {
+	if opt.SkipFunction {
+		return false, nil
+	}
+	name := aws.ToString(fn.FunctionName)
 	var remote *types.FunctionConfiguration
 	var code *types.FunctionCodeLocation
 
@@ -59,7 +85,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		if errors.As(err, &nfe) {
 			log.Printf("[info] function %s is not found. lambroll deploy will create a new function.", name)
 		} else {
-			return fmt.Errorf("failed to GetFunction %s: %w", name, err)
+			return false, fmt.Errorf("failed to GetFunction %s: %w", name, err)
 		}
 	} else {
 		remote = res.Configuration
@@ -72,7 +98,7 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 				Resource: aws.String(app.functionArn(ctx, name)),
 			})
 			if err != nil {
-				return fmt.Errorf("failed to list tags: %w", err)
+				return false, fmt.Errorf("failed to list tags: %w", err)
 			}
 			tags = res.Tags
 		}
@@ -85,14 +111,14 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	opts := []jsondiff.Option{}
 	if ignore := opt.Ignore; ignore != "" {
 		if p, err := gojq.Parse(ignore); err != nil {
-			return fmt.Errorf("failed to parse ignore query: %s %w", ignore, err)
+			return false, fmt.Errorf("failed to parse ignore query: %s %w", ignore, err)
 		} else {
 			opts = append(opts, jsondiff.Ignore(p))
 		}
 	}
 
 	remoteJSON, _ := marshalAny(remoteFunc)
-	newJSON, _ := marshalAny(newFunc)
+	newJSON, _ := marshalAny(fn)
 	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
 	hasDiff := false
 
@@ -101,27 +127,27 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 		&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
 		opts...,
 	); err != nil {
-		return fmt.Errorf("failed to diff: %w", err)
+		return false, fmt.Errorf("failed to diff: %w", err)
 	} else if diff != "" {
 		hasDiff = true
 		fmt.Print(coloredDiff(diff))
 	}
 
-	if err := validateUpdateFunction(remote, code, newFunc); err != nil {
-		return err
+	if err := validateUpdateFunction(remote, code, fn); err != nil {
+		return false, err
 	}
 
 	if opt.CodeSha256 {
 		if packageType != types.PackageTypeZip {
-			return fmt.Errorf("code-sha256 is only supported for Zip package type")
+			return false, fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
 		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes, opt.KeepSymlink)
 		if err != nil {
-			return err
+			return false, err
 		}
 		h := sha256.New()
 		if _, err := io.Copy(h, zipfile); err != nil {
-			return err
+			return false, err
 		}
 		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
 		prefix := "CodeSha256: "
@@ -132,24 +158,14 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 			hasDiff = true
 		}
 	}
-
-	if opt.FunctionURL != "" {
-		if d, err := app.diffFunctionURL(ctx, name, opt); err != nil {
-			return err
-		} else if d {
-			hasDiff = true
-		}
-	}
-
-	if hasDiff && opt.ExitCode {
-		// exit with code 2 if there are differences
-		// but actually, it's not an error
-		return ErrDiff
-	}
-	return nil
+	return hasDiff, nil
 }
 
 func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) (bool, error) {
+	if opt.FunctionURL == "" {
+		// skip function-url diff
+		return false, nil
+	}
 	var remote, local *types.FunctionUrlConfig
 	var hasDiff bool
 
