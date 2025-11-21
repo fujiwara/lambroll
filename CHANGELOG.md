@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.4.1](https://github.com/fujiwara/lambroll/compare/v1.4.0...v1.4.1) - 2025-11-21
+- Bump golang.org/x/crypto from 0.39.0 to 0.45.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/543
+- supports `aws login` - update to aws-sdk-go-v2 v1.40.0 by @fujiwara in https://github.com/fujiwara/lambroll/pull/545
+
 ## [v1.4.0](https://github.com/fujiwara/lambroll/compare/v1.3.2...v1.4.0) - 2025-11-02
 - Add args inputs to run lambroll after installation. by @fujiwara in https://github.com/fujiwara/lambroll/pull/527
 - Fix invoke command example by @ss49919201 in https://github.com/fujiwara/lambroll/pull/529
