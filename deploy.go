@@ -19,7 +19,7 @@ import (
 // DeployOption represents an option for Deploy()
 type DeployOption struct {
 	Src               string `help:"function zip archive or src dir" default:"."`
-	Publish           bool   `help:"publish function" default:"true"`
+	Publish           bool   `help:"publish function" default:"true" negatable:""`
 	AliasName         string `name:"alias" help:"alias name for publish" default:"current"`
 	AliasToLatest     bool   `help:"set alias to unpublished $LATEST version" default:"false"`
 	SkipArchive       bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
@@ -161,6 +161,13 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 
 	if opt.DryRun {
 		return nil
+	}
+
+	// publish function only for managed instance
+	if opt.Publish && isForManagedInstance(fn) {
+		if err := app.publishFunction(ctx, *fn.FunctionName); err != nil {
+			return fmt.Errorf("failed to publish function: %w", err)
+		}
 	}
 
 	// update function aliases
@@ -335,6 +342,19 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 		}
 	}
 	return fmt.Errorf("max retries reached")
+}
+
+func (app *App) publishFunction(ctx context.Context, functionName string) error {
+	slog.Info("publishing function", "function", functionName, "to", types.FunctionVersionLatestPublishedLatestPublished)
+	_, err := app.lambda.PublishVersion(ctx, &lambda.PublishVersionInput{
+		FunctionName: aws.String(functionName),
+		PublishTo:    types.FunctionVersionLatestPublishedLatestPublished,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to publish function: %w", err)
+	}
+	slog.Info("function published")
+	return nil
 }
 
 func (app *App) updateAliases(ctx context.Context, functionName string, vs ...versionAlias) error {
