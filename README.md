@@ -63,6 +63,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 - [Advanced Features](#advanced-features)
   - [Lambda@Edge support](#lambdaedge-support)
   - [Lambda function URLs support](#lambda-function-urls-support)
+  - [Lambda Managed Instances support](#lambda-managed-instances-support)
 - [LICENSE](#license)
 
 ## Differences of lambroll v0 and v1.
@@ -1057,6 +1058,29 @@ See also [Restricting access to an AWS Lambda function URL origin](https://docs.
 If you need to allow access from any CloudFront distributions in your account, you can specify `SourceArn` as `arn:aws:cloudfront::123456789012:distribution/*`.
 
 Specifying `SourceArn` as `*` is not recommended because it allows access from any CloudFront distribution in any AWS account.
+
+### Lambda Managed Instances support
+
+lambroll can deploy Lambda functions with [Lambda Managed Instances](https://aws.amazon.com/lambda/lambda-managed-instances/).
+
+To run your function with Lambda Managed Instances, set the `CapacityProviderConfig` field in `function.json`.
+```json
+{
+  "CapacityProviderConfig": {
+    "LambdaManagedInstancesCapacityProviderConfig": {
+      "CapacityProviderArn": "arn:aws:lambda:us-east-1:012345678912:capacity-provider:default"
+    }
+  }
+}
+```
+
+lambroll does not create or manage capacity providers. You need to create a capacity provider by yourself.
+
+When you deploy a function with Lambda Managed Instances, `lambroll deploy --publish` publishes a new version of the function code as `$LATEST.PUBLISHED`.
+
+This behavior is similar to a management console and CloudFormation. If you do not want to publish a new version automatically, use `lambroll deploy` with `--no-publish` flag.
+
+See also [$LATEST.PUBLISHED version in Lambda Managed Instances](https://docs.aws.amazon.com/lambda/latest/dg/lambda-managed-instances-version-publishing.html).
 
 ## LICENSE
 
