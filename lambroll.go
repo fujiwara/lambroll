@@ -39,6 +39,16 @@ var retryPolicy = retry.Policy{
 // type Function = lambda.CreateFunctionInput
 type Function lambda.CreateFunctionInput
 
+func isForManagedInstance(fn *Function) bool {
+	if fn == nil {
+		return false
+	}
+	if fn.CapacityProviderConfig != nil && fn.CapacityProviderConfig.LambdaManagedInstancesCapacityProviderConfig != nil {
+		return true
+	}
+	return false
+}
+
 // Tags represents tags of function
 type Tags map[string]string
 
