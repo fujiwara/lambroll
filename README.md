@@ -950,6 +950,10 @@ local second_tfstate = std.native('my_second_tfstate');
 }
 ```
 
+#### Specify an S3 endpoint for tfstate
+
+When your terraform.tfstate is stored in an S3-compatible storage service, you can specify the S3 endpoint by setting the `AWS_ENDPOINT_URL_S3` environment variable. This spec is based on the [tfstate-lookup](https://github.com/fujiwara/tfstate-lookup?tab=readme-ov-file#s3-endpoint-url-support).
+
 ### .lambdaignore
 
 lambroll will ignore files defined in `.lambdaignore` file at creating a zip archive.
