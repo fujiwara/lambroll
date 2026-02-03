@@ -1,5 +1,20 @@
 # Changelog
 
+## [v1.4.2](https://github.com/fujiwara/lambroll/compare/v1.4.1...v1.4.2) - 2026-02-03
+- Supports Lambda Managed Instances by @fujiwara in https://github.com/fujiwara/lambroll/pull/554
+- add readme for s3 endpoint. by @fujiwara in https://github.com/fujiwara/lambroll/pull/559
+- Bump actions/checkout from 5.0.0 to 6.0.1 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/555
+- Bump actions/setup-go from 6.0.0 to 6.1.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/549
+- Bump github.com/samber/lo from 1.51.0 to 1.52.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/538
+- Bump github.com/itchyny/gojq from 0.12.17 to 0.12.18 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/552
+- Bump the aws-sdk-go-v2 group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/558
+- Supports multi tenancy mode. by @fujiwara in https://github.com/fujiwara/lambroll/pull/547
+- Bump actions/checkout from 6.0.1 to 6.0.2 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/560
+- Bump actions/setup-go from 6.1.0 to 6.2.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/561
+- Bump github.com/fujiwara/tfstate-lookup from 1.8.1 to 1.10.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/566
+- Bump golang.org/x/sys from 0.38.0 to 0.40.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/563
+- Bump the aws-sdk-go-v2 group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/567
+
 ## [v1.4.1](https://github.com/fujiwara/lambroll/compare/v1.4.0...v1.4.1) - 2025-11-21
 - Bump golang.org/x/crypto from 0.39.0 to 0.45.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/543
 - supports `aws login` - update to aws-sdk-go-v2 v1.40.0 by @fujiwara in https://github.com/fujiwara/lambroll/pull/545
