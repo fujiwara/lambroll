@@ -23,6 +23,7 @@ type InvokeOption struct {
 	LogTail   bool    `default:"false" help:"output tail of log to STDERR"`
 	Qualifier *string `help:"version or alias to invoke"`
 	Payload   *string `help:"payload to invoke. if not specified, read from STDIN"`
+	TenantID  *string `help:"tenant ID for multi-tenant invocation"`
 }
 
 // Invoke invokes function
@@ -70,6 +71,7 @@ PAYLOAD:
 			InvocationType: invocationType,
 			LogType:        logType,
 			Payload:        b,
+			TenantId:       opt.TenantID,
 		}
 		in.Qualifier = opt.Qualifier
 		slog.Debug("invoking function", "input", in)
