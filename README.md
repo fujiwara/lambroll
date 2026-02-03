@@ -64,6 +64,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
   - [Lambda@Edge support](#lambdaedge-support)
   - [Lambda function URLs support](#lambda-function-urls-support)
   - [Lambda Managed Instances support](#lambda-managed-instances-support)
+  - [Tenant Isolation support](#tenant-isolation-support)
 - [LICENSE](#license)
 
 ## Differences of lambroll v0 and v1.
@@ -481,6 +482,7 @@ Flags:
       --log-tail                          output tail of log to STDERR
       --qualifier=QUALIFIER               version or alias to invoke
       --payload=PAYLOAD                   payload to invoke. if not specified, read from STDIN
+      --tenant-id=TENANT-ID               tenant ID for multi-tenant invocation
 ```
 
 `lambroll invoke` accepts multiple JSON payloads for invocations from `--payload` flag or STDIN.
@@ -1085,6 +1087,27 @@ When you deploy a function with Lambda Managed Instances, `lambroll deploy --pub
 This behavior is similar to a management console and CloudFormation. If you do not want to publish a new version automatically, use `lambroll deploy` with `--no-publish` flag.
 
 See also [$LATEST.PUBLISHED version in Lambda Managed Instances](https://docs.aws.amazon.com/lambda/latest/dg/lambda-managed-instances-version-publishing.html).
+
+### Tenant isolation support
+
+lambroll supports [Tenant isolation](https://docs.aws.amazon.com/lambda/latest/dg/tenant-isolation.html) for multi-tenant Lambda invocation.
+
+To enable Tenant isolation, the function must be created with `TenancyConfig`.
+
+```json
+{
+  "TenancyConfig": {
+    "TenantIsolationMode": "PER_TENANT"
+  }
+}
+```
+
+Then, you should invoke the function with `--tenant-id` flag. If `--tenant-id` is not specified, the invocation fails.
+
+```console
+$ lambroll invoke --tenant-id=my-tenant --payload='{"foo":1}'
+```
+
 
 ## LICENSE
 
