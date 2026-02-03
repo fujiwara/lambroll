@@ -14,7 +14,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/fatih/color v1.18.0
-	github.com/fujiwara/sloghandler v0.0.5
+	github.com/fujiwara/sloghandler v0.0.6
 	github.com/fujiwara/ssm-lookup v0.1.1
 	github.com/fujiwara/tfstate-lookup v1.10.0
 	github.com/go-test/deep v1.1.1
