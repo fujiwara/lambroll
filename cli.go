@@ -117,8 +117,10 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	kongOpts := []kong.Option{kong.Vars{"version": Version}}
 
 	// load default options
+	var defaultOpt *Option
 	if optionFilePath != "" {
-		defaultOpt, err := loadDefinitionFile[Option](nil, optionFilePath, nil)
+		var err error
+		defaultOpt, err = loadDefinitionFile[Option](nil, optionFilePath, nil)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to load option file: %w", err)
 		}
@@ -147,6 +149,17 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 		return "", nil, nil, fmt.Errorf("failed to parse args: %w", err)
 	}
 	opts.Envfile = lo.Uniq(envfiles) // envfiles are parsed before, so it's safe to overwrite
+
+	// Merge ext_str and ext_code from option file with CLI args
+	// CLI args take precedence over option file values
+	if defaultOpt != nil {
+		if defaultOpt.ExtStr != nil || opts.ExtStr != nil {
+			opts.ExtStr = lo.Assign(defaultOpt.ExtStr, opts.ExtStr)
+		}
+		if defaultOpt.ExtCode != nil || opts.ExtCode != nil {
+			opts.ExtCode = lo.Assign(defaultOpt.ExtCode, opts.ExtCode)
+		}
+	}
 
 	sub := strings.Fields(c.Command())[0]
 	return sub, &opts, func() { c.PrintUsage(true) }, nil
