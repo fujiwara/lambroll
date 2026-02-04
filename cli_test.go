@@ -195,6 +195,32 @@ var cliTests = []struct {
 			},
 		},
 	},
+	{
+		// Test: CLI args are merged with option file, CLI takes precedence
+		args: []string{
+			"render", "--option", "ext_vars.jsonnet",
+			"--ext-str", "cli_key=cli_val",
+			"--ext-str", "architecture=arm64",
+			"--ext-code", "memory_size=256",
+			"--ext-code", "storage_size=1024",
+		},
+		sub: "render",
+		option: &lambroll.Option{
+			OptionFilePath: "ext_vars.jsonnet",
+			Color:          true,
+			Envfile:        []string{},
+			ExtStr: map[string]string{
+				"architecture": "arm64",                                   // CLI overrides option file (x86_64 -> arm64)
+				"description":  "Test function with ext_str and ext_code", // from option file
+				"cli_key":      "cli_val",                                 // from CLI
+			},
+			ExtCode: map[string]string{
+				"memory_size":  "256",  // CLI overrides option file (128 -> 256)
+				"storage_size": "1024", // CLI overrides option file (512 -> 1024)
+				"timeout":      "30",   // from option file
+			},
+		},
+	},
 }
 
 func TestParseCLI(t *testing.T) {
