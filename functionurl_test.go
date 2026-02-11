@@ -355,7 +355,7 @@ func TestFunctionURLPermission_AddPermissionInputs_WithActualSids(t *testing.T) 
 	}
 
 	// StatementIds should be deterministic (same permission content = same SID)
-	for i := 0; i < 2; i++ {
+	for i := range 2 {
 		if aws.ToString(perms1[i].StatementId) != aws.ToString(perms2[i].StatementId) {
 			t.Errorf("StatementId[%d] not deterministic: %v != %v",
 				i, aws.ToString(perms1[i].StatementId), aws.ToString(perms2[i].StatementId))

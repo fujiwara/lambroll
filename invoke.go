@@ -57,7 +57,7 @@ func (app *App) Invoke(ctx context.Context, opt *InvokeOption) error {
 	stderr := bufio.NewWriter(os.Stderr)
 PAYLOAD:
 	for {
-		var payload interface{}
+		var payload any
 		err := dec.Decode(&payload)
 		if err != nil {
 			if err == io.EOF {

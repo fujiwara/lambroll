@@ -151,7 +151,7 @@ func (ps *PolicyStatement) PrincipalString() *string {
 	switch v := ps.Principal.(type) {
 	case string:
 		return aws.String(v)
-	case map[string]interface{}:
+	case map[string]any:
 		if v["AWS"] != nil {
 			switch vv := v["AWS"].(type) {
 			case string:
@@ -175,14 +175,14 @@ func (ps *PolicyStatement) PrincipalOrgID() *string {
 	if principal == nil || *principal != "*" {
 		return nil
 	}
-	m, ok := ps.Condition.(map[string]interface{})
+	m, ok := ps.Condition.(map[string]any)
 	if !ok {
 		return nil
 	}
 	if m["StringEquals"] == nil {
 		return nil
 	}
-	mm, ok := m["StringEquals"].(map[string]interface{})
+	mm, ok := m["StringEquals"].(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -205,14 +205,14 @@ func (ps *PolicyStatement) SourceAccount() *string {
 	if ps.Condition == nil {
 		return nil
 	}
-	m, ok := ps.Condition.(map[string]interface{})
+	m, ok := ps.Condition.(map[string]any)
 	if !ok {
 		return nil
 	}
 	if m["StringEquals"] == nil {
 		return nil
 	}
-	mm, ok := m["StringEquals"].(map[string]interface{})
+	mm, ok := m["StringEquals"].(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -229,14 +229,14 @@ func (ps *PolicyStatement) SourceArn() *string {
 	if ps.Condition == nil {
 		return nil
 	}
-	m, ok := ps.Condition.(map[string]interface{})
+	m, ok := ps.Condition.(map[string]any)
 	if !ok {
 		return nil
 	}
 	if m["ArnLike"] == nil {
 		return nil
 	}
-	mm, ok := m["ArnLike"].(map[string]interface{})
+	mm, ok := m["ArnLike"].(map[string]any)
 	if !ok {
 		return nil
 	}
