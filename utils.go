@@ -73,7 +73,7 @@ func jsonStr(s any) string {
 	return string(b)
 }
 
-func marshalJSON(s interface{}) ([]byte, error) {
+func marshalJSON(s any) ([]byte, error) {
 	x, err := toGeneralMap(s, true)
 	if err != nil {
 		return nil, err
@@ -85,19 +85,19 @@ func marshalJSON(s interface{}) ([]byte, error) {
 	}
 }
 
-func marshalAny(s interface{}) (interface{}, error) {
+func marshalAny(s any) (any, error) {
 	b, err := marshalJSON(s)
 	if err != nil {
 		return nil, err
 	}
-	var res interface{}
+	var res any
 	if err := json.NewDecoder(bytes.NewReader(b)).Decode(&res); err != nil {
 		return nil, err
 	}
 	return res, nil
 }
 
-func unmarshalJSON(src []byte, v interface{}, path string) error {
+func unmarshalJSON(src []byte, v any, path string) error {
 	strict := json.NewDecoder(bytes.NewReader(src))
 	strict.DisallowUnknownFields()
 	if err := strict.Decode(&v); err != nil {

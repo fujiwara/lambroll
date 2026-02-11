@@ -49,7 +49,7 @@ func tSetenv(key, value string) error {
 }
 
 func ResetEnv() {
-	envs.Range(func(key, value interface{}) bool {
+	envs.Range(func(key, value any) bool {
 		value.(func())()
 		return true
 	})

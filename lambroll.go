@@ -125,7 +125,7 @@ func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
 		awsconfig.WithRegion(region),
 	}
 	if opt.Endpoint != nil && *opt.Endpoint != "" {
-		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
 			if service == lambda.ServiceID || service == sts.ServiceID || service == s3.ServiceID {
 				return aws.Endpoint{
 					PartitionID:   "aws",
