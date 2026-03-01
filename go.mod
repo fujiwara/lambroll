@@ -1,8 +1,6 @@
 module github.com/fujiwara/lambroll
 
-go 1.24.0
-
-toolchain go1.24.7
+go 1.25
 
 require (
 	github.com/Songmu/prompter v0.5.1
@@ -14,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.96.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.41.6
 	github.com/fatih/color v1.18.0
-	github.com/fujiwara/sloghandler v0.0.5
+	github.com/fujiwara/sloghandler v0.1.0
 	github.com/fujiwara/ssm-lookup v0.1.1
 	github.com/fujiwara/tfstate-lookup v1.10.0
 	github.com/go-test/deep v1.1.1
