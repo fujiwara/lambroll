@@ -30,36 +30,25 @@ type StatusOutput struct {
 	FunctionURL     string `json:"FunctionURL,omitempty"`
 }
 
-func (o *StatusOutput) Table() (string, error) {
+func (o *StatusOutput) String() string {
 	buf := new(strings.Builder)
 	w := tablewriter.NewTable(buf, tablewriter.WithRendition(tw.Rendition{
 		Symbols: tw.NewSymbols(tw.StyleASCII),
 	}))
-	rows := [][2]string{
-		{"FunctionName", o.FunctionName},
-		{"FunctionArn", o.FunctionArn},
-		{"Version", o.Version},
-	}
+	_ = w.Append("FunctionName", o.FunctionName)
+	_ = w.Append("FunctionArn", o.FunctionArn)
+	_ = w.Append("Version", o.Version)
 	if o.Runtime != "" {
-		rows = append(rows, [2]string{"Runtime", o.Runtime})
+		_ = w.Append("Runtime", o.Runtime)
 	}
-	rows = append(rows,
-		[2]string{"PackageType", o.PackageType},
-		[2]string{"State", o.State},
-		[2]string{"LastUpdateState", o.LastUpdateState},
-	)
+	_ = w.Append("PackageType", o.PackageType)
+	_ = w.Append("State", o.State)
+	_ = w.Append("LastUpdateState", o.LastUpdateState)
 	if o.FunctionURL != "" {
-		rows = append(rows, [2]string{"FunctionURL", o.FunctionURL})
+		_ = w.Append("FunctionURL", o.FunctionURL)
 	}
-	for _, r := range rows {
-		if err := w.Append(r[0], r[1]); err != nil {
-			return "", fmt.Errorf("failed to append row: %w", err)
-		}
-	}
-	if err := w.Render(); err != nil {
-		return "", fmt.Errorf("failed to render table: %w", err)
-	}
-	return buf.String(), nil
+	_ = w.Render()
+	return buf.String()
 }
 
 // Status prints status of function
@@ -101,11 +90,7 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 	}
 	switch opt.Output {
 	case "table":
-		tbl, err := out.Table()
-		if err != nil {
-			return err
-		}
-		fmt.Print(tbl)
+		fmt.Print(out.String())
 	case "json":
 		b, _ := marshalJSON(out)
 		fmt.Print(string(b))

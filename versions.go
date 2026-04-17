@@ -47,7 +47,7 @@ func (vo versionsOutputs) TSV() string {
 	return buf.String()
 }
 
-func (vo versionsOutputs) Table() (string, error) {
+func (vo versionsOutputs) Table() string {
 	buf := new(strings.Builder)
 	w := tablewriter.NewTable(buf, tablewriter.WithRendition(tw.Rendition{
 		Symbols: tw.NewSymbols(tw.StyleASCII),
@@ -57,19 +57,15 @@ func (vo versionsOutputs) Table() (string, error) {
 	})
 	w.Header("Version", "Last Modified", "Aliases", "Runtime")
 	for _, v := range vo {
-		if err := w.Append(
+		_ = w.Append(
 			v.Version,
 			v.LastModified.Local().Format(time.RFC3339),
 			strings.Join(v.Aliases, ","),
 			v.Runtime,
-		); err != nil {
-			return "", fmt.Errorf("failed to append row: %w", err)
-		}
+		)
 	}
-	if err := w.Render(); err != nil {
-		return "", fmt.Errorf("failed to render table: %w", err)
-	}
-	return buf.String(), nil
+	_ = w.Render()
+	return buf.String()
 }
 
 func (v versionsOutput) TSV() string {
@@ -143,11 +139,7 @@ func (app *App) Versions(ctx context.Context, opt *VersionsOption) error {
 	case "tsv":
 		fmt.Print(vos.TSV())
 	case "table":
-		tbl, err := vos.Table()
-		if err != nil {
-			return err
-		}
-		fmt.Print(tbl)
+		fmt.Print(vos.Table())
 	default:
 		return fmt.Errorf("unknown output format: %s", opt.Output)
 	}
