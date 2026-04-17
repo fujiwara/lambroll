@@ -57,14 +57,14 @@ func (vo versionsOutputs) Table() string {
 	})
 	w.Header("Version", "Last Modified", "Aliases", "Runtime")
 	for _, v := range vo {
-		_ = w.Append(
+		w.Append(
 			v.Version,
 			v.LastModified.Local().Format(time.RFC3339),
 			strings.Join(v.Aliases, ","),
 			v.Runtime,
 		)
 	}
-	_ = w.Render()
+	w.Render()
 	return buf.String()
 }
 

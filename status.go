@@ -35,19 +35,19 @@ func (o *StatusOutput) String() string {
 	w := tablewriter.NewTable(buf, tablewriter.WithRendition(tw.Rendition{
 		Symbols: tw.NewSymbols(tw.StyleASCII),
 	}))
-	_ = w.Append("FunctionName", o.FunctionName)
-	_ = w.Append("FunctionArn", o.FunctionArn)
-	_ = w.Append("Version", o.Version)
+	w.Append("FunctionName", o.FunctionName)
+	w.Append("FunctionArn", o.FunctionArn)
+	w.Append("Version", o.Version)
 	if o.Runtime != "" {
-		_ = w.Append("Runtime", o.Runtime)
+		w.Append("Runtime", o.Runtime)
 	}
-	_ = w.Append("PackageType", o.PackageType)
-	_ = w.Append("State", o.State)
-	_ = w.Append("LastUpdateState", o.LastUpdateState)
+	w.Append("PackageType", o.PackageType)
+	w.Append("State", o.State)
+	w.Append("LastUpdateState", o.LastUpdateState)
 	if o.FunctionURL != "" {
-		_ = w.Append("FunctionURL", o.FunctionURL)
+		w.Append("FunctionURL", o.FunctionURL)
 	}
-	_ = w.Render()
+	w.Render()
 	return buf.String()
 }
 
