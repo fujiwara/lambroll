@@ -672,7 +672,7 @@ The template functions is available in `{{ }}`.
 
 ### File system mounts (EFS / S3 Files)
 
-`FileSystemConfigs[].Arn` accepts either an EFS access point ARN or an [Amazon S3 Files](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-overview.html) access point ARN. The two formats are shown below; pick one per mount.
+`FileSystemConfigs[].Arn` accepts either an EFS access point ARN or an [Amazon S3 Files](https://aws.amazon.com/s3/features/files/) access point ARN. The two formats are shown below; pick one per mount.
 
 ```json5
 {
