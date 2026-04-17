@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -48,17 +49,22 @@ func (vo versionsOutputs) TSV() string {
 
 func (vo versionsOutputs) Table() string {
 	buf := new(strings.Builder)
-	w := tablewriter.NewWriter(buf)
-	w.SetHeader([]string{"Version", "Last Modified", "Aliases", "Runtime"})
+	w := tablewriter.NewTable(buf, tablewriter.WithRendition(tw.Rendition{
+		Symbols: tw.NewSymbols(tw.StyleASCII),
+	}))
+	w.Configure(func(cfg *tablewriter.Config) {
+		cfg.Row.Alignment.Global = tw.AlignLeft
+	})
+	w.Header("Version", "Last Modified", "Aliases", "Runtime")
 	for _, v := range vo {
-		w.Append([]string{
+		_ = w.Append(
 			v.Version,
 			v.LastModified.Local().Format(time.RFC3339),
 			strings.Join(v.Aliases, ","),
 			v.Runtime,
-		})
+		)
 	}
-	w.Render()
+	_ = w.Render()
 	return buf.String()
 }
 

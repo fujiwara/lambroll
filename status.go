@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/olekukonko/tablewriter"
+	"github.com/olekukonko/tablewriter/tw"
 )
 
 // StatusOption represents options for Status()
@@ -31,20 +32,22 @@ type StatusOutput struct {
 
 func (o *StatusOutput) String() string {
 	buf := new(strings.Builder)
-	w := tablewriter.NewWriter(buf)
-	w.Append([]string{"FunctionName", o.FunctionName})
-	w.Append([]string{"FunctionArn", o.FunctionArn})
-	w.Append([]string{"Version", o.Version})
+	w := tablewriter.NewTable(buf, tablewriter.WithRendition(tw.Rendition{
+		Symbols: tw.NewSymbols(tw.StyleASCII),
+	}))
+	_ = w.Append("FunctionName", o.FunctionName)
+	_ = w.Append("FunctionArn", o.FunctionArn)
+	_ = w.Append("Version", o.Version)
 	if o.Runtime != "" {
-		w.Append([]string{"Runtime", o.Runtime})
+		_ = w.Append("Runtime", o.Runtime)
 	}
-	w.Append([]string{"PackageType", o.PackageType})
-	w.Append([]string{"State", o.State})
-	w.Append([]string{"LastUpdateState", o.LastUpdateState})
+	_ = w.Append("PackageType", o.PackageType)
+	_ = w.Append("State", o.State)
+	_ = w.Append("LastUpdateState", o.LastUpdateState)
 	if o.FunctionURL != "" {
-		w.Append([]string{"FunctionURL", o.FunctionURL})
+		_ = w.Append("FunctionURL", o.FunctionURL)
 	}
-	w.Render()
+	_ = w.Render()
 	return buf.String()
 }
 
