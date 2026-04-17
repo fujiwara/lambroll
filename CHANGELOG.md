@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.4.3](https://github.com/fujiwara/lambroll/compare/v1.4.2...v1.4.3) - 2026-04-17
+- Fix ext_str/ext_code from option file being overridden by CLI args by @jirtosterone in https://github.com/fujiwara/lambroll/pull/568
+- go fix (modernize) and pin actions. by @fujiwara in https://github.com/fujiwara/lambroll/pull/570
+- Bundle dependabot dependency bumps by @fujiwara in https://github.com/fujiwara/lambroll/pull/585
+- Bump tablewriter to v1.1.3 by @fujiwara in https://github.com/fujiwara/lambroll/pull/586
+- Document FileSystemConfigs support for EFS and S3 Files by @fujiwara in https://github.com/fujiwara/lambroll/pull/587
+
 ## [v1.4.2](https://github.com/fujiwara/lambroll/compare/v1.4.1...v1.4.2) - 2026-02-03
 - Supports Lambda Managed Instances by @fujiwara in https://github.com/fujiwara/lambroll/pull/554
 - add readme for s3 endpoint. by @fujiwara in https://github.com/fujiwara/lambroll/pull/559
