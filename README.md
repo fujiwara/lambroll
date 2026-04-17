@@ -63,6 +63,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 - [Advanced Features](#advanced-features)
   - [Lambda@Edge support](#lambdaedge-support)
   - [Lambda function URLs support](#lambda-function-urls-support)
+  - [File system mounts (EFS / S3 Files)](#file-system-mounts-efs--s3-files)
   - [Lambda Managed Instances support](#lambda-managed-instances-support)
   - [Tenant Isolation support](#tenant-isolation-support)
 - [LICENSE](#license)
@@ -1064,6 +1065,26 @@ See also [Restricting access to an AWS Lambda function URL origin](https://docs.
 If you need to allow access from any CloudFront distributions in your account, you can specify `SourceArn` as `arn:aws:cloudfront::123456789012:distribution/*`.
 
 Specifying `SourceArn` as `*` is not recommended because it allows access from any CloudFront distribution in any AWS account.
+
+### File system mounts (EFS / S3 Files)
+
+`FileSystemConfigs[].Arn` accepts either an EFS access point ARN or an [Amazon S3 Files](https://aws.amazon.com/s3/features/files/) access point ARN. The two formats are shown below; pick one per mount.
+
+```json5
+{
+  "FileSystemConfigs": [
+    // EFS
+    { "Arn": "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a", "LocalMountPath": "/mnt/efs" },
+    // S3 Files
+    { "Arn": "arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8", "LocalMountPath": "/mnt/data" }
+  ]
+}
+```
+
+The function must run inside a VPC that can reach the file system's mount targets, and its execution role needs the appropriate mount permissions. See the AWS docs for the required setup:
+
+- EFS: [Configuring file system access for Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem.html)
+- S3 Files: [Configuring Amazon S3 Files access with AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem-s3files.html) / [Prerequisites for S3 Files](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-prereq-policies.html)
 
 ### Lambda Managed Instances support
 
