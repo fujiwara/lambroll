@@ -44,7 +44,10 @@ func TestVersionsTSV(t *testing.T) {
 
 func TestVersionsTable(t *testing.T) {
 	t.Setenv("TZ", "UTC+9")
-	tableOutput := TestVersionsOutputs.Table()
+	tableOutput, err := TestVersionsOutputs.Table()
+	if err != nil {
+		t.Fatal(err)
+	}
 	expectedOutput := `
 +---------+---------------------------+----------------+-----------+
 | VERSION |       LAST MODIFIED       |    ALIASES     |  RUNTIME  |
