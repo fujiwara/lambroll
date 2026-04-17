@@ -51,6 +51,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
   - [Delete](#delete)
 - [Configuration](#configuration)
   - [function.json](#functionjson)
+  - [File system mounts (EFS / S3 Files)](#file-system-mounts-efs--s3-files)
   - [Tags](#tags)
   - [Environment variables from envfile](#environment-variables-from-envfile)
   - [Jsonnet support for function configuration](#jsonnet-support-for-function-configuration)
@@ -668,6 +669,26 @@ function.json is a definition for Lambda function. JSON structure is based from 
 The template functions is available in `{{ }}`.
 - `env` function expands environment variables.
 - `must_env` function expands environment variables. If the environment variable is not defined, lambroll will panic and abort.
+
+### File system mounts (EFS / S3 Files)
+
+`FileSystemConfigs[].Arn` accepts either an EFS access point ARN or an [Amazon S3 Files](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-overview.html) access point ARN. The two formats are shown below; pick one per mount.
+
+```json5
+{
+  "FileSystemConfigs": [
+    // EFS
+    { "Arn": "arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a", "LocalMountPath": "/mnt/efs" },
+    // S3 Files
+    { "Arn": "arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8", "LocalMountPath": "/mnt/data" }
+  ]
+}
+```
+
+The function must run inside a VPC that can reach the file system's mount targets, and its execution role needs the appropriate mount permissions. See the AWS docs for the required setup:
+
+- EFS: [Configuring file system access for Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem.html)
+- S3 Files: [Configuring Amazon S3 Files access with AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem-s3files.html) / [Prerequisites for S3 Files](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-prereq-policies.html)
 
 ### Tags
 
