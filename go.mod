@@ -5,7 +5,7 @@ go 1.25.0
 require (
 	github.com/Songmu/prompter v0.5.1
 	github.com/aereal/jsondiff v0.4.1
-	github.com/alecthomas/kong v1.12.1
+	github.com/alecthomas/kong v1.15.0
 	github.com/aws/aws-sdk-go-v2 v1.41.5
 	github.com/aws/aws-sdk-go-v2/config v1.32.10
 	github.com/aws/aws-sdk-go-v2/service/lambda v1.88.5
