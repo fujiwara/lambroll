@@ -315,6 +315,7 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 		FunctionName:      c.FunctionName,
 		Handler:           c.Handler,
 		LoggingConfig:     c.LoggingConfig,
+		DurableConfig:     c.DurableConfig,
 		MemorySize:        c.MemorySize,
 		Role:              c.Role,
 		Runtime:           c.Runtime,
