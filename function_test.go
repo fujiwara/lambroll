@@ -149,7 +149,7 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 		Runtime:      types.RuntimePython312,
 		Timeout:      aws.Int32(3),
 		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Role:         aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		DurableConfig: &types.DurableConfig{
 			ExecutionTimeout:      aws.Int32(900),
 			RetentionPeriodInDays: aws.Int32(14),
@@ -163,7 +163,7 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 		Runtime:      types.RuntimePython312,
 		Timeout:      aws.Int32(3),
 		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Role:         aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		DurableConfig: &types.DurableConfig{
 			ExecutionTimeout:      aws.Int32(900),
 			RetentionPeriodInDays: aws.Int32(14),
