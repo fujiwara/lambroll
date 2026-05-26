@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.4.4](https://github.com/fujiwara/lambroll/compare/v1.4.3...v1.4.4) - 2026-05-26
+- Add DurableConfig to diff/update handling by @butadora3 in https://github.com/fujiwara/lambroll/pull/594
+- Bundle dependabot updates by @fujiwara in https://github.com/fujiwara/lambroll/pull/596
+
 ## [v1.4.3](https://github.com/fujiwara/lambroll/compare/v1.4.2...v1.4.3) - 2026-04-17
 - Fix ext_str/ext_code from option file being overridden by CLI args by @jirtosterone in https://github.com/fujiwara/lambroll/pull/568
 - go fix (modernize) and pin actions. by @fujiwara in https://github.com/fujiwara/lambroll/pull/570
