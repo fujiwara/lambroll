@@ -206,6 +206,7 @@ func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, o
 		KMSKeyArn:         fn.KMSKeyArn,
 		Layers:            fn.Layers,
 		LoggingConfig:     fn.LoggingConfig,
+		DurableConfig:     fn.DurableConfig,
 		MemorySize:        fn.MemorySize,
 		Role:              fn.Role,
 		Runtime:           fn.Runtime,

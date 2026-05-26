@@ -141,3 +141,38 @@ func TestNewFunction(t *testing.T) {
 		t.Errorf("unexpected function got %s", diff)
 	}
 }
+
+func TestNewFunctionWithDurableConfig(t *testing.T) {
+	conf := &types.FunctionConfiguration{
+		FunctionName: aws.String("hello"),
+		MemorySize:   aws.Int32(128),
+		Runtime:      types.RuntimePython312,
+		Timeout:      aws.Int32(3),
+		Handler:      aws.String("index.handler"),
+		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		DurableConfig: &types.DurableConfig{
+			ExecutionTimeout:      aws.Int32(900),
+			RetentionPeriodInDays: aws.Int32(14),
+		},
+	}
+	fn := lambroll.NewFunctionFrom(conf, nil, nil)
+
+	expected := lambroll.Function{
+		FunctionName: aws.String("hello"),
+		MemorySize:   aws.Int32(128),
+		Runtime:      types.RuntimePython312,
+		Timeout:      aws.Int32(3),
+		Handler:      aws.String("index.handler"),
+		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		DurableConfig: &types.DurableConfig{
+			ExecutionTimeout:      aws.Int32(900),
+			RetentionPeriodInDays: aws.Int32(14),
+		},
+	}
+
+	fnJSON, _ := lambroll.MarshalJSON(fn)
+	expectedJSON, _ := lambroll.MarshalJSON(expected)
+	if diff := cmp.Diff(string(expectedJSON), string(fnJSON), ignore); diff != "" {
+		t.Errorf("unexpected function got %s", diff)
+	}
+}
