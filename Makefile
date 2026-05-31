@@ -1,6 +1,11 @@
 .PHONY: test binary install clean dist
+
+# tfstate-lookup build tags: exclude GCS and AzureRM remote backends.
+# lambroll only supports the S3 and Terraform Cloud (remote) backends.
+GO_BUILD_TAGS := no_gcs,no_azurerm
+
 cmd/lambroll/lambroll: *.go cmd/lambroll/*.go go.mod go.sum
-	cd cmd/lambroll && go build -ldflags "-s -w" -gcflags="-trimpath=${PWD}"
+	cd cmd/lambroll && go build -tags "$(GO_BUILD_TAGS)" -ldflags "-s -w" -gcflags="-trimpath=${PWD}"
 
 install: cmd/lambroll/lambroll
 	install cmd/lambroll/lambroll ${GOPATH}/bin
