@@ -957,6 +957,27 @@ local second_tfstate = std.native('my_second_tfstate');
 
 When your terraform.tfstate is stored in an S3-compatible storage service, you can specify the S3 endpoint by setting the `AWS_ENDPOINT_URL_S3` environment variable. This spec is based on the [tfstate-lookup](https://github.com/fujiwara/tfstate-lookup?tab=readme-ov-file#s3-endpoint-url-support).
 
+#### Supported tfstate backends
+
+lambroll uses [tfstate-lookup](https://github.com/fujiwara/tfstate-lookup) to read terraform.tfstate. The following backends are supported by the library:
+
+- Local file
+- HTTP
+- Amazon S3 (`s3://`)
+- Terraform Cloud / Enterprise (`remote` backend)
+- Google Cloud Storage (`gcs`)
+- Azure Blob Storage (`azurerm`)
+
+To keep the binary small, **the official release binaries are built with the `no_gcs` and `no_azurerm` build tags, so the GCS and AzureRM backends are not included.** This applies to all distributed binaries (GitHub Releases, Homebrew, aqua, the GitHub Action, and the CircleCI orb). Using one of these backends with a release binary results in an error such as `GCS backend is not available (built with no_gcs tag)`.
+
+If you need the GCS or AzureRM backend, build lambroll from source without those build tags:
+
+```console
+$ go install github.com/fujiwara/lambroll/cmd/lambroll@latest
+```
+
+`go install` does not apply the `no_gcs` / `no_azurerm` tags, so all backends are available in a binary built this way.
+
 ### .lambdaignore
 
 lambroll will ignore files defined in `.lambdaignore` file at creating a zip archive.
