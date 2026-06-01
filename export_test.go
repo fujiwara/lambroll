@@ -14,6 +14,7 @@ var (
 	JSONStr                 = jsonStr
 	MarshalJSON             = marshalJSON
 	NewFunctionFrom         = newFunctionFrom
+	SortFunctionForDiff     = sortFunctionForDiff
 	NewCallerIdentity       = newCallerIdentity
 	Unzip                   = unzip
 	ExtractExitCodeAndError = extractExitCodeAndError
