@@ -14,7 +14,6 @@ import (
 	"github.com/aereal/jsondiff"
 	"github.com/fatih/color"
 	"github.com/itchyny/gojq"
-	"github.com/kylelemons/godebug/diff"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -156,12 +155,16 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 			return false, err
 		}
 		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
+
 		prefix := "CodeSha256: "
-		if ds := diff.Diff(prefix+currentCodeSha256, prefix+newCodeSha256); ds != "" {
-			fmt.Println(color.RedString("---" + app.functionArn(ctx, name)))
-			fmt.Println(color.GreenString("+++" + "--src=" + opt.Src))
-			fmt.Println(coloredDiff(ds))
+		if diff, err := jsondiff.Diff(
+			&jsondiff.Input{Name: remoteArn, X: prefix + currentCodeSha256},
+			&jsondiff.Input{Name: "--src=" + opt.Src, X: prefix + newCodeSha256},
+		); err != nil {
+			return false, fmt.Errorf("failed to diff: %w", err)
+		} else if diff != "" {
 			hasDiff = true
+			fmt.Print(coloredDiff(diff))
 		}
 	}
 	return hasDiff, nil
@@ -231,21 +234,23 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	if err != nil {
 		return hasDiff, err
 	}
-	var addsB []byte
+	var addsB []*lambda.AddPermissionInput
 	for _, in := range adds {
-		b, _ := marshalJSON(in)
-		addsB = append(addsB, b...)
+		addsB = append(addsB, in)
 	}
-	var removesB []byte
+	var removesB []*lambda.AddPermissionInput
 	for _, in := range removes {
-		b, _ := marshalJSON(in)
-		removesB = append(removesB, b...)
+		removesB = append(removesB, in)
 	}
-	if ds := diff.Diff(string(removesB), string(addsB)); ds != "" {
-		fmt.Println(color.RedString("--- permissions"))
-		fmt.Println(color.GreenString("+++ permissions"))
-		fmt.Print(coloredDiff(ds))
+
+	if diff, err := jsondiff.Diff(
+		&jsondiff.Input{Name: "permissions", X: removesB},
+		&jsondiff.Input{Name: "permissions", X: addsB},
+	); err != nil {
+		return hasDiff, fmt.Errorf("failed to diff: %w", err)
+	} else if diff != "" {
 		hasDiff = true
+		fmt.Print(coloredDiff(diff))
 	}
 
 	return hasDiff, nil
