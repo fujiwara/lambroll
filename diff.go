@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/aereal/jsondiff"
@@ -107,6 +108,11 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	}
 	remoteFunc := newFunctionFrom(remote, code, tags)
 	fillDefaultValues(remoteFunc)
+
+	// AWS returns VPC subnet/security group IDs in an arbitrary order, so
+	// normalize the ordering on both sides to avoid a spurious diff.
+	sortFunctionForDiff(fn)
+	sortFunctionForDiff(remoteFunc)
 
 	opts := []jsondiff.Option{}
 	if ignore := opt.Ignore; ignore != "" {
@@ -243,6 +249,20 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	}
 
 	return hasDiff, nil
+}
+
+// sortFunctionForDiff normalizes order-insensitive slice fields so that
+// differences in ordering alone do not produce a spurious diff. AWS treats
+// VPC subnet IDs and security group IDs as sets and may return them in an
+// arbitrary order.
+func sortFunctionForDiff(fn *Function) {
+	if fn == nil {
+		return
+	}
+	if v := fn.VpcConfig; v != nil {
+		sort.Strings(v.SubnetIds)
+		sort.Strings(v.SecurityGroupIds)
+	}
 }
 
 func coloredDiff(src string) string {
