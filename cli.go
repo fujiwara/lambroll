@@ -53,11 +53,11 @@ func (o *Option) UnmarshalJSON(data []byte) error {
 	// If old field names are used and new ones are empty, copy the values
 	if o.ExtStr == nil && aux.OldExtStr != nil {
 		o.ExtStr = aux.OldExtStr
-		slog.Warn("Using deprecated field name 'extstr' in option file. Please use 'ext_str' instead.")
+		slog.Warn("Using deprecated field name 'extstr' in option file. Please use 'ext_str' instead. This will be removed in v2.")
 	}
 	if o.ExtCode == nil && aux.OldExtCode != nil {
 		o.ExtCode = aux.OldExtCode
-		slog.Warn("Using deprecated field name 'extcode' in option file. Please use 'ext_code' instead.")
+		slog.Warn("Using deprecated field name 'extcode' in option file. Please use 'ext_code' instead. This will be removed in v2.")
 	}
 
 	return nil
