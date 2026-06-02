@@ -474,7 +474,7 @@ func validateUpdateFunction(currentConf *types.FunctionConfiguration, currentCod
 	}
 
 	// current=Image
-	if currentCode != nil && currentCode.ImageUri != nil || currentConf != nil && currentConf.PackageType == types.PackageTypeImage {
+	if currentCode != nil && currentCode.ImageUri != nil || currentConf.PackageType == types.PackageTypeImage {
 		// new=Zip
 		if newCode == nil || newCode.ImageUri == nil {
 			return errCannotUpdateImageAndZip
