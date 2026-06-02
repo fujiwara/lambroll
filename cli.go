@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"log/slog"
 	"os"
 	"strings"
@@ -54,11 +53,11 @@ func (o *Option) UnmarshalJSON(data []byte) error {
 	// If old field names are used and new ones are empty, copy the values
 	if o.ExtStr == nil && aux.OldExtStr != nil {
 		o.ExtStr = aux.OldExtStr
-		log.Printf("[warn] Using deprecated field name 'extstr' in option file. Please use 'ext_str' instead.")
+		slog.Warn("Using deprecated field name 'extstr' in option file. Please use 'ext_str' instead.")
 	}
 	if o.ExtCode == nil && aux.OldExtCode != nil {
 		o.ExtCode = aux.OldExtCode
-		log.Printf("[warn] Using deprecated field name 'extcode' in option file. Please use 'ext_code' instead.")
+		slog.Warn("Using deprecated field name 'extcode' in option file. Please use 'ext_code' instead.")
 	}
 
 	return nil
@@ -229,9 +228,9 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 		return err
 	}
 	if opts.Function != "" {
-		log.Printf("[info] lambroll %s with %s", Version, opts.Function)
+		slog.Info("lambroll", "version", Version, "function", opts.Function)
 	} else {
-		log.Printf("[info] lambroll %s", Version)
+		slog.Info("lambroll", "version", Version)
 	}
 	switch sub {
 	case "init":
