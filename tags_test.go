@@ -16,10 +16,6 @@ type tagsTestCase struct {
 	removeKeys keys
 }
 
-func s(s string) *string {
-	return &s
-}
-
 var mergeTagsCase = []tagsTestCase{
 	{
 		oldTags:    tags{"Foo": "FOO", "Bar": "BAR", "Tee": "TEE"},

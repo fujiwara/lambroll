@@ -83,7 +83,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	}
 	fn := newFunctionFrom(c, code, tags)
 
-	if (opt.DownloadZip || opt.Unzip) && res.Code != nil && *res.Code.RepositoryType == "S3" {
+	if (opt.DownloadZip || opt.Unzip) && res != nil && res.Code != nil && aws.ToString(res.Code.RepositoryType) == "S3" {
 		slog.Info("downloading file", "file", FunctionZipFilename)
 		if err := download(ctx, *res.Code.Location, FunctionZipFilename); err != nil {
 			return err
@@ -148,8 +148,11 @@ func download(ctx context.Context, url, path string) error {
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %w", path, err)
 	}
-	_, err = io.Copy(f, resp.Body)
-	return err
+	defer f.Close()
+	if _, err := io.Copy(f, resp.Body); err != nil {
+		return fmt.Errorf("failed to write file %s: %w", path, err)
+	}
+	return f.Close()
 }
 
 func unzipAfterInit(ctx context.Context, path, dest string, force bool) error {

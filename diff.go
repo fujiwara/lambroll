@@ -235,18 +235,9 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	if err != nil {
 		return hasDiff, err
 	}
-	var addsB []*lambda.AddPermissionInput
-	for _, in := range adds {
-		addsB = append(addsB, in)
-	}
-	var removesB []*lambda.AddPermissionInput
-	for _, in := range removes {
-		removesB = append(removesB, in)
-	}
-
 	if d, err := app.emitDiff(ctx, opt, "permissions.json",
-		&jsondiff.Input{Name: "permissions", X: removesB},
-		&jsondiff.Input{Name: "permissions", X: addsB},
+		&jsondiff.Input{Name: "permissions", X: removes},
+		&jsondiff.Input{Name: "permissions", X: adds},
 		"",
 	); err != nil {
 		return hasDiff, err

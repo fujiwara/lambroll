@@ -334,7 +334,7 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 			Mode: t.Mode,
 		}
 	}
-	if v := c.VpcConfig; v != nil && *v.VpcId != "" {
+	if v := c.VpcConfig; v != nil && aws.ToString(v.VpcId) != "" {
 		fn.VpcConfig = &types.VpcConfig{
 			SubnetIds:               v.SubnetIds,
 			SecurityGroupIds:        v.SecurityGroupIds,
