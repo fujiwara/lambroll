@@ -14,8 +14,6 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/fujiwara/ssm-lookup/ssm"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-jsonnet"
@@ -125,18 +123,7 @@ func newAwsConfig(ctx context.Context, opt *Option) (aws.Config, error) {
 		awsconfig.WithRegion(region),
 	}
 	if opt.Endpoint != nil && *opt.Endpoint != "" {
-		customResolver := aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...any) (aws.Endpoint, error) {
-			if service == lambda.ServiceID || service == sts.ServiceID || service == s3.ServiceID {
-				return aws.Endpoint{
-					PartitionID:   "aws",
-					URL:           *opt.Endpoint,
-					SigningRegion: region,
-				}, nil
-			}
-			// returning EndpointNotFoundError will allow the service to fallback to it's default resolution
-			return aws.Endpoint{}, &aws.EndpointNotFoundError{}
-		})
-		optFuncs = append(optFuncs, awsconfig.WithEndpointResolverWithOptions(customResolver))
+		optFuncs = append(optFuncs, awsconfig.WithBaseEndpoint(*opt.Endpoint))
 	}
 	if opt.Profile != nil && *opt.Profile != "" {
 		optFuncs = append(optFuncs, awsconfig.WithSharedConfigProfile(*opt.Profile))
