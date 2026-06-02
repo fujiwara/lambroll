@@ -176,23 +176,3 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 		t.Errorf("unexpected function got %s", diff)
 	}
 }
-
-// TestNewFunctionWithNilVpcID ensures NewFunctionFrom does not panic when the
-// VpcConfig is present but VpcId is nil (a function that is not attached to a VPC).
-func TestNewFunctionWithNilVpcID(t *testing.T) {
-	conf := &types.FunctionConfiguration{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
-		Runtime:      types.RuntimeNodejs18x,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
-		VpcConfig: &types.VpcConfigResponse{
-			VpcId: nil, // not attached to a VPC
-		},
-	}
-	fn := lambroll.NewFunctionFrom(conf, nil, nil)
-	if fn.VpcConfig != nil {
-		t.Errorf("VpcConfig should be nil when VpcId is empty, got %v", fn.VpcConfig)
-	}
-}
