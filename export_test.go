@@ -1,6 +1,7 @@
 package lambroll
 
 import (
+	"io"
 	"os"
 	"sync"
 )
@@ -19,7 +20,13 @@ var (
 	Unzip                   = unzip
 	ExtractExitCodeAndError = extractExitCodeAndError
 	IsAWSManagedTag         = isAWSManagedTag
+	RunExternalDiff         = runExternalDiff
+	RenderForExternalDiff   = renderForExternalDiff
 )
+
+func (o *DiffOption) SetWriter(w io.Writer) {
+	o.w = w
+}
 
 type VersionsOutput = versionsOutput
 type VersionsOutputs = versionsOutputs

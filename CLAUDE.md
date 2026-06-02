@@ -92,6 +92,7 @@ make clean
 
 ## Git Workflow
 
+- **The default branch is `v1`** - base feature branches on `v1` and open PRs against it. The `main` branch is outdated; do not use it as a base or diff target.
 - **Never commit directly to main/master/v1 branches** - always create a feature branch first
 - Use `git add <specific-files>` instead of `git add -A` to avoid committing unrelated changes
 - Run `go fmt ./...` before committing Go code

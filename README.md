@@ -539,6 +539,18 @@ $ lambroll diff --exit-code   # Exit with code 2 if differences exist
 
 Use `--ignore` with jq query syntax to ignore specific fields when comparing.
 
+`lambroll diff --external` can render the diff with an external command of your choice. lambroll writes the remote and local definitions to temporary files and invokes the command with those two file paths as the last two arguments. The fields removed by `--ignore` are also removed from the files passed to the external command.
+
+For example, use [difftastic](https://github.com/Wilfred/difftastic) (`difft`).
+
+```console
+$ lambroll diff --external "difft --color=always"
+
+$ LAMBROLL_DIFF_COMMAND="difft --color=always" lambroll diff
+```
+
+The command must exit with status 0. If it exits with a non-zero status when the two files differ (for example, `diff(1)`), you need to write a wrapper command.
+
 #### Status
 
 ```console
