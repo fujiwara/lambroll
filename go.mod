@@ -23,7 +23,7 @@ require (
 	github.com/itchyny/gojq v0.12.19
 	github.com/kayac/go-config v0.7.0
 	github.com/kylelemons/godebug v1.1.0 // indirect
-	github.com/mattn/go-isatty v0.0.20
+	github.com/mattn/go-isatty v0.0.22
 	github.com/mattn/go-shellwords v1.0.13
 	github.com/olekukonko/tablewriter v1.1.4
 	github.com/samber/lo v1.52.0
