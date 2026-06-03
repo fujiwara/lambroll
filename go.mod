@@ -26,7 +26,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mattn/go-shellwords v1.0.13
 	github.com/olekukonko/tablewriter v1.1.4
-	github.com/samber/lo v1.52.0
+	github.com/samber/lo v1.53.0
 	github.com/shogo82148/go-retry v1.3.1
 	golang.org/x/sys v0.42.0
 )
