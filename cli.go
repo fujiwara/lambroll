@@ -30,6 +30,10 @@ type Option struct {
 	Envfile         []string          `help:"environment files" env:"LAMBROLL_ENVFILE" json:"envfile,omitempty"`
 	ExtStr          map[string]string `help:"external string values for Jsonnet" env:"LAMBROLL_EXTSTR" json:"ext_str,omitempty"`
 	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE" json:"ext_code,omitempty"`
+
+	// Diff holds option-file config scoped to the diff command (diff.mask).
+	// It is not a CLI flag; ParseCLI merges it into DiffOption.Mask.
+	Diff DiffMaskOption `kong:"-" json:"diff,omitempty"`
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling to support both old and new field names
@@ -158,6 +162,17 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 		if defaultOpt.ExtCode != nil || opts.ExtCode != nil {
 			opts.ExtCode = lo.Assign(defaultOpt.ExtCode, opts.ExtCode)
 		}
+	}
+
+	// Merge option-file diff.mask entries with the CLI --mask values additively
+	// (option-file first, CLI appended) so the mask set never shrinks. kong
+	// allocates opts.Diff for every subcommand; the merged slice is only consumed
+	// by the diff command (dispatchCLI), so writing it elsewhere is harmless.
+	if defaultOpt != nil && opts.Diff != nil && len(defaultOpt.Diff.Mask) > 0 {
+		merged := make([]string, 0, len(defaultOpt.Diff.Mask)+len(opts.Diff.Mask))
+		merged = append(merged, defaultOpt.Diff.Mask...)
+		merged = append(merged, opts.Diff.Mask...)
+		opts.Diff.Mask = merged
 	}
 
 	sub := strings.Fields(c.Command())[0]

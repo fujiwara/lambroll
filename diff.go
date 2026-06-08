@@ -36,6 +36,8 @@ type DiffOption struct {
 	SkipFunction bool    `help:"skip function diff. shows function-url only" default:"false"`
 	External     string  `help:"external command to display diff" default:"" env:"LAMBROLL_DIFF_COMMAND"`
 
+	Mask []string `help:"mask values by jq query or environment variable name (repeatable)"`
+
 	ZipOption
 
 	w io.Writer `kong:"-"`
@@ -129,10 +131,15 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
 	hasDiff := false
 
+	// masking is applied only to the function configuration diff, with a single
+	// registry shared across both sides so equal values collapse to one token.
+	maskSelectors := buildEffectiveMaskSet(opt.Mask, nil)
+	maskReg := newMaskTokenRegistry()
+
 	if d, err := app.emitDiff(ctx, opt, "function.json",
 		&jsondiff.Input{Name: remoteArn, X: remoteJSON},
 		&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
-		opt.Ignore,
+		opt.Ignore, maskSelectors, maskReg,
 	); err != nil {
 		return false, err
 	} else if d {
@@ -161,7 +168,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		if d, err := app.emitDiff(ctx, opt, "CodeSha256.txt",
 			&jsondiff.Input{Name: remoteArn, X: prefix + currentCodeSha256},
 			&jsondiff.Input{Name: "--src=" + opt.Src, X: prefix + newCodeSha256},
-			"",
+			"", nil, nil,
 		); err != nil {
 			return false, err
 		} else if d {
@@ -223,7 +230,7 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	if d, err := app.emitDiff(ctx, opt, "function_url.json",
 		&jsondiff.Input{Name: fqName, X: r},
 		&jsondiff.Input{Name: opt.FunctionURL, X: l},
-		"",
+		"", nil, nil,
 	); err != nil {
 		return hasDiff, err
 	} else if d {
@@ -238,7 +245,7 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 	if d, err := app.emitDiff(ctx, opt, "permissions.json",
 		&jsondiff.Input{Name: "permissions", X: removes},
 		&jsondiff.Input{Name: "permissions", X: adds},
-		"",
+		"", nil, nil,
 	); err != nil {
 		return hasDiff, err
 	} else if d {
@@ -266,7 +273,26 @@ func sortFunctionForDiff(fn *Function) {
 // ignore jq query) and renders it. When opt.External is set, the diff is shown
 // by running the external command against two temporary files instead of the
 // built-in colored unified diff. It returns true if there is any difference.
-func (app *App) emitDiff(ctx context.Context, opt *DiffOption, label string, from, to *jsondiff.Input, ignore string) (bool, error) {
+//
+// When maskSelectors is non-empty, ignore and then mask are applied to deep
+// copies of from.X / to.X before rendering, so every render path sees only
+// masked values. With no selectors the inputs are untouched.
+func (app *App) emitDiff(ctx context.Context, opt *DiffOption, label string, from, to *jsondiff.Input, ignore string, maskSelectors []string, maskReg *maskTokenRegistry) (bool, error) {
+	if len(maskSelectors) > 0 {
+		fromMasked, err := maskInput(from.X, ignore, maskSelectors, maskReg)
+		if err != nil {
+			return false, err
+		}
+		toMasked, err := maskInput(to.X, ignore, maskSelectors, maskReg)
+		if err != nil {
+			return false, err
+		}
+		from = &jsondiff.Input{Name: from.Name, X: fromMasked}
+		to = &jsondiff.Input{Name: to.Name, X: toMasked}
+		// ignore has already been applied to the masked copies.
+		ignore = ""
+	}
+
 	var jsonOpts []jsondiff.Option
 	if ignore != "" {
 		p, err := gojq.Parse(ignore)

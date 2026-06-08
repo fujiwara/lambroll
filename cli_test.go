@@ -257,3 +257,75 @@ func TestParseCLI(t *testing.T) {
 		})
 	}
 }
+
+func TestParseCLIDiffMask(t *testing.T) {
+	cwd, _ := os.Getwd()
+	os.Chdir("test/cli")
+	defer os.Chdir(cwd)
+
+	tests := []struct {
+		name string
+		args []string
+		want []string
+	}{
+		{
+			name: "repeatable --mask, no option file",
+			args: []string{"diff", "--mask", "DB_PASSWORD", "--mask", "API_KEY"},
+			want: []string{"DB_PASSWORD", "API_KEY"},
+		},
+		{
+			name: "option-file diff.mask only",
+			args: []string{"diff", "--option", "diff_mask.jsonnet"},
+			want: []string{"DB_PASSWORD", `.Environment.Variables["API_KEY"]`},
+		},
+		{
+			name: "option-file diff.mask plus CLI --mask, CLI added on top",
+			args: []string{"diff", "--option", "diff_mask.jsonnet", "--mask", "EXTRA"},
+			// option entries first, then CLI added (never replacing)
+			want: []string{"DB_PASSWORD", `.Environment.Variables["API_KEY"]`, "EXTRA"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sub, opt, _, err := lambroll.ParseCLI(tt.args)
+			if err != nil {
+				t.Fatalf("ParseCLI error: %v", err)
+			}
+			if sub != "diff" {
+				t.Fatalf("unexpected subcommand: %s", sub)
+			}
+			if opt.Diff == nil {
+				t.Fatal("opt.Diff is nil")
+			}
+			if diff := cmp.Diff(tt.want, opt.Diff.Mask); diff != "" {
+				t.Errorf("DiffOption.Mask mismatch (-want +got):\n%s", diff)
+			}
+			// fail-safe: merged set never shorter than the CLI count alone.
+			if len(opt.Diff.Mask) < len(tt.want) {
+				t.Errorf("merged mask set shrank: got %d want >= %d", len(opt.Diff.Mask), len(tt.want))
+			}
+		})
+	}
+}
+
+func TestParseCLIDiffMaskEffectiveSet(t *testing.T) {
+	cwd, _ := os.Getwd()
+	os.Chdir("test/cli")
+	defer os.Chdir(cwd)
+
+	// CLI passes DB_PASSWORD which is already in the option file; the merged
+	// carried slice has a duplicate, but the effective set dedupes it.
+	_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "diff_mask.jsonnet", "--mask", "DB_PASSWORD"})
+	if err != nil {
+		t.Fatalf("ParseCLI error: %v", err)
+	}
+	effective := lambroll.BuildEffectiveMaskSet(opt.Diff.Mask, nil)
+	want := []string{
+		`.Environment.Variables["DB_PASSWORD"]`,
+		`.Environment.Variables["API_KEY"]`,
+	}
+	if diff := cmp.Diff(want, effective); diff != "" {
+		t.Errorf("effective mask set mismatch (-want +got):\n%s", diff)
+	}
+}

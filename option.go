@@ -34,3 +34,10 @@ func (opt *ZipOption) Expand() error {
 	opt.excludes = append(opt.excludes, excludes...)
 	return nil
 }
+
+// DiffMaskOption holds the diff.mask array from the option file. Its entries
+// may mix the jq-selector form and the environment-variable-name form, and are
+// merged with the --mask CLI values in ParseCLI.
+type DiffMaskOption struct {
+	Mask []string `json:"mask,omitempty"`
+}

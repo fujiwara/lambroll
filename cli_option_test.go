@@ -86,3 +86,46 @@ func TestOptionUnmarshalJSON(t *testing.T) {
 		})
 	}
 }
+
+func TestOptionUnmarshalJSONDiffMask(t *testing.T) {
+	tests := []struct {
+		name     string
+		jsonData string
+		wantMask []string
+		wantExt  map[string]string
+	}{
+		{
+			name:     "diff.mask with mixed forms",
+			jsonData: `{"diff": {"mask": ["DB_PASSWORD", ".Environment.Variables[\"API_KEY\"]"]}}`,
+			wantMask: []string{"DB_PASSWORD", `.Environment.Variables["API_KEY"]`},
+		},
+		{
+			name:     "absent diff key leaves mask nil",
+			jsonData: `{"region": "us-west-2"}`,
+			wantMask: nil,
+		},
+		{
+			name:     "diff.mask coexists with legacy extstr",
+			jsonData: `{"extstr": {"k": "v"}, "diff": {"mask": ["X"]}}`,
+			wantMask: []string{"X"},
+			wantExt:  map[string]string{"k": "v"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got lambroll.Option
+			if err := json.Unmarshal([]byte(tt.jsonData), &got); err != nil {
+				t.Fatalf("UnmarshalJSON error = %v", err)
+			}
+			if diff := cmp.Diff(tt.wantMask, got.Diff.Mask); diff != "" {
+				t.Errorf("Diff.Mask mismatch (-want +got):\n%s", diff)
+			}
+			if tt.wantExt != nil {
+				if diff := cmp.Diff(tt.wantExt, got.ExtStr); diff != "" {
+					t.Errorf("ExtStr back-compat disturbed (-want +got):\n%s", diff)
+				}
+			}
+		})
+	}
+}

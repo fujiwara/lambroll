@@ -535,9 +535,41 @@ $ lambroll diff --code        # Compare code SHA256
 $ lambroll diff --qualifier current  # Compare with specific version/alias
 $ lambroll diff --ignore='.Environment.Variables.TIMESTAMP'  # Ignore specific fields
 $ lambroll diff --exit-code   # Exit with code 2 if differences exist
+$ lambroll diff --mask=DB_PASSWORD                  # Mask an environment variable value
+$ lambroll diff --mask='.Environment.Variables[]'   # Mask all environment variable values
 ```
 
 Use `--ignore` with jq query syntax to ignore specific fields when comparing.
+
+Use `--mask` to hide sensitive values in the diff output while still showing whether they changed. lambroll resolves template/Jsonnet functions when it loads a function definition, so a secret referenced via `ssm(...)` — for example an SSM `SecureString` parameter used as an environment variable value — is expanded to its decrypted value in the rendered config and would otherwise appear in plaintext in the diff. Unlike `--ignore` (which drops a field from the comparison entirely), `--mask` keeps the field but replaces its value with an opaque per-run token. A `--mask` argument that begins with `.` is used as a jq selector; otherwise it is treated as a Lambda environment variable name and expanded to `.Environment.Variables["<name>"]`. The flag is repeatable.
+
+Equal values share a token (so an unchanged value produces no diff line) and changed values get different tokens, so drift stays visible without revealing the value:
+
+```console
+$ lambroll diff --mask DB_PASSWORD
+   "Environment": {
+     "Variables": {
+-      "DB_PASSWORD": "***MASKED#1***"
++      "DB_PASSWORD": "***MASKED#2***"
+     }
+   }
+```
+
+`--mask '.Environment.Variables'` masks the whole map (hiding the variable names too), while `--mask '.Environment.Variables[]'` masks each value but keeps the names visible. Masking applies only to the function configuration diff (not the code SHA256, function URL, or permissions diffs) and never affects `deploy`.
+
+You can set a default mask list in the [option file](#option-file) under the `diff.mask` key; entries may mix both forms and are combined with any `--mask` flags (CLI values are added, never replacing the configured list):
+
+```jsonnet
+{
+  diff: {
+    mask: [
+      'DB_PASSWORD',
+      'API_KEY',
+      '.Environment.Variables[]',
+    ],
+  },
+}
+```
 
 `lambroll diff --external` can render the diff with an external command of your choice. lambroll writes the remote and local definitions to temporary files and invokes the command with those two file paths as the last two arguments. The fields removed by `--ignore` are also removed from the files passed to the external command.
 
