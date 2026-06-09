@@ -11,10 +11,10 @@ import (
 )
 
 type LogsOption struct {
-	Since         *string `help:"From what time to begin displaying logs" default:"10m"`
-	Follow        *bool   `help:"follow new logs" default:"false"`
-	Format        *string `help:"The format to display the logs" default:"detailed" enum:"detailed,short,json"`
-	FilterPattern *string `help:"The filter pattern to use"`
+	Since         *string `help:"From what time to begin displaying logs" default:"10m" json:"since,omitempty"`
+	Follow        *bool   `help:"follow new logs" default:"false" json:"follow,omitempty"`
+	Format        *string `help:"The format to display the logs" default:"detailed" enum:"detailed,short,json" json:"format,omitempty"`
+	FilterPattern *string `help:"The filter pattern to use" json:"filter_pattern,omitempty"`
 }
 
 func (app *App) Logs(ctx context.Context, opt *LogsOption) error {

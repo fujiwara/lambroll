@@ -18,8 +18,8 @@ import (
 )
 
 type ArchiveOption struct {
-	Src  string `help:"function zip archive or src dir" default:"."`
-	Dest string `help:"destination file path" default:"function.zip"`
+	Src  string `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
+	Dest string `help:"destination file path" default:"function.zip" json:"dest,omitempty"`
 
 	ZipOption
 }

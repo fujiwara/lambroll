@@ -178,24 +178,6 @@ var cliTests = []struct {
 		},
 	},
 	{
-		args: []string{"render", "--option", "ext_legacy.jsonnet"},
-		sub:  "render",
-		option: &lambroll.Option{
-			OptionFilePath: "ext_legacy.jsonnet",
-			Color:          true,
-			Envfile:        []string{},
-			ExtStr: map[string]string{
-				"architecture": "arm64",
-				"description":  "Legacy format test function",
-			},
-			ExtCode: map[string]string{
-				"memory_size":  "256",
-				"storage_size": "1024",
-				"timeout":      "10",
-			},
-		},
-	},
-	{
 		// Test: CLI args are merged with option file, CLI takes precedence
 		args: []string{
 			"render", "--option", "ext_vars.jsonnet",
@@ -221,6 +203,44 @@ var cliTests = []struct {
 			},
 		},
 	},
+}
+
+func TestParseCLISubcommandOption(t *testing.T) {
+	cwd, _ := os.Getwd()
+	os.Chdir("test/cli")
+	defer os.Chdir(cwd)
+
+	t.Run("subcommand flags from option file", func(t *testing.T) {
+		sub, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "subcommand.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sub != "diff" {
+			t.Errorf("unexpected subcommand: %s", sub)
+		}
+		if opt.Region == nil || *opt.Region != "us-west-2" {
+			t.Errorf("global flag region not resolved from option file: %v", opt.Region)
+		}
+		if opt.Diff == nil {
+			t.Fatal("diff option is nil")
+		}
+		if opt.Diff.External != "dyff between" {
+			t.Errorf("diff.external: expected 'dyff between', got %q", opt.Diff.External)
+		}
+		if !opt.Diff.CodeSha256 {
+			t.Errorf("diff.code: expected true, got false")
+		}
+	})
+
+	t.Run("CLI flag overrides option file", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "subcommand.jsonnet", "--external", "cli-cmd"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if opt.Diff.External != "cli-cmd" {
+			t.Errorf("diff.external: CLI should override option file, got %q", opt.Diff.External)
+		}
+	})
 }
 
 func TestParseCLI(t *testing.T) {

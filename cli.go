@@ -1,7 +1,6 @@
 package lambroll
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -32,55 +31,63 @@ type Option struct {
 	ExtCode         map[string]string `help:"external code values for Jsonnet" env:"LAMBROLL_EXTCODE" json:"ext_code,omitempty"`
 }
 
-// UnmarshalJSON implements custom JSON unmarshaling to support both old and new field names
-// TODO: Remove backward compatibility for extstr/extcode fields in v2
-func (o *Option) UnmarshalJSON(data []byte) error {
-	// Define a type alias to avoid infinite recursion
-	type Alias Option
-	aux := &struct {
-		*Alias
-		// Support old field names
-		OldExtStr  map[string]string `json:"extstr,omitempty"`
-		OldExtCode map[string]string `json:"extcode,omitempty"`
-	}{
-		Alias: (*Alias)(o),
+// newOptionFileResolver returns a kong.Resolver that resolves flag default
+// values from an option file. Global flags are resolved from the top-level
+// keys, while subcommand-specific flags are resolved from the nested object
+// keyed by the subcommand name.
+func newOptionFileResolver(values map[string]any) kong.Resolver {
+	lookup := func(scope map[string]any, flag *kong.Flag) any {
+		// option file keys use the snake_case form of the flag name
+		// (e.g. --skip-archive -> "skip_archive").
+		name := strings.ReplaceAll(flag.Name, "-", "_")
+		if raw, ok := scope[name]; ok {
+			return raw
+		}
+		return nil
 	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	// If old field names are used and new ones are empty, copy the values
-	if o.ExtStr == nil && aux.OldExtStr != nil {
-		o.ExtStr = aux.OldExtStr
-		slog.Warn("Using deprecated field name 'extstr' in option file. Please use 'ext_str' instead. This will be removed in v2.")
-	}
-	if o.ExtCode == nil && aux.OldExtCode != nil {
-		o.ExtCode = aux.OldExtCode
-		slog.Warn("Using deprecated field name 'extcode' in option file. Please use 'ext_code' instead. This will be removed in v2.")
-	}
-
-	return nil
+	return kong.ResolverFunc(func(_ *kong.Context, parent *kong.Path, flag *kong.Flag) (any, error) {
+		if parent != nil && parent.Command != nil {
+			// subcommand-specific flag: look up the nested section.
+			sub, ok := values[parent.Command.Name].(map[string]any)
+			if !ok {
+				return nil, nil
+			}
+			return lookup(sub, flag), nil
+		}
+		// global flag: look up the top-level keys.
+		return lookup(values, flag), nil
+	})
 }
 
+// CLIOptions is both the kong parse target for the command line and the schema
+// of the option file (--option). Global flags are placed at the top level
+// (flat, via the embedded Option), while subcommand-specific flags are nested
+// under the subcommand name. The json tag of each command field must match its
+// cmd name so the option file resolver can scope lookups by subcommand.
 type CLIOptions struct {
 	Option
 
-	Deploy   *DeployOption   `cmd:"deploy" help:"deploy or create function"`
-	Init     *InitOption     `cmd:"init" help:"init function.json"`
-	List     *ListOption     `cmd:"list" help:"list functions"`
-	Rollback *RollbackOption `cmd:"rollback" help:"rollback function"`
-	Invoke   *InvokeOption   `cmd:"invoke" help:"invoke function"`
-	Archive  *ArchiveOption  `cmd:"archive" help:"archive function"`
-	Logs     *LogsOption     `cmd:"logs" help:"show logs of function"`
-	Diff     *DiffOption     `cmd:"diff" help:"show diff of function"`
-	Render   *RenderOption   `cmd:"render" help:"render function.json"`
-	Status   *StatusOption   `cmd:"status" help:"show status of function"`
-	Delete   *DeleteOption   `cmd:"delete" help:"delete function"`
-	Versions *VersionsOption `cmd:"versions" help:"show versions of function"`
+	Deploy   *DeployOption   `cmd:"deploy" help:"deploy or create function" json:"deploy,omitempty"`
+	Init     *InitOption     `cmd:"init" help:"init function.json" json:"init,omitempty"`
+	List     *ListOption     `cmd:"list" help:"list functions" json:"list,omitempty"`
+	Rollback *RollbackOption `cmd:"rollback" help:"rollback function" json:"rollback,omitempty"`
+	Invoke   *InvokeOption   `cmd:"invoke" help:"invoke function" json:"invoke,omitempty"`
+	Archive  *ArchiveOption  `cmd:"archive" help:"archive function" json:"archive,omitempty"`
+	Logs     *LogsOption     `cmd:"logs" help:"show logs of function" json:"logs,omitempty"`
+	Diff     *DiffOption     `cmd:"diff" help:"show diff of function" json:"diff,omitempty"`
+	Render   *RenderOption   `cmd:"render" help:"render function.json" json:"render,omitempty"`
+	Status   *StatusOption   `cmd:"status" help:"show status of function" json:"status,omitempty"`
+	Delete   *DeleteOption   `cmd:"delete" help:"delete function" json:"delete,omitempty"`
+	Versions *VersionsOption `cmd:"versions" help:"show versions of function" json:"versions,omitempty"`
 
-	Version struct{} `cmd:"version" help:"show version"`
+	Version struct{} `cmd:"version" help:"show version" json:"-"`
 }
+
+// RequireStrict marks CLIOptions as a strict definition loader: when loaded from
+// a file, unknown keys are rejected instead of warned and ignored. An option
+// file is equivalent to specifying flags, so an unknown key is treated the same
+// as an unknown flag.
+func (CLIOptions) RequireStrict() {}
 
 type CLIParseFunc func([]string) (string, *CLIOptions, func(), error)
 
@@ -116,10 +123,10 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	kongOpts := []kong.Option{kong.Vars{"version": Version}}
 
 	// load default options
-	var defaultOpt *Option
+	var defaultOpt *CLIOptions
 	if optionFilePath != "" {
 		var err error
-		defaultOpt, err = loadDefinitionFile[Option](nil, optionFilePath, nil)
+		defaultOpt, err = loadDefinitionFile[CLIOptions](nil, optionFilePath, nil)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to load option file: %w", err)
 		}
@@ -127,11 +134,11 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to marshal default options: %w", err)
 		}
-		resolver, err := kong.JSON(bytes.NewReader(defaultOptBytes))
-		if err != nil {
+		var values map[string]any
+		if err := json.Unmarshal(defaultOptBytes, &values); err != nil {
 			return "", nil, nil, fmt.Errorf("failed to parse default options: %w", err)
 		}
-		kongOpts = append(kongOpts, kong.Resolvers(resolver))
+		kongOpts = append(kongOpts, kong.Resolvers(newOptionFileResolver(values)))
 		envfiles = defaultOpt.Envfile
 		envfiles = append(envfiles, argEnvfiles...)
 	} else {

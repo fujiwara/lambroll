@@ -19,14 +19,14 @@ import (
 
 // InitOption represents options for Init()
 type InitOption struct {
-	FunctionName   *string `help:"Function name for init" required:"true" default:""`
-	DownloadZip    bool    `name:"download" help:"Download function.zip" default:"false"`
-	Unzip          bool    `help:"Unzip function.zip and delete it" default:"false"`
-	Src            string  `help:"Source directory for unzipping function.zip" default:"."`
-	Jsonnet        bool    `help:"render function.json as jsonnet" default:"false"`
-	Qualifier      *string `help:"function version or alias"`
-	FunctionURL    bool    `help:"create function url definition file" default:"false"`
-	ForceOverwrite bool    `help:"Overwrite existing files without prompting" default:"false"`
+	FunctionName   *string `help:"Function name for init" required:"true" default:"" json:"function_name,omitempty"`
+	DownloadZip    bool    `name:"download" help:"Download function.zip" default:"false" json:"download,omitempty"`
+	Unzip          bool    `help:"Unzip function.zip and delete it" default:"false" json:"unzip,omitempty"`
+	Src            string  `help:"Source directory for unzipping function.zip" default:"." json:"src,omitempty"`
+	Jsonnet        bool    `help:"render function.json as jsonnet" default:"false" json:"jsonnet,omitempty"`
+	Qualifier      *string `help:"function version or alias" json:"qualifier,omitempty"`
+	FunctionURL    bool    `help:"create function url definition file" default:"false" json:"function_url,omitempty"`
+	ForceOverwrite bool    `help:"Overwrite existing files without prompting" default:"false" json:"force_overwrite,omitempty"`
 }
 
 // Init initializes function.json

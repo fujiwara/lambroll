@@ -18,16 +18,16 @@ import (
 
 // DeployOption represents an option for Deploy()
 type DeployOption struct {
-	Src               string `help:"function zip archive or src dir" default:"."`
-	Publish           bool   `help:"publish function" default:"true" negatable:""`
-	AliasName         string `name:"alias" help:"alias name for publish" default:"current"`
-	AliasToLatest     bool   `help:"set alias to unpublished $LATEST version" default:"false"`
-	SkipArchive       bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false"`
-	KeepVersions      int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0"`
-	Ignore            string `help:"ignore fields by jq queries in function.json" default:""`
-	FunctionURL       string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
-	SkipConfiguration bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false"`
-	SkipFunction      bool   `help:"skip to deploy a function. deploy function-url only" default:"false"`
+	Src               string `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
+	Publish           bool   `help:"publish function" default:"true" negatable:"" json:"publish,omitempty"`
+	AliasName         string `name:"alias" help:"alias name for publish" default:"current" json:"alias,omitempty"`
+	AliasToLatest     bool   `help:"set alias to unpublished $LATEST version" default:"false" json:"alias_to_latest,omitempty"`
+	SkipArchive       bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false" json:"skip_archive,omitempty"`
+	KeepVersions      int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0" json:"keep_versions,omitempty"`
+	Ignore            string `help:"ignore fields by jq queries in function.json" default:"" json:"ignore,omitempty"`
+	FunctionURL       string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
+	SkipConfiguration bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false" json:"skip_configuration,omitempty"`
+	SkipFunction      bool   `help:"skip to deploy a function. deploy function-url only" default:"false" json:"skip_function,omitempty"`
 
 	DryRunOption
 	ZipOption

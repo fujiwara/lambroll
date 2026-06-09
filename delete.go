@@ -10,7 +10,7 @@ import (
 
 // DeleteOption represents options for Delete()
 type DeleteOption struct {
-	Force bool `help:"delete without confirmation" default:"false"`
+	Force bool `help:"delete without confirmation" default:"false" json:"force,omitempty"`
 
 	DryRunOption
 }
