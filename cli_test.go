@@ -32,6 +32,7 @@ var cliTests = []struct {
 		sub:  "render",
 		option: &lambroll.Option{
 			LogLevel:       "debug",
+			LogFormat:      "text",
 			Color:          true,
 			OptionFilePath: "debug.jsonnet",
 			Envfile:        []string{},
@@ -58,6 +59,8 @@ var cliTests = []struct {
 		option: &lambroll.Option{
 			Function:       "function.jsonnet",
 			OptionFilePath: "global.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{"envfile.global", "envfile.local"},
 		},
@@ -95,6 +98,8 @@ var cliTests = []struct {
 		option: &lambroll.Option{
 			OptionFilePath: "useenv.jsonnet",
 			Function:       "hello",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{"envfile.useenv"},
 		},
@@ -108,6 +113,8 @@ var cliTests = []struct {
 		option: &lambroll.Option{
 			OptionFilePath: "useenv.jsonnet",
 			Function:       "world",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{},
 		},
@@ -136,6 +143,7 @@ var cliTests = []struct {
 			Color:          true,
 			Envfile:        []string{},
 			LogLevel:       "trace", // option file's priority is higher than env
+			LogFormat:      "text",
 			Profile:        ptr("mine"),
 			Region:         ptr("us-west-2"),
 		},
@@ -155,6 +163,7 @@ var cliTests = []struct {
 			Color:          true,
 			Envfile:        []string{},
 			LogLevel:       "trace", // option file's priority is higher than env
+			LogFormat:      "text",
 			Profile:        ptr("mine"),
 			Region:         ptr("us-west-2"),
 		},
@@ -164,6 +173,8 @@ var cliTests = []struct {
 		sub:  "render",
 		option: &lambroll.Option{
 			OptionFilePath: "ext_vars.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{},
 			ExtStr: map[string]string{
@@ -189,6 +200,8 @@ var cliTests = []struct {
 		sub: "render",
 		option: &lambroll.Option{
 			OptionFilePath: "ext_vars.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{},
 			ExtStr: map[string]string{
@@ -239,6 +252,27 @@ func TestParseCLISubcommandOption(t *testing.T) {
 		}
 		if opt.Diff.External != "cli-cmd" {
 			t.Errorf("diff.external: CLI should override option file, got %q", opt.Diff.External)
+		}
+	})
+
+	// Falsey values must survive loading: they are the only way to negate
+	// default-true flags (e.g. color, deploy.publish) from an option file.
+	t.Run("falsey values from option file", func(t *testing.T) {
+		sub, opt, _, err := lambroll.ParseCLI([]string{"deploy", "--option", "falsey.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sub != "deploy" {
+			t.Errorf("unexpected subcommand: %s", sub)
+		}
+		if opt.Color {
+			t.Error("global color: expected false from option file, got true")
+		}
+		if opt.Deploy == nil {
+			t.Fatal("deploy option is nil")
+		}
+		if opt.Deploy.Publish {
+			t.Error("deploy.publish: expected false from option file, got true")
 		}
 	})
 }

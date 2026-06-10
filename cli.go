@@ -126,16 +126,16 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	var defaultOpt *CLIOptions
 	if optionFilePath != "" {
 		var err error
-		defaultOpt, err = loadDefinitionFile[CLIOptions](nil, optionFilePath, nil)
+		var src []byte
+		defaultOpt, src, err = loadDefinitionFileWithBytes[CLIOptions](nil, optionFilePath, nil)
 		if err != nil {
 			return "", nil, nil, fmt.Errorf("failed to load option file: %w", err)
 		}
-		defaultOptBytes, err := json.Marshal(defaultOpt)
-		if err != nil {
-			return "", nil, nil, fmt.Errorf("failed to marshal default options: %w", err)
-		}
+		// Build resolver values from the evaluated file contents rather than
+		// re-marshaling defaultOpt, so explicit falsey values (e.g. color:
+		// false) are preserved and only user-specified keys are present.
 		var values map[string]any
-		if err := json.Unmarshal(defaultOptBytes, &values); err != nil {
+		if err := json.Unmarshal(src, &values); err != nil {
 			return "", nil, nil, fmt.Errorf("failed to parse default options: %w", err)
 		}
 		kongOpts = append(kongOpts, kong.Resolvers(newOptionFileResolver(values)))
