@@ -15,10 +15,9 @@ const (
 	maskTokenSuffix = "***"
 )
 
-const (
-	envVarSelectorPrefix = `.Environment.Variables["`
-	envVarSelectorSuffix = `"]`
-)
+// envVarSelectorBase is the path to the Lambda environment variable map; an
+// environment-variable-name mask argument is expanded to a subscript of it.
+const envVarSelectorBase = ".Environment.Variables"
 
 // maskFuncName is the name of the custom gojq function registered while masking.
 // It is distinctive to avoid colliding with anything in a user selector.
@@ -57,7 +56,11 @@ func resolveMaskSelector(arg string) (selector string, warn bool) {
 		return arg, false
 	}
 	warn = strings.ContainsAny(arg, ".[|")
-	return envVarSelectorPrefix + arg + envVarSelectorSuffix, warn
+	// Encode the name as a JSON string literal (which is valid jq) so a name
+	// containing " or \ cannot break out of the subscript. json.Marshal of a
+	// string never fails.
+	key, _ := json.Marshal(arg)
+	return envVarSelectorBase + "[" + string(key) + "]", warn
 }
 
 // resolveMaskSelectors resolves every mask argument to a jq selector, dropping

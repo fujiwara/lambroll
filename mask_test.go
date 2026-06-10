@@ -40,6 +40,8 @@ func TestResolveMaskSelector(t *testing.T) {
 		{".Foo.Bar", ".Foo.Bar", false},
 		{"looks.like.selector", `.Environment.Variables["looks.like.selector"]`, true},
 		{"has[bracket]", `.Environment.Variables["has[bracket]"]`, true},
+		// a name containing " must be JSON-escaped so it cannot break the subscript
+		{`a"b`, `.Environment.Variables["a\"b"]`, false},
 	}
 	for _, c := range cases {
 		sel, warn := resolveMaskSelector(c.arg)
@@ -96,6 +98,22 @@ func TestApplyMaskEnvVar(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := `{"Environment":{"Variables":{"A":"***MASKED#1***","B":"2"}}}`
+	if dumpJSON(t, got) != want {
+		t.Errorf("applyMask = %s, want %s", dumpJSON(t, got), want)
+	}
+}
+
+// TestApplyMaskEnvVarNameWithQuote verifies a name containing " is escaped so
+// the generated selector still targets exactly that key (and does not break).
+func TestApplyMaskEnvVarNameWithQuote(t *testing.T) {
+	reg := newMaskTokenRegistry()
+	root := mustJSON(t, `{"Environment":{"Variables":{"a\"b":"secret","c":"keep"}}}`)
+	sel, _ := resolveMaskSelector(`a"b`)
+	got, err := applyMask(root, []string{sel}, reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"Environment":{"Variables":{"a\"b":"***MASKED#1***","c":"keep"}}}`
 	if dumpJSON(t, got) != want {
 		t.Errorf("applyMask = %s, want %s", dumpJSON(t, got), want)
 	}
