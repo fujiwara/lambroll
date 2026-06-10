@@ -172,6 +172,14 @@ func deepCopyJSONValue(x any) (any, error) {
 	return out, nil
 }
 
+// maskValue applies the mask selectors to a deep copy of v using a fresh token
+// registry. It is the single-document counterpart of the diff masking (used by
+// render), where there is no second side to keep token-consistent. With no
+// selectors v is returned unchanged.
+func maskValue(v any, selectors []string) (any, error) {
+	return maskInput(v, "", selectors, newMaskTokenRegistry())
+}
+
 // maskInput returns x with the ignore query and then the mask selectors applied
 // to a deep copy, so the original value is never mutated. With no selectors it
 // returns x unchanged. The returned value already has ignore applied, so callers

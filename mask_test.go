@@ -271,6 +271,44 @@ func TestEmitDiffMaskedUnchangedNoDiff(t *testing.T) {
 	}
 }
 
+// TestRenderDefinitionMask verifies render-style single-document masking:
+// matched values become tokens, others are preserved, and plaintext never
+// appears.
+func TestRenderDefinitionMask(t *testing.T) {
+	def := mustJSON(t, `{"FunctionName":"f","Environment":{"Variables":{"DB_PASSWORD":"secret","PUBLIC":"ok"}}}`)
+	b, err := renderDefinition(def, resolveMaskSelectors([]string{"DB_PASSWORD"}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(b)
+	if strings.Contains(s, "secret") {
+		t.Errorf("plaintext leaked into render output:\n%s", s)
+	}
+	if !strings.Contains(s, maskTokenPrefix) {
+		t.Errorf("expected mask token in render output:\n%s", s)
+	}
+	if !strings.Contains(s, `"PUBLIC": "ok"`) {
+		t.Errorf("non-masked value not preserved:\n%s", s)
+	}
+}
+
+// TestRenderDefinitionNoMaskIdentical verifies that without selectors the output
+// is byte-identical to the unmasked marshaling.
+func TestRenderDefinitionNoMaskIdentical(t *testing.T) {
+	def := mustJSON(t, `{"FunctionName":"f","Environment":{"Variables":{"DB_PASSWORD":"secret"}}}`)
+	got, err := renderDefinition(def, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := marshalJSON(def)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, want) {
+		t.Errorf("renderDefinition with no mask differs from marshalJSON:\ngot:  %s\nwant: %s", got, want)
+	}
+}
+
 func TestMaskInputAppliesIgnoreThenMask(t *testing.T) {
 	reg := newMaskTokenRegistry()
 	x := mustJSON(t, `{"Environment":{"Variables":{"A":"1"}},"Drop":"me"}`)

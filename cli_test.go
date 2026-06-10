@@ -298,6 +298,16 @@ func TestParseCLISubcommandOption(t *testing.T) {
 			t.Errorf("CLI --mask should replace option file diff.mask: %s", diff)
 		}
 	})
+
+	t.Run("render.mask from option file", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"render", "--option", "render_mask.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff([]string{"DB_PASSWORD"}, opt.Render.Mask); diff != "" {
+			t.Errorf("render.mask not resolved from option file: %s", diff)
+		}
+	})
 }
 
 func TestParseCLI(t *testing.T) {
