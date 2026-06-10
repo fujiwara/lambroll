@@ -663,7 +663,7 @@ $ lambroll render --mask DB_PASSWORD     # Mask sensitive values in the output
 
 Useful for debugging template variable expansion.
 
-`--mask` works the same way as [`lambroll diff --mask`](#mask-sensitive-values): an argument starting with `.` is a jq selector, otherwise it is an environment variable name. It replaces matched values with `***MASKED***` tokens so the rendered definition (which has secrets such as `ssm(...)` expanded to plaintext) can be shared or inspected without leaking them. Defaults can be set in the option file under `render.mask`.
+`--mask` works the same way as [`lambroll diff --mask`](#mask-sensitive-values): an argument starting with `.` is a jq selector, otherwise it is an environment variable name. It replaces matched values with `***MASKED#<n>***` tokens (equal values share a token) so the rendered definition (which has secrets such as `ssm(...)` expanded to plaintext) can be shared or inspected without leaking them. Defaults can be set in the option file under `render.mask`.
 
 #### Versions
 
