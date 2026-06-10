@@ -27,18 +27,18 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src          string  `help:"function zip archive or src dir" default:"."`
-	CodeSha256   bool    `name:"code" help:"diff of code sha256" default:"false"`
-	Qualifier    *string `help:"the qualifier to compare"`
-	FunctionURL  string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL"`
-	Ignore       string  `help:"ignore diff by jq query" default:""`
-	ExitCode     bool    `help:"exit with code 2 if there are differences" default:"false"`
-	SkipFunction bool    `help:"skip function diff. shows function-url only" default:"false"`
-	External     string  `help:"external command to display diff" default:"" env:"LAMBROLL_DIFF_COMMAND"`
+	Src          string  `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
+	CodeSha256   bool    `name:"code" help:"diff of code sha256" default:"false" json:"code,omitempty"`
+	Qualifier    *string `help:"the qualifier to compare" json:"qualifier,omitempty"`
+	FunctionURL  string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
+	Ignore       string  `help:"ignore diff by jq query" default:"" json:"ignore,omitempty"`
+	ExitCode     bool    `help:"exit with code 2 if there are differences" default:"false" json:"exit_code,omitempty"`
+	SkipFunction bool    `help:"skip function diff. shows function-url only" default:"false" json:"skip_function,omitempty"`
+	External     string  `help:"external command to display diff" default:"" env:"LAMBROLL_DIFF_COMMAND" json:"external,omitempty"`
 
 	ZipOption
 
-	w io.Writer `kong:"-"`
+	w io.Writer `kong:"-" json:"-"`
 }
 
 // Diff prints diff of function.json compared with latest function

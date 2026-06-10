@@ -7,8 +7,8 @@ import (
 )
 
 type RenderOption struct {
-	Jsonnet     bool   `default:"false" help:"render function.json as jsonnet"`
-	FunctionURL string `help:"render function-url definition file" default:"" env:"LAMBROLL_FUNCTION_URL"`
+	Jsonnet     bool   `default:"false" help:"render function.json as jsonnet" json:"jsonnet,omitempty"`
+	FunctionURL string `help:"render function-url definition file" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
 }
 
 // Invoke invokes function

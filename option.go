@@ -8,7 +8,7 @@ import (
 // Option represents common option.
 
 type DryRunOption struct {
-	DryRun bool `default:"false" help:"dry run"`
+	DryRun bool `default:"false" help:"dry run" json:"dry_run,omitempty"`
 }
 
 func (opt DryRunOption) logger() *slog.Logger {
@@ -20,8 +20,8 @@ func (opt DryRunOption) logger() *slog.Logger {
 }
 
 type ZipOption struct {
-	ExcludeFile string `help:"exclude file" default:".lambdaignore"`
-	KeepSymlink bool   `name:"symlink" help:"keep symlink (same as zip --symlink,-y)" default:"false"`
+	ExcludeFile string `help:"exclude file" default:".lambdaignore" json:"exclude_file,omitempty"`
+	KeepSymlink bool   `name:"symlink" help:"keep symlink (same as zip --symlink,-y)" default:"false" json:"symlink,omitempty"`
 
 	excludes []string
 }

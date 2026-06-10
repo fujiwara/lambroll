@@ -15,8 +15,8 @@ import (
 
 // StatusOption represents options for Status()
 type StatusOption struct {
-	Qualifier *string `help:"compare with"`
-	Output    string  `help:"output format" default:"table" enum:"table,json"`
+	Qualifier *string `help:"compare with" json:"qualifier,omitempty"`
+	Output    string  `help:"output format" default:"table" enum:"table,json" json:"output,omitempty"`
 }
 
 type StatusOutput struct {

@@ -19,11 +19,11 @@ import (
 
 // InvokeOption represents option for Invoke()
 type InvokeOption struct {
-	Async     bool    `default:"false" help:"invocation type async"`
-	LogTail   bool    `default:"false" help:"output tail of log to STDERR"`
-	Qualifier *string `help:"version or alias to invoke"`
-	Payload   *string `help:"payload to invoke. if not specified, read from STDIN"`
-	TenantID  *string `help:"tenant ID for multi-tenant invocation"`
+	Async     bool    `default:"false" help:"invocation type async" json:"async,omitempty"`
+	LogTail   bool    `default:"false" help:"output tail of log to STDERR" json:"log_tail,omitempty"`
+	Qualifier *string `help:"version or alias to invoke" json:"qualifier,omitempty"`
+	Payload   *string `help:"payload to invoke. if not specified, read from STDIN" json:"payload,omitempty"`
+	TenantID  *string `help:"tenant ID for multi-tenant invocation" json:"tenant_id,omitempty"`
 }
 
 // Invoke invokes function

@@ -32,6 +32,7 @@ var cliTests = []struct {
 		sub:  "render",
 		option: &lambroll.Option{
 			LogLevel:       "debug",
+			LogFormat:      "text",
 			Color:          true,
 			OptionFilePath: "debug.jsonnet",
 			Envfile:        []string{},
@@ -58,6 +59,8 @@ var cliTests = []struct {
 		option: &lambroll.Option{
 			Function:       "function.jsonnet",
 			OptionFilePath: "global.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{"envfile.global", "envfile.local"},
 		},
@@ -95,6 +98,8 @@ var cliTests = []struct {
 		option: &lambroll.Option{
 			OptionFilePath: "useenv.jsonnet",
 			Function:       "hello",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{"envfile.useenv"},
 		},
@@ -108,6 +113,8 @@ var cliTests = []struct {
 		option: &lambroll.Option{
 			OptionFilePath: "useenv.jsonnet",
 			Function:       "world",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{},
 		},
@@ -136,6 +143,7 @@ var cliTests = []struct {
 			Color:          true,
 			Envfile:        []string{},
 			LogLevel:       "trace", // option file's priority is higher than env
+			LogFormat:      "text",
 			Profile:        ptr("mine"),
 			Region:         ptr("us-west-2"),
 		},
@@ -155,6 +163,7 @@ var cliTests = []struct {
 			Color:          true,
 			Envfile:        []string{},
 			LogLevel:       "trace", // option file's priority is higher than env
+			LogFormat:      "text",
 			Profile:        ptr("mine"),
 			Region:         ptr("us-west-2"),
 		},
@@ -164,6 +173,8 @@ var cliTests = []struct {
 		sub:  "render",
 		option: &lambroll.Option{
 			OptionFilePath: "ext_vars.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{},
 			ExtStr: map[string]string{
@@ -174,24 +185,6 @@ var cliTests = []struct {
 				"memory_size":  "128",
 				"storage_size": "512",
 				"timeout":      "30",
-			},
-		},
-	},
-	{
-		args: []string{"render", "--option", "ext_legacy.jsonnet"},
-		sub:  "render",
-		option: &lambroll.Option{
-			OptionFilePath: "ext_legacy.jsonnet",
-			Color:          true,
-			Envfile:        []string{},
-			ExtStr: map[string]string{
-				"architecture": "arm64",
-				"description":  "Legacy format test function",
-			},
-			ExtCode: map[string]string{
-				"memory_size":  "256",
-				"storage_size": "1024",
-				"timeout":      "10",
 			},
 		},
 	},
@@ -207,6 +200,8 @@ var cliTests = []struct {
 		sub: "render",
 		option: &lambroll.Option{
 			OptionFilePath: "ext_vars.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
 			Color:          true,
 			Envfile:        []string{},
 			ExtStr: map[string]string{
@@ -221,6 +216,65 @@ var cliTests = []struct {
 			},
 		},
 	},
+}
+
+func TestParseCLISubcommandOption(t *testing.T) {
+	cwd, _ := os.Getwd()
+	os.Chdir("test/cli")
+	defer os.Chdir(cwd)
+
+	t.Run("subcommand flags from option file", func(t *testing.T) {
+		sub, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "subcommand.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sub != "diff" {
+			t.Errorf("unexpected subcommand: %s", sub)
+		}
+		if opt.Region == nil || *opt.Region != "us-west-2" {
+			t.Errorf("global flag region not resolved from option file: %v", opt.Region)
+		}
+		if opt.Diff == nil {
+			t.Fatal("diff option is nil")
+		}
+		if opt.Diff.External != "dyff between" {
+			t.Errorf("diff.external: expected 'dyff between', got %q", opt.Diff.External)
+		}
+		if !opt.Diff.CodeSha256 {
+			t.Errorf("diff.code: expected true, got false")
+		}
+	})
+
+	t.Run("CLI flag overrides option file", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "subcommand.jsonnet", "--external", "cli-cmd"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if opt.Diff.External != "cli-cmd" {
+			t.Errorf("diff.external: CLI should override option file, got %q", opt.Diff.External)
+		}
+	})
+
+	// Falsey values must survive loading: they are the only way to negate
+	// default-true flags (e.g. color, deploy.publish) from an option file.
+	t.Run("falsey values from option file", func(t *testing.T) {
+		sub, opt, _, err := lambroll.ParseCLI([]string{"deploy", "--option", "falsey.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if sub != "deploy" {
+			t.Errorf("unexpected subcommand: %s", sub)
+		}
+		if opt.Color {
+			t.Error("global color: expected false from option file, got true")
+		}
+		if opt.Deploy == nil {
+			t.Fatal("deploy option is nil")
+		}
+		if opt.Deploy.Publish {
+			t.Error("deploy.publish: expected false from option file, got true")
+		}
+	})
 }
 
 func TestParseCLI(t *testing.T) {

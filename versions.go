@@ -18,9 +18,9 @@ import (
 
 // VersionsOption represents options for Versions()
 type VersionsOption struct {
-	Output       string `default:"table" enum:"table,json,tsv" help:"output format (table,json,tsv)"`
-	Delete       bool   `default:"false" help:"delete older versions"`
-	KeepVersions int    `default:"0" help:"Number of latest versions to keep. Older versions will be deleted with --delete."`
+	Output       string `default:"table" enum:"table,json,tsv" help:"output format (table,json,tsv)" json:"output,omitempty"`
+	Delete       bool   `default:"false" help:"delete older versions" json:"delete,omitempty"`
+	KeepVersions int    `default:"0" help:"Number of latest versions to keep. Older versions will be deleted with --delete." json:"keep_versions,omitempty"`
 }
 
 type versionsOutput struct {

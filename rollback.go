@@ -14,9 +14,9 @@ import (
 
 // RollbackOption represents option for Rollback()
 type RollbackOption struct {
-	Alias         string `default:"current" help:"alias to rollback"`
-	Version       string `default:"" help:"version to rollback (default: previous version auto detected)"`
-	DeleteVersion bool   `default:"false" help:"delete rolled back version"`
+	Alias         string `default:"current" help:"alias to rollback" json:"alias,omitempty"`
+	Version       string `default:"" help:"version to rollback (default: previous version auto detected)" json:"version,omitempty"`
+	DeleteVersion bool   `default:"false" help:"delete rolled back version" json:"delete_version,omitempty"`
 
 	DryRunOption
 }

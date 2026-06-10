@@ -317,6 +317,23 @@ The file format is JSON or Jsonnet.
 All fields are optional. If the field is not defined, the default value is used.
 When command-line flags are specified, they take precedence over the options file.
 
+Subcommand-specific flags can also be set in the option file by nesting them under the subcommand name. The keys are the snake_case form of each flag name.
+
+```jsonnet
+// option.jsonnet
+{
+  region: 'ap-northeast-1',  // global flags at the top level
+  diff: {
+    external: 'dyff between',  // --external flag of `lambroll diff`
+  },
+  deploy: {
+    keep_versions: 5,  // --keep-versions flag of `lambroll deploy`
+  },
+}
+```
+
+Unknown keys in the option file cause an error, both at the top level and within a subcommand section. An option file is equivalent to specifying flags, so an unknown key is treated the same as an unknown flag.
+
 The priority of the option values is as follows:
 
 1. Command-line flags. (`--log-level=debug`, `--log-format=json`)
