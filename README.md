@@ -568,6 +568,41 @@ $ LAMBROLL_DIFF_COMMAND="difft --color=always" lambroll diff
 
 The command must exit with status 0. If it exits with a non-zero status when the two files differ (for example, `diff(1)`), you need to write a wrapper command.
 
+##### Mask sensitive values
+
+lambroll resolves template/Jsonnet functions (such as `ssm(...)`) when it loads the function definition, so a secret referenced from a `SecureString` parameter is expanded to its plaintext value in the rendered config and would be printed by `lambroll diff`. Unlike `--ignore`, which drops a field from the comparison entirely, `--mask` keeps the field but replaces its value with an opaque token, so drift stays visible without exposing the value.
+
+```console
+$ lambroll diff --mask DB_PASSWORD                  # environment variable by name
+$ lambroll diff --mask '.Environment.Variables[]'   # all environment variable values (jq selector)
+```
+
+An argument beginning with `.` is used as a jq selector (the same grammar as `--ignore`); otherwise it is a Lambda environment variable name expanded to `.Environment.Variables["<name>"]` (case-sensitive). The flag is repeatable.
+
+Each distinct value is replaced with a per-run token `***MASKED#<n>***`. Equal values share a token (so an unchanged value produces no diff line) and changed values get different tokens, so drift stays visible without revealing the value:
+
+```diff
+   "Environment": {
+     "Variables": {
+-      "DB_PASSWORD": "***MASKED#1***"
++      "DB_PASSWORD": "***MASKED#2***"
+     }
+   }
+```
+
+Masking applies only to the function configuration diff (not the CodeSha256, function URL, or permissions diffs) and to every render path (built-in diff and `--external`). A selector that matches nothing (including one that points at an absent field) warns and is a no-op without fabricating a field; an invalid selector errors. Defaults can be set in the option file under `diff.mask`; a `--mask` flag on the command line replaces the configured list.
+
+```jsonnet
+{
+  diff: {
+    mask: [
+      'DB_PASSWORD',
+      '.Environment.Variables[]',
+    ],
+  },
+}
+```
+
 #### Status
 
 ```console

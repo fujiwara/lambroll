@@ -275,6 +275,29 @@ func TestParseCLISubcommandOption(t *testing.T) {
 			t.Error("deploy.publish: expected false from option file, got true")
 		}
 	})
+
+	t.Run("diff.mask from option file", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "diff_mask.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := []string{"DB_PASSWORD", ".Environment.Variables[]"}
+		if diff := cmp.Diff(want, opt.Diff.Mask); diff != "" {
+			t.Errorf("diff.mask not resolved from option file: %s", diff)
+		}
+	})
+
+	// A repeatable slice flag given on the CLI replaces the option-file value
+	// (uniform with every other flag: option file = default, CLI overrides).
+	t.Run("CLI --mask replaces option file diff.mask", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "diff_mask.jsonnet", "--mask", "FOO"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff([]string{"FOO"}, opt.Diff.Mask); diff != "" {
+			t.Errorf("CLI --mask should replace option file diff.mask: %s", diff)
+		}
+	})
 }
 
 func TestParseCLI(t *testing.T) {
