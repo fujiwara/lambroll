@@ -15,3 +15,8 @@
 .envrc
 cmd/lambroll/lambroll
 dist/
+
+# Editor and AI tool settings
+.claude/
+.codex/
+.vscode/

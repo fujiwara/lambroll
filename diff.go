@@ -290,6 +290,10 @@ func (app *App) emitDiff(ctx context.Context, opt *DiffOption, label string, fro
 		if err != nil {
 			return false, err
 		}
+		// Warn only for selectors that matched nothing on either side, so a
+		// selector masking a value present on just one side (or a field that is
+		// empty/omitted on one side) is not reported as a no-op.
+		reg.warnUnmatched(maskSelectors)
 		from = &jsondiff.Input{Name: from.Name, X: fromMasked}
 		to = &jsondiff.Input{Name: to.Name, X: toMasked}
 		// ignore has already been applied to the masked copies.

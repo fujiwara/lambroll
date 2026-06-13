@@ -556,6 +556,8 @@ $ lambroll diff --exit-code   # Exit with code 2 if differences exist
 
 Use `--ignore` with jq query syntax to ignore specific fields when comparing.
 
+lambroll omits empty fields (null, `false`, empty objects/arrays, and empty strings) from the diff and render output. Environment variable values are the exception: an empty string value inside `Environment.Variables` is kept, because lambroll deploys it to AWS as-is (an empty variable is distinct from an unset one for `os.LookupEnv` and similar). To stop managing environment variables instead of setting them empty, exclude them with `--ignore '.Environment'`.
+
 `lambroll diff --external` can render the diff with an external command of your choice. lambroll writes the remote and local definitions to temporary files and invokes the command with those two file paths as the last two arguments. The fields removed by `--ignore` are also removed from the files passed to the external command.
 
 For example, use [difftastic](https://github.com/Wilfred/difftastic) (`difft`).
@@ -590,7 +592,7 @@ Each distinct value is replaced with a per-run token `***MASKED#<n>***`. Equal v
    }
 ```
 
-Masking applies only to the function configuration diff (not the CodeSha256, function URL, or permissions diffs) and to every render path (built-in diff and `--external`). A selector that matches nothing (including one that points at an absent field) warns and is a no-op without fabricating a field; an invalid selector errors. Defaults can be set in the option file under `diff.mask`; a `--mask` flag on the command line replaces the configured list.
+Masking applies only to the function configuration diff (not the CodeSha256, function URL, or permissions diffs) and to every render path (built-in diff and `--external`). A selector that matches nothing is a no-op and does not fabricate a field; an invalid selector errors. In a diff a selector is reported as matching nothing (and warns) only when it matches on neither side, so masking a field that is present on one side but empty or absent on the other (an empty `Description`, for example) does not warn. Defaults can be set in the option file under `diff.mask`; a `--mask` flag on the command line replaces the configured list.
 
 ```jsonnet
 {

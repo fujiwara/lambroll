@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log/slog"
 	"reflect"
 	"strings"
 	"testing"
@@ -224,6 +225,71 @@ func TestMaskInputNoSelectorsUntouched(t *testing.T) {
 	// same underlying value returned unchanged
 	if dumpJSON(t, got) != `{"a":1}` {
 		t.Errorf("maskInput with no selectors changed the value: %s", dumpJSON(t, got))
+	}
+}
+
+// captureWarnSelectors swaps the default slog logger for the duration of fn and
+// returns the "selector" attribute of every "mask selector matched nothing"
+// warning emitted.
+func captureWarnSelectors(t *testing.T, fn func()) []string {
+	t.Helper()
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelWarn})))
+	defer slog.SetDefault(prev)
+	fn()
+	var got []string
+	for line := range strings.SplitSeq(strings.TrimSpace(buf.String()), "\n") {
+		if line == "" {
+			continue
+		}
+		var rec struct {
+			Msg      string `json:"msg"`
+			Selector string `json:"selector"`
+		}
+		if err := json.Unmarshal([]byte(line), &rec); err != nil {
+			t.Fatalf("invalid log line %q: %v", line, err)
+		}
+		if rec.Msg == "mask selector matched nothing" {
+			got = append(got, rec.Selector)
+		}
+	}
+	return got
+}
+
+// TestMaskWarnUnmatchedOneSide verifies the both-sides accounting: a selector
+// that matches on only one diff side (e.g. a field empty/omitted on the other)
+// is not warned about, because masking did take effect somewhere.
+func TestMaskWarnUnmatchedOneSide(t *testing.T) {
+	reg := newMaskTokenRegistry()
+	sel := []string{".Description"}
+	// remote has a non-empty Description, local omits it (empty -> omitted).
+	if _, err := applyMask(mustJSON(t, `{"Description":"hello"}`), sel, reg); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := applyMask(mustJSON(t, `{"FunctionName":"x"}`), sel, reg); err != nil {
+		t.Fatal(err)
+	}
+	got := captureWarnSelectors(t, func() { reg.warnUnmatched(sel) })
+	if len(got) != 0 {
+		t.Errorf("did not expect a warning when the selector matched one side, got %v", got)
+	}
+}
+
+// TestMaskWarnUnmatchedNeitherSide verifies that a selector matching on neither
+// side (a likely typo, or a field empty/omitted on both sides) is warned about.
+func TestMaskWarnUnmatchedNeitherSide(t *testing.T) {
+	reg := newMaskTokenRegistry()
+	sel := []string{".Nope"}
+	if _, err := applyMask(mustJSON(t, `{"Description":"hello"}`), sel, reg); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := applyMask(mustJSON(t, `{"FunctionName":"x"}`), sel, reg); err != nil {
+		t.Fatal(err)
+	}
+	got := captureWarnSelectors(t, func() { reg.warnUnmatched(sel) })
+	if len(got) != 1 || got[0] != ".Nope" {
+		t.Errorf("expected one warning for .Nope, got %v", got)
 	}
 }
 
