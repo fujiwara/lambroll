@@ -27,13 +27,38 @@ const maskFuncName = "_lambroll_mask"
 // a single diff render. Equal values share a token (so an unchanged secret
 // produces no diff line); distinct values get distinct tokens (so a changed
 // secret still shows as a diff) without revealing the value.
+//
+// It also accumulates how many values each selector matched. The registry's
+// lifetime matches the warning scope: in a diff a single registry is shared by
+// both sides, so matched aggregates the remote and local counts and a selector
+// is reported as matching nothing only when it matched on neither side; in
+// render a fresh registry covers the single document.
 type maskTokenRegistry struct {
 	valueToToken map[string]string
 	next         int
+	matched      map[string]int
 }
 
 func newMaskTokenRegistry() *maskTokenRegistry {
-	return &maskTokenRegistry{valueToToken: map[string]string{}, next: 1}
+	return &maskTokenRegistry{valueToToken: map[string]string{}, next: 1, matched: map[string]int{}}
+}
+
+// recordMatch accumulates the number of values a selector matched. Recording a
+// zero count still registers the selector so warnUnmatched can report it.
+func (r *maskTokenRegistry) recordMatch(selector string, n int) {
+	r.matched[selector] += n
+}
+
+// warnUnmatched logs a warning for every selector that matched no value across
+// all documents masked with this registry, which typically indicates a mistyped
+// selector. A selector that matched only an empty/absent field (omitted from the
+// marshaled document) on every side is also reported here.
+func (r *maskTokenRegistry) warnUnmatched(selectors []string) {
+	for _, selector := range selectors {
+		if r.matched[selector] == 0 {
+			slog.Warn("mask selector matched nothing", "selector", selector)
+		}
+	}
 }
 
 func (r *maskTokenRegistry) tokenFor(canonical string) string {
@@ -101,11 +126,14 @@ func canonicalize(value any) (string, error) {
 // so only existing (non-null) values are replaced. A selector pointing at an
 // absent path therefore neither creates that path (which would otherwise appear
 // as a spurious diff and fabricate a field on the side that lacks it) nor
-// errors. A selector that matches nothing warns and is a no-op; a selector that
-// iterates an absent node (e.g. ".Environment.Variables[]" on a function with
-// no Environment) is also a no-op; any other evaluation error is returned so an
+// errors. A selector that matches nothing is a no-op; a selector that iterates
+// an absent node (e.g. ".Environment.Variables[]" on a function with no
+// Environment) is also a no-op; any other evaluation error is returned so an
 // invalid selector fails loudly instead of leaving a value unmasked. gojq does
-// not mutate its input; the updated document is returned.
+// not mutate its input; the updated document is returned. The number of values
+// each selector matched is recorded in reg so the caller can warn once a
+// selector has matched nothing across every document it masked (see
+// maskTokenRegistry.warnUnmatched).
 func applyMask(root any, selectors []string, reg *maskTokenRegistry) (any, error) {
 	for _, selector := range selectors {
 		query, err := gojq.Parse("(" + selector + " | select(. != null)) |= " + maskFuncName)
@@ -134,7 +162,7 @@ func applyMask(root any, selectors []string, reg *maskTokenRegistry) (any, error
 		}
 		if err, isErr := v.(error); isErr {
 			if isNullIterationError(err) {
-				slog.Warn("mask selector matched nothing", "selector", selector)
+				reg.recordMatch(selector, 0)
 				continue
 			}
 			return nil, fmt.Errorf("failed to apply mask selector %q: %w", selector, err)
@@ -143,9 +171,7 @@ func applyMask(root any, selectors []string, reg *maskTokenRegistry) (any, error
 			return nil, fmt.Errorf("failed to apply mask selector %q: %w", selector, maskErr)
 		}
 		root = v
-		if matched == 0 {
-			slog.Warn("mask selector matched nothing", "selector", selector)
-		}
+		reg.recordMatch(selector, matched)
 	}
 	return root, nil
 }
@@ -177,7 +203,13 @@ func deepCopyJSONValue(x any) (any, error) {
 // render), where there is no second side to keep token-consistent. With no
 // selectors v is returned unchanged.
 func maskValue(v any, selectors []string) (any, error) {
-	return maskInput(v, "", selectors, newMaskTokenRegistry())
+	reg := newMaskTokenRegistry()
+	out, err := maskInput(v, "", selectors, reg)
+	if err != nil {
+		return nil, err
+	}
+	reg.warnUnmatched(selectors)
+	return out, nil
 }
 
 // maskInput returns x with the ignore query and then the mask selectors applied

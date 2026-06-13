@@ -590,7 +590,7 @@ Each distinct value is replaced with a per-run token `***MASKED#<n>***`. Equal v
    }
 ```
 
-Masking applies only to the function configuration diff (not the CodeSha256, function URL, or permissions diffs) and to every render path (built-in diff and `--external`). A selector that matches nothing (including one that points at an absent field) warns and is a no-op without fabricating a field; an invalid selector errors. Defaults can be set in the option file under `diff.mask`; a `--mask` flag on the command line replaces the configured list.
+Masking applies only to the function configuration diff (not the CodeSha256, function URL, or permissions diffs) and to every render path (built-in diff and `--external`). A selector that matches nothing is a no-op and does not fabricate a field; an invalid selector errors. In a diff a selector is reported as matching nothing (and warns) only when it matches on neither side, so masking a field that is present on one side but empty or absent on the other (an empty `Description`, for example) does not warn. Defaults can be set in the option file under `diff.mask`; a `--mask` flag on the command line replaces the configured list.
 
 ```jsonnet
 {
