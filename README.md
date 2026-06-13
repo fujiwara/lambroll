@@ -556,6 +556,8 @@ $ lambroll diff --exit-code   # Exit with code 2 if differences exist
 
 Use `--ignore` with jq query syntax to ignore specific fields when comparing.
 
+lambroll omits empty fields (null, `false`, empty objects/arrays, and empty strings) from the diff and render output. Environment variable values are the exception: an empty string value inside `Environment.Variables` is kept, because lambroll deploys it to AWS as-is (an empty variable is distinct from an unset one for `os.LookupEnv` and similar). To stop managing environment variables instead of setting them empty, exclude them with `--ignore '.Environment'`.
+
 `lambroll diff --external` can render the diff with an external command of your choice. lambroll writes the remote and local definitions to temporary files and invokes the command with those two file paths as the last two arguments. The fields removed by `--ignore` are also removed from the files passed to the external command.
 
 For example, use [difftastic](https://github.com/Wilfred/difftastic) (`difft`).
@@ -736,8 +738,6 @@ function.json is a definition for Lambda function. JSON structure is based from 
 The template functions is available in `{{ }}`.
 - `env` function expands environment variables.
 - `must_env` function expands environment variables. If the environment variable is not defined, lambroll will panic and abort.
-
-lambroll omits empty fields (null, `false`, empty objects/arrays, and empty strings) from the definition shown by `diff` and `render`. Environment variable values are the exception: an empty string value inside `Environment.Variables` is kept, because lambroll deploys it to AWS as-is (an empty variable is distinct from an unset one for `os.LookupEnv` and similar). To stop managing environment variables instead of setting them empty, exclude them with `--ignore '.Environment'`.
 
 ### Tags
 
