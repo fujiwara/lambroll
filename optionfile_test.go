@@ -143,10 +143,17 @@ func TestUnmarshalJSONStrict(t *testing.T) {
 			t.Error("expected error for unknown nested key")
 		}
 	})
-	t.Run("removed extstr/extcode aliases", func(t *testing.T) {
+	t.Run("deprecated extstr/extcode aliases accepted", func(t *testing.T) {
 		var c CLIOptions
-		if err := unmarshalJSON([]byte(`{"extstr":{"a":"b"}}`), &c, "test"); err == nil {
-			t.Error("expected error for removed extstr alias")
+		if err := unmarshalJSON([]byte(`{"extstr":{"a":"b"},"extcode":{"c":"d"}}`), &c, "test"); err != nil {
+			t.Errorf("deprecated extstr/extcode aliases should be accepted: %v", err)
+		}
+		c.applyLegacyExtVars()
+		if c.ExtStr["a"] != "b" {
+			t.Errorf("extstr should be folded into ExtStr: %v", c.ExtStr)
+		}
+		if c.ExtCode["c"] != "d" {
+			t.Errorf("extcode should be folded into ExtCode: %v", c.ExtCode)
 		}
 	})
 	t.Run("non-strict type warns and continues", func(t *testing.T) {
