@@ -81,6 +81,14 @@ type CLIOptions struct {
 	Versions *VersionsOption `cmd:"versions" help:"show versions of function" json:"versions,omitempty"`
 
 	Version struct{} `cmd:"version" help:"show version" json:"-"`
+
+	// LegacyExtStr and LegacyExtCode accept the pre-v1.3.1 option file key
+	// names (extstr/extcode). They are excluded from CLI parsing (kong:"-")
+	// and only exist so the strict loader accepts these deprecated keys;
+	// applyLegacyExtVars folds them into ExtStr/ExtCode.
+	// TODO: Remove in v2.
+	LegacyExtStr  map[string]string `kong:"-" json:"extstr,omitempty"`
+	LegacyExtCode map[string]string `kong:"-" json:"extcode,omitempty"`
 }
 
 // RequireStrict marks CLIOptions as a strict definition loader: when loaded from
@@ -88,6 +96,26 @@ type CLIOptions struct {
 // file is equivalent to specifying flags, so an unknown key is treated the same
 // as an unknown flag.
 func (CLIOptions) RequireStrict() {}
+
+// applyLegacyExtVars folds the deprecated extstr/extcode option file fields into
+// ExtStr/ExtCode. The current field wins if both are set.
+// TODO: Remove in v2.
+func (o *CLIOptions) applyLegacyExtVars() {
+	if o.LegacyExtStr != nil {
+		slog.Warn(`option file key "extstr" is deprecated; use "ext_str" instead. This will be removed in v2.`)
+		if o.ExtStr == nil {
+			o.ExtStr = o.LegacyExtStr
+		}
+		o.LegacyExtStr = nil
+	}
+	if o.LegacyExtCode != nil {
+		slog.Warn(`option file key "extcode" is deprecated; use "ext_code" instead. This will be removed in v2.`)
+		if o.ExtCode == nil {
+			o.ExtCode = o.LegacyExtCode
+		}
+		o.LegacyExtCode = nil
+	}
+}
 
 type CLIParseFunc func([]string) (string, *CLIOptions, func(), error)
 
@@ -159,6 +187,7 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	// Merge ext_str and ext_code from option file with CLI args
 	// CLI args take precedence over option file values
 	if defaultOpt != nil {
+		defaultOpt.applyLegacyExtVars() // accept deprecated extstr/extcode keys
 		if defaultOpt.ExtStr != nil || opts.ExtStr != nil {
 			opts.ExtStr = lo.Assign(defaultOpt.ExtStr, opts.ExtStr)
 		}

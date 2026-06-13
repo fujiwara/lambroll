@@ -189,6 +189,27 @@ var cliTests = []struct {
 		},
 	},
 	{
+		// Test: deprecated extstr/extcode keys are still accepted (v1 compat).
+		args: []string{"render", "--option", "ext_vars_legacy.jsonnet"},
+		sub:  "render",
+		option: &lambroll.Option{
+			OptionFilePath: "ext_vars_legacy.jsonnet",
+			LogLevel:       "info",
+			LogFormat:      "text",
+			Color:          true,
+			Envfile:        []string{},
+			ExtStr: map[string]string{
+				"architecture": "x86_64",
+				"description":  "Test function with ext_str and ext_code",
+			},
+			ExtCode: map[string]string{
+				"memory_size":  "128",
+				"storage_size": "512",
+				"timeout":      "30",
+			},
+		},
+	},
+	{
 		// Test: CLI args are merged with option file, CLI takes precedence
 		args: []string{
 			"render", "--option", "ext_vars.jsonnet",
@@ -273,6 +294,39 @@ func TestParseCLISubcommandOption(t *testing.T) {
 		}
 		if opt.Deploy.Publish {
 			t.Error("deploy.publish: expected false from option file, got true")
+		}
+	})
+
+	t.Run("diff.mask from option file", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "diff_mask.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := []string{"DB_PASSWORD", ".Environment.Variables[]"}
+		if diff := cmp.Diff(want, opt.Diff.Mask); diff != "" {
+			t.Errorf("diff.mask not resolved from option file: %s", diff)
+		}
+	})
+
+	// A repeatable slice flag given on the CLI replaces the option-file value
+	// (uniform with every other flag: option file = default, CLI overrides).
+	t.Run("CLI --mask replaces option file diff.mask", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"diff", "--option", "diff_mask.jsonnet", "--mask", "FOO"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff([]string{"FOO"}, opt.Diff.Mask); diff != "" {
+			t.Errorf("CLI --mask should replace option file diff.mask: %s", diff)
+		}
+	})
+
+	t.Run("render.mask from option file", func(t *testing.T) {
+		_, opt, _, err := lambroll.ParseCLI([]string{"render", "--option", "render_mask.jsonnet"})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff([]string{"DB_PASSWORD"}, opt.Render.Mask); diff != "" {
+			t.Errorf("render.mask not resolved from option file: %s", diff)
 		}
 	})
 }
