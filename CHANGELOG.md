@@ -1,5 +1,20 @@
 # Changelog
 
+## [v1.5.0](https://github.com/fujiwara/lambroll/compare/v1.4.4...v1.5.0) - 2026-06-13
+
+- Exclude GCS and AzureRM tfstate backends from release binaries by @fujiwara in https://github.com/fujiwara/lambroll/pull/598
+- fix: sort VPC subnet/security group IDs in diff by @draftcode in https://github.com/fujiwara/lambroll/pull/600
+- Add diff --external and unify diff with jsondiff by @fujiwara in https://github.com/fujiwara/lambroll/pull/601
+- Replace log.Printf with slog in cli.go by @fujiwara in https://github.com/fujiwara/lambroll/pull/602
+- Update AWS SDK and replace deprecated EndpointResolver by @fujiwara in https://github.com/fujiwara/lambroll/pull/603
+- ci: replace LocalStack with floci by @fujiwara in https://github.com/fujiwara/lambroll/pull/604
+- Fix minor robustness issues and cleanups by @fujiwara in https://github.com/fujiwara/lambroll/pull/605
+- Bump dependencies (combined dependabot updates) by @fujiwara in https://github.com/fujiwara/lambroll/pull/612
+- Support subcommand-specific flags in option file via unified CLIOptions by @fujiwara in https://github.com/fujiwara/lambroll/pull/614
+- Add --mask to hide sensitive values in diff and render output by @fujiwara in https://github.com/fujiwara/lambroll/pull/615
+- Unified option file and diff/render --mask (formerly pre-v2) by @fujiwara in https://github.com/fujiwara/lambroll/pull/616
+- Fix diff/render of empty environment variables and mask warning by @fujiwara in https://github.com/fujiwara/lambroll/pull/617
+
 ## [v1.4.4](https://github.com/fujiwara/lambroll/compare/v1.4.3...v1.4.4) - 2026-05-26
 - Add DurableConfig to diff/update handling by @butadora3 in https://github.com/fujiwara/lambroll/pull/594
 - Bundle dependabot updates by @fujiwara in https://github.com/fujiwara/lambroll/pull/596
