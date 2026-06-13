@@ -23,11 +23,31 @@ func isEmptyValue(value any) bool {
 }
 
 func omitEmptyValues(data any) any {
+	return omitEmptyValuesIn(data, "", false)
+}
+
+// omitEmptyValuesIn removes empty values recursively. parentKey is the key under
+// which data sits in its parent map (empty for the root). keepEmptyStr is true
+// while processing the Environment.Variables map: there, string values are kept
+// even when empty, because an intentionally-empty environment variable is
+// deployed to AWS as-is and dropping it would hide it from diff/render output.
+// All other empty values (null, false, empty objects/arrays, and empty strings
+// outside Environment.Variables) are still dropped everywhere.
+func omitEmptyValuesIn(data any, parentKey string, keepEmptyStr bool) any {
 	switch v := data.(type) {
 	case map[string]any:
 		nonEmptyMap := make(map[string]any)
 		for key, value := range v {
-			nonEmptyValue := omitEmptyValues(value)
+			// Inside Environment.Variables, keep string values verbatim so an
+			// empty environment variable survives.
+			if keepEmptyStr {
+				if s, ok := value.(string); ok {
+					nonEmptyMap[key] = s
+					continue
+				}
+			}
+			inEnvVars := parentKey == "Environment" && key == "Variables"
+			nonEmptyValue := omitEmptyValuesIn(value, key, inEnvVars)
 			if !isEmptyValue(nonEmptyValue) {
 				nonEmptyMap[key] = nonEmptyValue
 			}
@@ -38,7 +58,7 @@ func omitEmptyValues(data any) any {
 	case []any:
 		nonEmptyList := make([]any, 0)
 		for _, value := range v {
-			nonEmptyValue := omitEmptyValues(value)
+			nonEmptyValue := omitEmptyValuesIn(value, "", false)
 			if !isEmptyValue(nonEmptyValue) {
 				nonEmptyList = append(nonEmptyList, nonEmptyValue)
 			}

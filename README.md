@@ -737,6 +737,8 @@ The template functions is available in `{{ }}`.
 - `env` function expands environment variables.
 - `must_env` function expands environment variables. If the environment variable is not defined, lambroll will panic and abort.
 
+lambroll omits empty fields (null, `false`, empty objects/arrays, and empty strings) from the definition shown by `diff` and `render`. Environment variable values are the exception: an empty string value inside `Environment.Variables` is kept, because lambroll deploys it to AWS as-is (an empty variable is distinct from an unset one for `os.LookupEnv` and similar). To stop managing environment variables instead of setting them empty, exclude them with `--ignore '.Environment'`.
+
 ### Tags
 
 When "Tags" key exists in function.json, lambroll set / remove tags to the lambda function at deploy.
