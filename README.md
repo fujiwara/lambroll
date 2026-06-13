@@ -317,6 +317,23 @@ The file format is JSON or Jsonnet.
 All fields are optional. If the field is not defined, the default value is used.
 When command-line flags are specified, they take precedence over the options file.
 
+Subcommand-specific flags can also be set in the option file by nesting them under the subcommand name. The keys are the snake_case form of each flag name.
+
+```jsonnet
+// option.jsonnet
+{
+  region: 'ap-northeast-1',  // global flags at the top level
+  diff: {
+    external: 'dyff between',  // --external flag of `lambroll diff`
+  },
+  deploy: {
+    keep_versions: 5,  // --keep-versions flag of `lambroll deploy`
+  },
+}
+```
+
+Unknown keys in the option file cause an error, both at the top level and within a subcommand section. An option file is equivalent to specifying flags, so an unknown key is treated the same as an unknown flag.
+
 The priority of the option values is as follows:
 
 1. Command-line flags. (`--log-level=debug`, `--log-format=json`)
@@ -551,6 +568,41 @@ $ LAMBROLL_DIFF_COMMAND="difft --color=always" lambroll diff
 
 The command must exit with status 0. If it exits with a non-zero status when the two files differ (for example, `diff(1)`), you need to write a wrapper command.
 
+##### Mask sensitive values
+
+lambroll resolves template/Jsonnet functions (such as `ssm(...)`) when it loads the function definition, so a secret referenced from a `SecureString` parameter is expanded to its plaintext value in the rendered config and would be printed by `lambroll diff`. Unlike `--ignore`, which drops a field from the comparison entirely, `--mask` keeps the field but replaces its value with an opaque token, so drift stays visible without exposing the value.
+
+```console
+$ lambroll diff --mask DB_PASSWORD                  # environment variable by name
+$ lambroll diff --mask '.Environment.Variables[]'   # all environment variable values (jq selector)
+```
+
+An argument beginning with `.` is used as a jq selector (the same grammar as `--ignore`); otherwise it is a Lambda environment variable name expanded to `.Environment.Variables["<name>"]` (case-sensitive). The flag is repeatable.
+
+Each distinct value is replaced with a per-run token `***MASKED#<n>***`. Equal values share a token (so an unchanged value produces no diff line) and changed values get different tokens, so drift stays visible without revealing the value:
+
+```diff
+   "Environment": {
+     "Variables": {
+-      "DB_PASSWORD": "***MASKED#1***"
++      "DB_PASSWORD": "***MASKED#2***"
+     }
+   }
+```
+
+Masking applies only to the function configuration diff (not the CodeSha256, function URL, or permissions diffs) and to every render path (built-in diff and `--external`). A selector that matches nothing (including one that points at an absent field) warns and is a no-op without fabricating a field; an invalid selector errors. Defaults can be set in the option file under `diff.mask`; a `--mask` flag on the command line replaces the configured list.
+
+```jsonnet
+{
+  diff: {
+    mask: [
+      'DB_PASSWORD',
+      '.Environment.Variables[]',
+    ],
+  },
+}
+```
+
 #### Status
 
 ```console
@@ -606,9 +658,12 @@ Renders `function.json` with all template variables expanded and outputs to STDO
 ```console
 $ lambroll render --jsonnet              # Convert output to Jsonnet format
 $ lambroll render --function-url path    # Render function URL config instead
+$ lambroll render --mask DB_PASSWORD     # Mask sensitive values in the output
 ```
 
 Useful for debugging template variable expansion.
+
+`--mask` works the same way as [`lambroll diff --mask`](#mask-sensitive-values): an argument starting with `.` is a jq selector, otherwise it is an environment variable name. It replaces matched values with `***MASKED#<n>***` tokens (equal values share a token) so the rendered definition (which has secrets such as `ssm(...)` expanded to plaintext) can be shared or inspected without leaking them. Defaults can be set in the option file under `render.mask`.
 
 #### Versions
 

@@ -97,11 +97,23 @@ func marshalAny(s any) (any, error) {
 	return res, nil
 }
 
+// RequireStrictLoader is implemented by definition types that must reject
+// unknown keys when loaded from a file, instead of warning and ignoring them.
+// Types that do not implement it keep the lenient behavior (warn and continue),
+// which is useful for files that mirror evolving AWS API structures.
+type RequireStrictLoader interface {
+	RequireStrict()
+}
+
 func unmarshalJSON(src []byte, v any, path string) error {
 	strict := json.NewDecoder(bytes.NewReader(src))
 	strict.DisallowUnknownFields()
 	if err := strict.Decode(&v); err != nil {
 		if !strings.Contains(err.Error(), "unknown field") {
+			return err
+		}
+		if _, ok := v.(RequireStrictLoader); ok {
+			// strict types reject unknown keys, just like unknown CLI flags.
 			return err
 		}
 		slog.Warn("unknown field in file", "error", err, "path", path)

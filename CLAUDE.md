@@ -88,7 +88,6 @@ make clean
 
 - Unit tests alongside each .go file (e.g., archive_test.go, deploy_test.go)
 - test/ directory contains integration test fixtures
-- Always verify backward compatibility, especially for option file field names (e.g., extstr → ext_str migration)
 
 ## Git Workflow
 
@@ -102,4 +101,3 @@ make clean
 - Maintain backward compatibility when possible
 - Add deprecation warnings for features that will be removed
 - Use TODO comments to track future removals (e.g., `TODO: Remove in v2`)
-- The project uses backward compatibility code for old field names (e.g., `extstr`/`extcode` → `ext_str`/`ext_code`)

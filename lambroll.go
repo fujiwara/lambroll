@@ -249,10 +249,20 @@ func (app *App) ConfigLoader() *config.Loader {
 }
 
 func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, error) {
+	v, _, err := loadDefinitionFileWithBytes[T](app, path, defaults)
+	return v, err
+}
+
+// loadDefinitionFileWithBytes loads a definition file like loadDefinitionFile
+// but also returns the evaluated source bytes (after jsonnet evaluation and env
+// substitution). The bytes are useful when the caller needs the literal file
+// contents, e.g. to preserve explicit falsey values that struct marshaling with
+// omitempty would drop.
+func loadDefinitionFileWithBytes[T any](app *App, path string, defaults []string) (*T, []byte, error) {
 	if path == "" {
 		p, err := findDefinitionFile("", defaults)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		path = p
 	}
@@ -268,23 +278,23 @@ func loadDefinitionFile[T any](app *App, path string, defaults []string) (*T, er
 	case ".jsonnet":
 		jsonStr, err := app.JsonnetVM().EvaluateFile(path)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		src, err = app.ConfigLoader().ReadWithEnvBytes([]byte(jsonStr))
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	default:
 		src, err = app.ConfigLoader().ReadWithEnv(path)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 	var v T
 	if err := unmarshalJSON(src, &v, path); err != nil {
-		return nil, fmt.Errorf("failed to load %s: %w", path, err)
+		return nil, nil, fmt.Errorf("failed to load %s: %w", path, err)
 	}
-	return &v, nil
+	return &v, src, nil
 }
 
 func (app *App) loadFunction(path string) (*Function, error) {
