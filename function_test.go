@@ -176,3 +176,96 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 		t.Errorf("unexpected function got %s", diff)
 	}
 }
+
+func TestNewFunctionWithResolvedS3Object(t *testing.T) {
+	conf := &types.FunctionConfiguration{
+		FunctionName: aws.String("hello"),
+		MemorySize:   aws.Int32(128),
+		Runtime:      types.RuntimeNodejs18x,
+		Timeout:      aws.Int32(3),
+		Handler:      aws.String("index.handler"),
+		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+	}
+	code := &types.FunctionCodeLocation{
+		RepositoryType: aws.String("S3"),
+		ResolvedS3Object: &types.ResolvedS3Object{
+			S3Bucket:        aws.String("my-bucket"),
+			S3Key:           aws.String("function.zip"),
+			S3ObjectVersion: aws.String("version123"),
+		},
+	}
+	fn := lambroll.NewFunctionFrom(conf, code, nil)
+
+	expected := lambroll.Function{
+		FunctionName: aws.String("hello"),
+		MemorySize:   aws.Int32(128),
+		Runtime:      types.RuntimeNodejs18x,
+		Timeout:      aws.Int32(3),
+		Handler:      aws.String("index.handler"),
+		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Code: &types.FunctionCode{
+			S3Bucket:            aws.String("my-bucket"),
+			S3Key:               aws.String("function.zip"),
+			S3ObjectVersion:     aws.String("version123"),
+			S3ObjectStorageMode: types.S3ObjectStorageModeReference,
+		},
+	}
+
+	fnJSON, _ := lambroll.MarshalJSON(fn)
+	expectedJSON, _ := lambroll.MarshalJSON(expected)
+	if diff := cmp.Diff(string(expectedJSON), string(fnJSON), ignore); diff != "" {
+		t.Errorf("unexpected function got %s", diff)
+	}
+}
+
+func TestNormalizeCodeForDiff(t *testing.T) {
+	newRemote := func() *lambroll.Function {
+		return &lambroll.Function{
+			Code: &types.FunctionCode{
+				S3Bucket:            aws.String("my-bucket"),
+				S3Key:               aws.String("function.zip"),
+				S3ObjectVersion:     aws.String("version123"),
+				S3ObjectStorageMode: types.S3ObjectStorageModeReference,
+			},
+		}
+	}
+
+	t.Run("local does not pin S3ObjectVersion", func(t *testing.T) {
+		local := &lambroll.Function{
+			Code: &types.FunctionCode{
+				S3Bucket:            aws.String("my-bucket"),
+				S3Key:               aws.String("function.zip"),
+				S3ObjectStorageMode: types.S3ObjectStorageModeReference,
+			},
+		}
+		remote := newRemote()
+		lambroll.NormalizeCodeForDiff(local, remote)
+		if remote.Code.S3ObjectVersion != nil {
+			t.Errorf("S3ObjectVersion must be cleared, got %s", *remote.Code.S3ObjectVersion)
+		}
+	})
+
+	t.Run("local pins S3ObjectVersion", func(t *testing.T) {
+		local := &lambroll.Function{
+			Code: &types.FunctionCode{
+				S3Bucket:        aws.String("my-bucket"),
+				S3Key:           aws.String("function.zip"),
+				S3ObjectVersion: aws.String("version456"),
+			},
+		}
+		remote := newRemote()
+		lambroll.NormalizeCodeForDiff(local, remote)
+		if aws.ToString(remote.Code.S3ObjectVersion) != "version123" {
+			t.Errorf("S3ObjectVersion must be kept, got %v", remote.Code.S3ObjectVersion)
+		}
+	})
+
+	t.Run("remote has no Code", func(t *testing.T) {
+		local := &lambroll.Function{}
+		remote := &lambroll.Function{}
+		lambroll.NormalizeCodeForDiff(local, remote)
+		if remote.Code != nil {
+			t.Errorf("remote.Code must be nil")
+		}
+	})
+}

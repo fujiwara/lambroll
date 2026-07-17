@@ -79,6 +79,18 @@ func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
 	return nil
 }
 
+// normalizeCodeForDiff clears S3ObjectVersion on the remote function when the
+// local definition does not pin it, because lambroll resolves the version at
+// deploy time after uploading the zip.
+func normalizeCodeForDiff(local, remote *Function) {
+	if remote == nil || remote.Code == nil {
+		return
+	}
+	if local.Code == nil || local.Code.S3ObjectVersion == nil {
+		remote.Code.S3ObjectVersion = nil
+	}
+}
+
 func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption) (bool, error) {
 	if opt.SkipFunction {
 		return false, nil
@@ -120,6 +132,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	}
 	remoteFunc := newFunctionFrom(remote, code, tags)
 	fillDefaultValues(remoteFunc)
+	normalizeCodeForDiff(fn, remoteFunc)
 
 	// AWS returns VPC subnet/security group IDs in an arbitrary order, so
 	// normalize the ordering on both sides to avoid a spurious diff.
