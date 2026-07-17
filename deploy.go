@@ -235,15 +235,7 @@ func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, o
 func (app *App) deployFunctionCode(ctx context.Context, fn *Function, opt *DeployOption) (string, error) {
 	logger := opt.logger()
 
-	codeIn := &lambda.UpdateFunctionCodeInput{
-		Architectures:   fn.Architectures,
-		FunctionName:    fn.FunctionName,
-		ZipFile:         fn.Code.ZipFile,
-		S3Bucket:        fn.Code.S3Bucket,
-		S3Key:           fn.Code.S3Key,
-		S3ObjectVersion: fn.Code.S3ObjectVersion,
-		ImageUri:        fn.Code.ImageUri,
-	}
+	codeIn := newUpdateFunctionCodeInput(fn)
 	if opt.DryRun {
 		codeIn.DryRun = true
 	} else {
@@ -269,6 +261,20 @@ func (app *App) deployFunctionCode(ctx context.Context, fn *Function, opt *Deplo
 		logger.Info("deployed version", "version", newerVersion)
 	}
 	return newerVersion, nil
+}
+
+func newUpdateFunctionCodeInput(fn *Function) *lambda.UpdateFunctionCodeInput {
+	return &lambda.UpdateFunctionCodeInput{
+		Architectures:       fn.Architectures,
+		FunctionName:        fn.FunctionName,
+		ZipFile:             fn.Code.ZipFile,
+		S3Bucket:            fn.Code.S3Bucket,
+		S3Key:               fn.Code.S3Key,
+		S3ObjectVersion:     fn.Code.S3ObjectVersion,
+		S3ObjectStorageMode: fn.Code.S3ObjectStorageMode,
+		SourceKMSKeyArn:     fn.Code.SourceKMSKeyArn,
+		ImageUri:            fn.Code.ImageUri,
+	}
 }
 
 func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.UpdateFunctionConfigurationInput) error {
