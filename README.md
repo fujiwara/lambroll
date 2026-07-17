@@ -433,6 +433,18 @@ Set `Code.S3Bucket` and `Code.S3Key` in function.json. lambroll uploads the zip 
 
 If you want to upload the zip archive yourself, you can skip creating the zip archive by using the `--skip-archive` flag.
 
+To use [self-managed code storage](https://docs.aws.amazon.com/lambda/latest/dg/configuration-self-managed-storage.html), which makes Lambda reference the deployment package directly from your S3 bucket instead of copying it into Lambda managed storage, set `Code.S3ObjectStorageMode` to `"REFERENCE"` (default is `"COPY"`).
+
+```json
+{
+  "Code": {
+    "S3Bucket": "my-bucket",
+    "S3Key": "function.zip",
+    "S3ObjectStorageMode": "REFERENCE"
+  }
+}
+```
+
 ##### Deploy container image
 
 lambroll also support to deploy a container image for Lambda.
