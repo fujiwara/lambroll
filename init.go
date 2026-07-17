@@ -82,6 +82,12 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		code = res.Code
 	}
 	fn := newFunctionFrom(c, code, tags)
+	if fn.Code != nil {
+		// The version resolved at GetFunction becomes stale immediately after
+		// the next upload. Writing it to the generated file would pin
+		// deployments with --skip-archive to the old object.
+		fn.Code.S3ObjectVersion = nil
+	}
 
 	if (opt.DownloadZip || opt.Unzip) && res != nil && res.Code != nil && aws.ToString(res.Code.RepositoryType) == "S3" {
 		slog.Info("downloading file", "file", FunctionZipFilename)

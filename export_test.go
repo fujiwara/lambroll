@@ -23,6 +23,7 @@ var (
 	RunExternalDiff            = runExternalDiff
 	RenderForExternalDiff      = renderForExternalDiff
 	NewUpdateFunctionCodeInput = newUpdateFunctionCodeInput
+	NormalizeCodeForDiff       = normalizeCodeForDiff
 )
 
 func (o *DiffOption) SetWriter(w io.Writer) {

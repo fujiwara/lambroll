@@ -358,6 +358,15 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 		fn.Code = &types.FunctionCode{
 			ImageUri: code.ImageUri,
 		}
+	} else if code != nil && code.ResolvedS3Object != nil {
+		// ResolvedS3Object is returned only for functions using self-managed
+		// code storage (S3ObjectStorageMode=REFERENCE).
+		fn.Code = &types.FunctionCode{
+			S3Bucket:            code.ResolvedS3Object.S3Bucket,
+			S3Key:               code.ResolvedS3Object.S3Key,
+			S3ObjectVersion:     code.ResolvedS3Object.S3ObjectVersion,
+			S3ObjectStorageMode: types.S3ObjectStorageModeReference,
+		}
 	}
 
 	fn.Tags = tags
