@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.5.1](https://github.com/fujiwara/lambroll/compare/v1.5.0...v1.5.1) - 2026-07-17
+
+- Bump golang.org/x/net from 0.52.0 to 0.55.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/625
+- Bump golang.org/x/crypto from 0.51.0 to 0.52.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/627
+- Support S3ObjectStorageMode for self-managed code storage by @fujiwara in https://github.com/fujiwara/lambroll/pull/628
+- Bump dependencies (consolidated dependabot PRs) by @fujiwara in https://github.com/fujiwara/lambroll/pull/629
+- Fix spurious diff for functions using self-managed code storage by @fujiwara in https://github.com/fujiwara/lambroll/pull/631
+
 ## [v1.5.0](https://github.com/fujiwara/lambroll/compare/v1.4.4...v1.5.0) - 2026-06-13
 
 - Exclude GCS and AzureRM tfstate backends from release binaries by @fujiwara in https://github.com/fujiwara/lambroll/pull/598
