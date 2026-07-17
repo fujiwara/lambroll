@@ -7,21 +7,22 @@ import (
 )
 
 var (
-	CreateZipArchive        = createZipArchive
-	ExpandExcludeFile       = expandExcludeFile
-	LoadZipArchive          = loadZipArchive
-	MergeTags               = mergeTags
-	FillDefaultValues       = fillDefaultValues
-	JSONStr                 = jsonStr
-	MarshalJSON             = marshalJSON
-	NewFunctionFrom         = newFunctionFrom
-	SortFunctionForDiff     = sortFunctionForDiff
-	NewCallerIdentity       = newCallerIdentity
-	Unzip                   = unzip
-	ExtractExitCodeAndError = extractExitCodeAndError
-	IsAWSManagedTag         = isAWSManagedTag
-	RunExternalDiff         = runExternalDiff
-	RenderForExternalDiff   = renderForExternalDiff
+	CreateZipArchive           = createZipArchive
+	ExpandExcludeFile          = expandExcludeFile
+	LoadZipArchive             = loadZipArchive
+	MergeTags                  = mergeTags
+	FillDefaultValues          = fillDefaultValues
+	JSONStr                    = jsonStr
+	MarshalJSON                = marshalJSON
+	NewFunctionFrom            = newFunctionFrom
+	SortFunctionForDiff        = sortFunctionForDiff
+	NewCallerIdentity          = newCallerIdentity
+	Unzip                      = unzip
+	ExtractExitCodeAndError    = extractExitCodeAndError
+	IsAWSManagedTag            = isAWSManagedTag
+	RunExternalDiff            = runExternalDiff
+	RenderForExternalDiff      = renderForExternalDiff
+	NewUpdateFunctionCodeInput = newUpdateFunctionCodeInput
 )
 
 func (o *DiffOption) SetWriter(w io.Writer) {
