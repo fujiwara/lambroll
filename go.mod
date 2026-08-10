@@ -12,6 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.105.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.45.4
 	github.com/fatih/color v1.19.0
+	github.com/fujiwara/cfn-lookup v1.1.1
 	github.com/fujiwara/sloghandler v0.1.0
 	github.com/fujiwara/ssm-lookup v0.1.1
 	github.com/fujiwara/tfstate-lookup v1.12.1
@@ -30,8 +31,6 @@ require (
 	github.com/shogo82148/go-retry v1.3.1
 	golang.org/x/sys v0.47.0
 )
-
-require github.com/fujiwara/cfn-lookup v1.1.1
 
 require (
 	cel.dev/expr v0.25.1 // indirect
