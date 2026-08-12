@@ -1,5 +1,10 @@
 # Changelog
 
+## [v1.5.2](https://github.com/fujiwara/lambroll/compare/v1.5.1...v1.5.2) - 2026-08-12
+
+- Bump google.golang.org/grpc from 1.80.0 to 1.82.1 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/632
+- Add cfn_output and cfn_export template/Jsonnet functions by @fujiwara in https://github.com/fujiwara/lambroll/pull/642
+
 ## [v1.5.1](https://github.com/fujiwara/lambroll/compare/v1.5.0...v1.5.1) - 2026-07-17
 
 - Bump golang.org/x/net from 0.52.0 to 0.55.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/625
