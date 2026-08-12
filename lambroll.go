@@ -14,6 +14,7 @@ import (
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
+	"github.com/fujiwara/cfn-lookup/cfn"
 	"github.com/fujiwara/ssm-lookup/ssm"
 	"github.com/fujiwara/tfstate-lookup/tfstate"
 	"github.com/google/go-jsonnet"
@@ -162,6 +163,18 @@ func New(ctx context.Context, opt *Option) (*App, error) {
 		return nil, err
 	} else {
 		nativeFuncs = append(nativeFuncs, ssmNativeFuncs...)
+	}
+
+	// load cfn functions
+	if cfnFuncs, err := cfn.FuncMap(ctx, v2cfg); err != nil {
+		return nil, err
+	} else {
+		loader.Funcs(cfnFuncs)
+	}
+	if cfnNativeFuncs, err := cfn.JsonnetNativeFuncs(ctx, v2cfg); err != nil {
+		return nil, err
+	} else {
+		nativeFuncs = append(nativeFuncs, cfnNativeFuncs...)
 	}
 
 	// load tfstate functions

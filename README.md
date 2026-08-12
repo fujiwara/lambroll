@@ -55,6 +55,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
   - [Environment variables from envfile](#environment-variables-from-envfile)
   - [Jsonnet support for function configuration](#jsonnet-support-for-function-configuration)
   - [Expand SSM parameter values](#expand-ssm-parameter-values)
+  - [Lookup CloudFormation stack outputs and exports](#lookup-cloudformation-stack-outputs-and-exports)
   - [Expand environment variables](#expand-environment-variables)
   - [Resolve AWS caller identity](#resolve-aws-caller-identity)
   - [Resolve Lambda layer ARN](#resolve-lambda-layer-arn)
@@ -830,6 +831,51 @@ local ssm = std.native('ssm');
   },
 }
 ```
+
+### Lookup CloudFormation stack outputs and exports
+
+The `cfn_output` and `cfn_export` template functions lookup values from CloudFormation stacks.
+
+- `cfn_output` takes two arguments: a stack name and an output key. It returns the output value of the stack.
+- `cfn_export` takes one argument: an export name. It returns the exported value.
+
+For example, given the following CloudFormation outputs:
+
+```yaml
+Outputs:
+  LambdaExecutionRoleArn:
+    Value: !GetAtt LambdaExecutionRole.Arn
+    Export:
+      Name: my-project-lambda-role-arn
+```
+
+These values can be referenced in `function.json` as follows:
+
+```json
+{
+  "Role": "{{ cfn_output `my-stack` `LambdaExecutionRoleArn` }}"
+}
+```
+
+```json
+{
+  "Role": "{{ cfn_export `my-project-lambda-role-arn` }}"
+}
+```
+
+For Jsonnet, the `cfn_output` and `cfn_export` native functions are available.
+
+```jsonnet
+local cfn_output = std.native('cfn_output');
+local cfn_export = std.native('cfn_export');
+{
+  Role: cfn_output('my-stack', 'LambdaExecutionRoleArn'),
+  // or
+  Role: cfn_export('my-project-lambda-role-arn'),
+}
+```
+
+These functions use the AWS credentials and region configured for lambroll. When the specified stack, output, or export is not found, lambroll fails to load the function definition with an error.
 
 ### Expand environment variables
 
