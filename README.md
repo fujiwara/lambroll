@@ -1234,6 +1234,32 @@ The function must run inside a VPC that can reach the file system's mount target
 - EFS: [Configuring file system access for Lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem.html)
 - S3 Files: [Configuring Amazon S3 Files access with AWS Lambda](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem-s3files.html) / [Prerequisites for S3 Files](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-files-prereq-policies.html)
 
+#### S3 Files direct reads
+
+For an S3 Files mount, `S3FilesConfig.DirectS3Read` controls whether the function streams eligible reads directly from the S3 bucket (highest throughput) or always reads through the file system's high-performance storage (lowest latency).
+
+```json5
+{
+  "FileSystemConfigs": [
+    {
+      "Arn": "arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8",
+      "LocalMountPath": "/mnt/data",
+      "S3FilesConfig": {
+        "DirectS3Read": "ENABLED" // AUTO (default) | ENABLED | DISABLED
+      }
+    }
+  ]
+}
+```
+
+| Value | Behavior |
+|---|---|
+| `AUTO` (default) | Direct reads are enabled only for functions with 512 MB or more of memory. |
+| `ENABLED` | Direct reads are always enabled, regardless of memory size. |
+| `DISABLED` | All reads go through the file system. |
+
+When `S3FilesConfig` is omitted for an S3 Files mount, lambroll treats it as `AUTO` (the value Lambda reports back), so `lambroll diff` stays clean. `S3FilesConfig` is valid only for S3 Files access point ARNs. Specifying it on an EFS mount causes an `InvalidParameterException`. Direct reads require the execution role to have `s3:GetObject` and `s3:GetObjectVersion` permissions on the bucket. See [Configuring direct reads](https://docs.aws.amazon.com/lambda/latest/dg/configuration-filesystem-s3files.html#configuration-filesystem-s3files-directreads).
+
 ### Lambda Managed Instances support
 
 lambroll can deploy Lambda functions with [Lambda Managed Instances](https://aws.amazon.com/lambda/lambda-managed-instances/).

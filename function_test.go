@@ -17,6 +17,7 @@ var ignore = cmpopts.IgnoreUnexported(
 	types.EphemeralStorage{},
 	types.Environment{},
 	types.FileSystemConfig{},
+	types.S3FilesConfig{},
 	types.LoggingConfig{},
 	types.TracingConfig{},
 	types.VpcConfig{},
@@ -69,6 +70,13 @@ func TestLoadFunction(t *testing.T) {
 			{
 				Arn:            aws.String("arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a"),
 				LocalMountPath: aws.String("/mnt/lambda"),
+			},
+			{
+				Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
+				LocalMountPath: aws.String("/mnt/data"),
+				S3FilesConfig: &types.S3FilesConfig{
+					DirectS3Read: types.DirectS3ReadEnabled,
+				},
 			},
 		},
 		FunctionName: aws.String("test"),
@@ -133,6 +141,44 @@ func TestNewFunction(t *testing.T) {
 		Handler:      aws.String("index.handler"),
 		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		Tags:         tags,
+	}
+
+	fnJSON, _ := lambroll.MarshalJSON(fn)
+	expectedJSON, _ := lambroll.MarshalJSON(expected)
+	if diff := cmp.Diff(string(expectedJSON), string(fnJSON), ignore); diff != "" {
+		t.Errorf("unexpected function got %s", diff)
+	}
+}
+
+func TestNewFunctionWithS3FilesConfig(t *testing.T) {
+	fsConfigs := []types.FileSystemConfig{
+		{
+			Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
+			LocalMountPath: aws.String("/mnt/data"),
+			S3FilesConfig: &types.S3FilesConfig{
+				DirectS3Read: types.DirectS3ReadDisabled,
+			},
+		},
+	}
+	conf := &types.FunctionConfiguration{
+		FunctionName:      aws.String("hello"),
+		MemorySize:        aws.Int32(128),
+		Runtime:           types.RuntimeNodejs18x,
+		Timeout:           aws.Int32(3),
+		Handler:           aws.String("index.handler"),
+		Role:              aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		FileSystemConfigs: fsConfigs,
+	}
+	fn := lambroll.NewFunctionFrom(conf, nil, nil)
+
+	expected := lambroll.Function{
+		FunctionName:      aws.String("hello"),
+		MemorySize:        aws.Int32(128),
+		Runtime:           types.RuntimeNodejs18x,
+		Timeout:           aws.Int32(3),
+		Handler:           aws.String("index.handler"),
+		Role:              aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		FileSystemConfigs: fsConfigs,
 	}
 
 	fnJSON, _ := lambroll.MarshalJSON(fn)

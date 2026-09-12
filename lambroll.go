@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"text/template"
 	"time"
 
@@ -439,6 +440,31 @@ func fillDefaultValues(fn *Function) {
 		fn.SnapStart = &types.SnapStart{
 			ApplyOn: types.SnapStartApplyOnNone,
 		}
+	}
+	for i := range fn.FileSystemConfigs {
+		fillDefaultFileSystemConfig(&fn.FileSystemConfigs[i])
+	}
+}
+
+// isS3FilesAccessPointArn reports whether arn is an Amazon S3 Files access point ARN.
+// (arn:aws:s3files:REGION:ACCOUNT:file-system/fs-xxx/access-point/fsap-xxx)
+func isS3FilesAccessPointArn(arn string) bool {
+	parts := strings.SplitN(arn, ":", 4)
+	return len(parts) == 4 && parts[0] == "arn" && parts[2] == "s3files"
+}
+
+// fillDefaultFileSystemConfig fills S3FilesConfig.DirectS3Read with AUTO for S3 Files mounts.
+// Lambda API returns {"DirectS3Read": "AUTO"} when it is omitted, so fill it to avoid a spurious diff.
+// EFS mounts are left untouched because S3FilesConfig is invalid for them.
+func fillDefaultFileSystemConfig(fc *types.FileSystemConfig) {
+	if fc == nil || fc.Arn == nil || !isS3FilesAccessPointArn(*fc.Arn) {
+		return
+	}
+	if fc.S3FilesConfig == nil {
+		fc.S3FilesConfig = &types.S3FilesConfig{}
+	}
+	if fc.S3FilesConfig.DirectS3Read == "" {
+		fc.S3FilesConfig.DirectS3Read = types.DirectS3ReadAuto
 	}
 }
 

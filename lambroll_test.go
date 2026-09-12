@@ -71,6 +71,74 @@ var testCasesFillDefaultValues = []struct {
 			},
 		},
 	},
+	{
+		name: "file system configs (S3 Files gets DirectS3Read AUTO, EFS untouched)",
+		in: &lambroll.Function{
+			FunctionName: aws.String("test"),
+			FileSystemConfigs: []types.FileSystemConfig{
+				{
+					Arn:            aws.String("arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a"),
+					LocalMountPath: aws.String("/mnt/efs"),
+				},
+				{
+					Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
+					LocalMountPath: aws.String("/mnt/data"),
+				},
+				{
+					Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-0aaaaaaaaaaaaaaaa"),
+					LocalMountPath: aws.String("/mnt/data2"),
+					S3FilesConfig:  &types.S3FilesConfig{},
+				},
+				{
+					Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-0bbbbbbbbbbbbbbbb"),
+					LocalMountPath: aws.String("/mnt/data3"),
+					S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadEnabled},
+				},
+			},
+		},
+		expect: &lambroll.Function{
+			FunctionName:  aws.String("test"),
+			Description:   aws.String(""),
+			Architectures: []types.Architecture{types.ArchitectureX8664},
+			EphemeralStorage: &types.EphemeralStorage{
+				Size: aws.Int32(512),
+			},
+			FileSystemConfigs: []types.FileSystemConfig{
+				{
+					Arn:            aws.String("arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a"),
+					LocalMountPath: aws.String("/mnt/efs"),
+				},
+				{
+					Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
+					LocalMountPath: aws.String("/mnt/data"),
+					S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadAuto},
+				},
+				{
+					Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-0aaaaaaaaaaaaaaaa"),
+					LocalMountPath: aws.String("/mnt/data2"),
+					S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadAuto},
+				},
+				{
+					Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-0bbbbbbbbbbbbbbbb"),
+					LocalMountPath: aws.String("/mnt/data3"),
+					S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadEnabled},
+				},
+			},
+			Layers: []string{},
+			LoggingConfig: &types.LoggingConfig{
+				LogFormat: types.LogFormatText,
+				LogGroup:  aws.String("/aws/lambda/test"),
+			},
+			MemorySize: aws.Int32(128),
+			SnapStart: &types.SnapStart{
+				ApplyOn: types.SnapStartApplyOnNone,
+			},
+			Timeout: aws.Int32(3),
+			TracingConfig: &types.TracingConfig{
+				Mode: types.TracingModePassThrough,
+			},
+		},
+	},
 }
 
 func TestFillDefaultValues(t *testing.T) {

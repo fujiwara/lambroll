@@ -21,7 +21,7 @@ func jsonObjectKeys(t reflect.Type) map[string]bool {
 	}
 	for i := 0; i < t.NumField(); i++ {
 		f := t.Field(i)
-		name := strings.Split(f.Tag.Get("json"), ",")[0]
+		name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
 		if f.Anonymous && name == "" {
 			for k := range jsonObjectKeys(f.Type) {
 				keys[k] = true
@@ -69,7 +69,7 @@ func TestOptionFileSubcommandTags(t *testing.T) {
 		if cmd == "" {
 			cmd = strings.ToLower(field.Name)
 		}
-		jsonTag := strings.Split(field.Tag.Get("json"), ",")[0]
+		jsonTag, _, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if jsonTag == "-" {
 			continue // commands without options (e.g. version)
 		}
