@@ -1,3 +1,3 @@
 package lambroll
 
-var Version = "v1.5.2"
+var Version = "v1.5.3"

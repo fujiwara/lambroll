@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.5.3](https://github.com/fujiwara/lambroll/compare/v1.5.2...v1.5.3) - 2026-09-12
+
+- Support S3FilesConfig.DirectS3Read for S3 Files mounts by @fujiwara in https://github.com/fujiwara/lambroll/pull/649
+- Bump dependencies (consolidated dependabot PRs) by @fujiwara in https://github.com/fujiwara/lambroll/pull/651
+- Bump google.golang.org/grpc from 1.83.1 to 1.83.2 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/653
+- Bump the aws-sdk-go-v2 group across 1 directory with 3 updates by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/652
+
 ## [v1.5.2](https://github.com/fujiwara/lambroll/compare/v1.5.1...v1.5.2) - 2026-08-12
 
 - Bump google.golang.org/grpc from 1.80.0 to 1.82.1 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/632
