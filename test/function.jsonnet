@@ -31,6 +31,13 @@ local timeout = std.extVar("timeout");
       Arn: 'arn:aws:elasticfilesystem:ap-northeast-1:%s:access-point/fsap-04fc0858274e7dd9a' % caller.Account,
       LocalMountPath: '/mnt/lambda',
     },
+    {
+      Arn: 'arn:aws:s3files:ap-northeast-1:%s:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8' % caller.Account,
+      LocalMountPath: '/mnt/data',
+      S3FilesConfig: {
+        DirectS3Read: 'ENABLED',
+      },
+    },
   ],
   Handler: 'index.js',
   LoggingConfig: {
