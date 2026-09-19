@@ -1,5 +1,9 @@
 # Changelog
 
+## [v1.5.4](https://github.com/fujiwara/lambroll/compare/v1.5.3...v1.5.4) - 2026-09-19
+
+- Rename CLAUDE.md to AGENTS.md by @fujiwara in https://github.com/fujiwara/lambroll/pull/655
+
 ## [v1.5.3](https://github.com/fujiwara/lambroll/compare/v1.5.2...v1.5.3) - 2026-09-12
 
 - Support S3FilesConfig.DirectS3Read for S3 Files mounts by @fujiwara in https://github.com/fujiwara/lambroll/pull/649
