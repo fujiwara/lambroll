@@ -26,7 +26,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.24
 	github.com/mattn/go-shellwords v1.0.14
-	github.com/olekukonko/tablewriter v1.1.4
+	github.com/olekukonko/tablewriter v1.1.5
 	github.com/samber/lo v1.53.0
 	github.com/shogo82148/go-retry v1.3.1
 	golang.org/x/sys v0.47.0
