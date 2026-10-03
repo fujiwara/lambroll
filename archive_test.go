@@ -168,3 +168,175 @@ func TestUnzip(t *testing.T) {
 		t.Errorf("unexpected symlink target %s", diff)
 	}
 }
+
+type testZipEntry struct {
+	name    string
+	body    string
+	symlink bool
+}
+
+func createTestZip(t *testing.T, entries []testZipEntry) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "test.zip")
+	f, err := os.Create(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	w := zip.NewWriter(f)
+	for _, e := range entries {
+		h := &zip.FileHeader{Name: e.name, Method: zip.Deflate}
+		if e.symlink {
+			h.SetMode(os.ModeSymlink | 0777)
+		} else {
+			h.SetMode(0644)
+		}
+		fw, err := w.CreateHeader(h)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := fw.Write([]byte(e.body)); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestUnzipPathTraversal(t *testing.T) {
+	cases := []struct {
+		name    string
+		entries []testZipEntry
+		// prepare is called with dest before unzipping
+		prepare func(t *testing.T, dest string)
+	}{
+		{
+			name:    "parent directory",
+			entries: []testZipEntry{{name: "../escaped.txt", body: "escaped"}},
+		},
+		{
+			name:    "nested parent directory",
+			entries: []testZipEntry{{name: "a/../../escaped.txt", body: "escaped"}},
+		},
+		{
+			name:    "absolute path",
+			entries: []testZipEntry{{name: "/tmp/escaped.txt", body: "escaped"}},
+		},
+		{
+			name:    "file via pre-existing symlink",
+			entries: []testZipEntry{{name: "link/escaped.txt", body: "escaped"}},
+			prepare: func(t *testing.T, dest string) {
+				if err := os.Symlink("..", filepath.Join(dest, "link")); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ctx := context.TODO()
+			src := createTestZip(t, c.entries)
+			base := t.TempDir()
+			dest := filepath.Join(base, "dest")
+			if err := os.MkdirAll(dest, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if c.prepare != nil {
+				c.prepare(t, dest)
+			}
+			if err := lambroll.Unzip(ctx, src, dest, true); err == nil {
+				t.Error("Unzip must fail")
+			} else {
+				t.Log(err)
+			}
+			if _, err := os.Stat(filepath.Join(base, "escaped.txt")); err == nil {
+				t.Error("file is created outside of dest")
+			}
+		})
+	}
+}
+
+func TestUnzipSkipEscapingSymlink(t *testing.T) {
+	ctx := context.TODO()
+	src := createTestZip(t, []testZipEntry{
+		{name: "parent", body: "..", symlink: true},
+		{name: "abs", body: "/opt/nodejs/node_modules", symlink: true},
+		{name: "dir/link", body: "../..", symlink: true},
+		{name: "dir/link/escaped.txt", body: "escaped"},
+		{name: "hello.txt", body: "hello"},
+	})
+	base := t.TempDir()
+	dest := filepath.Join(base, "dest")
+	if err := lambroll.Unzip(ctx, src, dest, true); err != nil {
+		t.Fatal("failed to Unzip", err)
+	}
+	for _, name := range []string{"parent", "abs"} {
+		if _, err := os.Lstat(filepath.Join(dest, name)); err == nil {
+			t.Errorf("symlink %s must not be created", name)
+		}
+	}
+	// dir/link is not created as a symlink, so dir/link/escaped.txt is extracted inside dest
+	fi, err := os.Lstat(filepath.Join(dest, "dir/link"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		t.Error("dir/link must not be a symlink")
+	}
+	if _, err := os.Stat(filepath.Join(base, "escaped.txt")); err == nil {
+		t.Error("file is created outside of dest")
+	}
+	if b, err := os.ReadFile(filepath.Join(dest, "hello.txt")); err != nil || string(b) != "hello" {
+		t.Errorf("hello.txt must be extracted: %q %v", string(b), err)
+	}
+}
+
+func TestUnzipSymlinkInDest(t *testing.T) {
+	ctx := context.TODO()
+	src := createTestZip(t, []testZipEntry{
+		{name: "dir/file.txt", body: "hello"},
+		{name: "dir/sub/link.txt", body: "../file.txt", symlink: true},
+		{name: "dirlink", body: "dir", symlink: true},
+		{name: "dirlink/via-link.txt", body: "world"},
+		{name: "a/../b.txt", body: "b"},
+	})
+	dest := t.TempDir()
+	if err := lambroll.Unzip(ctx, src, dest, true); err != nil {
+		t.Fatal("failed to Unzip", err)
+	}
+	for path, expected := range map[string]string{
+		"dir/sub/link.txt": "hello",
+		"dir/via-link.txt": "world",
+		"b.txt":            "b",
+	} {
+		b, err := os.ReadFile(filepath.Join(dest, path))
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+		if string(b) != expected {
+			t.Errorf("unexpected content of %s: %q", path, string(b))
+		}
+	}
+}
+
+func TestUnzipOverwriteTruncates(t *testing.T) {
+	ctx := context.TODO()
+	src := createTestZip(t, []testZipEntry{{name: "file.txt", body: "short"}})
+	dest := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dest, "file.txt"), []byte("long long content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := lambroll.Unzip(ctx, src, dest, true); err != nil {
+		t.Fatal("failed to Unzip", err)
+	}
+	b, err := os.ReadFile(filepath.Join(dest, "file.txt"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "short" {
+		t.Errorf("unexpected content %q", string(b))
+	}
+}
