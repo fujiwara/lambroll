@@ -1,5 +1,11 @@
 # Changelog
 
+## [v1.5.4](https://github.com/fujiwara/lambroll/compare/v1.5.3...v1.5.4) - 2026-10-03
+
+- Fix path traversal in `init --unzip` ([GHSA-p9xj-8cwq-6fmf](https://github.com/fujiwara/lambroll/security/advisories/GHSA-p9xj-8cwq-6fmf)). Zip entries escaping the `--src` directory are rejected, and symlinks pointing outside of it are skipped with a warning. Reported by @real-kicktheball
+- Rename CLAUDE.md to AGENTS.md by @fujiwara in https://github.com/fujiwara/lambroll/pull/655
+- Bump go.opentelemetry.io/otel/sdk from 1.44.0 to 1.45.0 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/654
+
 ## [v1.5.3](https://github.com/fujiwara/lambroll/compare/v1.5.2...v1.5.3) - 2026-09-12
 
 - Support S3FilesConfig.DirectS3Read for S3 Files mounts by @fujiwara in https://github.com/fujiwara/lambroll/pull/649
