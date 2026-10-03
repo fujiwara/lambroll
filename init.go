@@ -274,11 +274,14 @@ func saveSymlinkIO(_ context.Context, root *os.Root, name string, r io.ReadClose
 		return err
 	}
 	linkTo := string(l)
-	// The link target must stay within the destination directory.
+	// Skip symlinks pointing outside of the destination directory.
+	// They may be legitimate (e.g. pointing to /opt for layers), but creating them
+	// locally is unsafe because deploy follows symlinks by default.
 	target := filepath.FromSlash(linkTo)
 	if filepath.IsAbs(target) || filepath.VolumeName(target) != "" ||
 		!filepath.IsLocal(filepath.Join(filepath.Dir(name), target)) {
-		return fmt.Errorf("invalid symlink %q: target %q escapes destination", name, linkTo)
+		slog.Warn("skip creating symlink pointing outside of the destination directory", "name", name, "target", linkTo)
+		return nil
 	}
 	slog.Debug("creating symlink", "name", name, "target", linkTo)
 	return root.Symlink(linkTo, name)

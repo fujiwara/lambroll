@@ -225,21 +225,6 @@ func TestUnzipPathTraversal(t *testing.T) {
 			entries: []testZipEntry{{name: "/tmp/escaped.txt", body: "escaped"}},
 		},
 		{
-			name:    "symlink to parent directory",
-			entries: []testZipEntry{{name: "link", body: "..", symlink: true}},
-		},
-		{
-			name:    "symlink to absolute path",
-			entries: []testZipEntry{{name: "link", body: "/tmp", symlink: true}},
-		},
-		{
-			name: "file via escaping symlink",
-			entries: []testZipEntry{
-				{name: "dir/link", body: "../..", symlink: true},
-				{name: "dir/link/escaped.txt", body: "escaped"},
-			},
-		},
-		{
 			name:    "file via pre-existing symlink",
 			entries: []testZipEntry{{name: "link/escaped.txt", body: "escaped"}},
 			prepare: func(t *testing.T, dest string) {
@@ -270,6 +255,41 @@ func TestUnzipPathTraversal(t *testing.T) {
 				t.Error("file is created outside of dest")
 			}
 		})
+	}
+}
+
+func TestUnzipSkipEscapingSymlink(t *testing.T) {
+	ctx := context.TODO()
+	src := createTestZip(t, []testZipEntry{
+		{name: "parent", body: "..", symlink: true},
+		{name: "abs", body: "/opt/nodejs/node_modules", symlink: true},
+		{name: "dir/link", body: "../..", symlink: true},
+		{name: "dir/link/escaped.txt", body: "escaped"},
+		{name: "hello.txt", body: "hello"},
+	})
+	base := t.TempDir()
+	dest := filepath.Join(base, "dest")
+	if err := lambroll.Unzip(ctx, src, dest, true); err != nil {
+		t.Fatal("failed to Unzip", err)
+	}
+	for _, name := range []string{"parent", "abs"} {
+		if _, err := os.Lstat(filepath.Join(dest, name)); err == nil {
+			t.Errorf("symlink %s must not be created", name)
+		}
+	}
+	// dir/link is not created as a symlink, so dir/link/escaped.txt is extracted inside dest
+	fi, err := os.Lstat(filepath.Join(dest, "dir/link"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode()&os.ModeSymlink != 0 {
+		t.Error("dir/link must not be a symlink")
+	}
+	if _, err := os.Stat(filepath.Join(base, "escaped.txt")); err == nil {
+		t.Error("file is created outside of dest")
+	}
+	if b, err := os.ReadFile(filepath.Join(dest, "hello.txt")); err != nil || string(b) != "hello" {
+		t.Errorf("hello.txt must be extracted: %q %v", string(b), err)
 	}
 }
 

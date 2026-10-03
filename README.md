@@ -365,7 +365,7 @@ Flags:
 
 `init` creates `function.json` as a configuration file of the function.
 
-`--unzip` extracts the function code into the `--src` directory. Entries that would be written outside of the `--src` directory (e.g. paths containing `..`, absolute paths, or symbolic links pointing outside of the directory) are rejected with an error.
+`--unzip` extracts the function code into the `--src` directory. Entries that would be written outside of the `--src` directory (e.g. paths containing `..` or absolute paths) are rejected with an error. Symbolic links pointing outside of the `--src` directory (e.g. to `/opt` for layers) are not created and a warning is shown.
 
 #### Deploy
 
