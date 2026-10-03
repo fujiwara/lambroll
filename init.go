@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Songmu/prompter"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
@@ -183,21 +184,34 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 	if err := os.MkdirAll(dest, 0755); err != nil {
 		return err
 	}
+	// All file operations are performed via os.Root to prevent escaping from dest,
+	// including escapes via pre-existing or extracted symlinks.
+	root, err := os.OpenRoot(dest)
+	if err != nil {
+		return err
+	}
+	defer root.Close()
 
 	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
+		name, err := localZipEntryName(f.Name)
+		if err != nil {
+			return err
+		}
+		fpath := filepath.Join(dest, name)
 		fi := f.FileInfo()
 		if fi.IsDir() {
 			slog.Debug("creating directory", "path", fpath)
-			if err := os.MkdirAll(fpath, f.Mode()); err != nil {
+			if err := root.MkdirAll(name, f.Mode().Perm()); err != nil {
 				return err
 			}
 			continue
 		}
 
 		slog.Debug("extracting file", "path", fpath)
-		if err := os.MkdirAll(filepath.Dir(fpath), 0755); err != nil {
-			return err
+		if dir := filepath.Dir(name); dir != "." {
+			if err := root.MkdirAll(dir, 0755); err != nil {
+				return err
+			}
 		}
 
 		fc, err := f.Open()
@@ -206,12 +220,12 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 		}
 		if fi.Mode()&os.ModeSymlink != 0 {
 			// supports for symbolic link
-			if err := saveSymlinkIO(ctx, fpath, fc); err != nil {
+			if err := saveSymlinkIO(ctx, root, name, fc); err != nil {
 				return err
 			}
 		} else {
 			// normal file
-			if err := saveFileIO(ctx, fpath, fc, f.Mode(), force); err != nil {
+			if err := saveFileInRoot(ctx, root, name, fc, f.Mode().Perm(), force); err != nil {
 				return err
 			}
 		}
@@ -220,24 +234,52 @@ func unzip(ctx context.Context, src, dest string, force bool) error {
 	return nil
 }
 
-func saveSymlinkIO(_ context.Context, fpath string, r io.ReadCloser) error {
+// localZipEntryName converts a zip entry name to a local path relative to the destination.
+// It rejects absolute paths, volume names and paths escaping the destination.
+func localZipEntryName(name string) (string, error) {
+	p := filepath.FromSlash(strings.TrimSuffix(name, "/"))
+	if !filepath.IsLocal(p) {
+		return "", fmt.Errorf("invalid zip entry name %q: path escapes destination", name)
+	}
+	return filepath.Clean(p), nil
+}
+
+func saveFileInRoot(ctx context.Context, root *os.Root, name string, r io.ReadCloser, mode os.FileMode, force bool) error {
+	slog.Debug("writing file", "path", name, "mode", mode)
+	defer r.Close()
+	if _, err := root.Stat(name); err == nil {
+		ok := force || prompter.YN(fmt.Sprintf("Overwrite existing file %s?", filepath.Join(root.Name(), name)), false)
+		if !ok {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return nil
+		}
+	}
+	f, err := root.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, mode)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if _, err := io.Copy(f, r); err != nil {
+		return err
+	}
+	return f.Close()
+}
+
+func saveSymlinkIO(_ context.Context, root *os.Root, name string, r io.ReadCloser) error {
 	defer r.Close()
 	l, err := io.ReadAll(r)
 	if err != nil {
 		return err
 	}
 	linkTo := string(l)
-	slog.Debug("writing symlink", "path", fpath, "target", linkTo)
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err
+	// The link target must stay within the destination directory.
+	target := filepath.FromSlash(linkTo)
+	if filepath.IsAbs(target) || filepath.VolumeName(target) != "" ||
+		!filepath.IsLocal(filepath.Join(filepath.Dir(name), target)) {
+		return fmt.Errorf("invalid symlink %q: target %q escapes destination", name, linkTo)
 	}
-	defer os.Chdir(cwd)
-	if err := os.Chdir(filepath.Dir(fpath)); err != nil {
-		return err
-	}
-	name := filepath.Base(fpath)
 	slog.Debug("creating symlink", "name", name, "target", linkTo)
-	return os.Symlink(linkTo, name)
+	return root.Symlink(linkTo, name)
 }

@@ -353,14 +353,19 @@ Usage: lambroll init --function-name=
 init function.json
 
 Flags:
-      --function-name=                    Function name for init
-      --download                          Download function.zip
-      --jsonnet                           render function.json as jsonnet
-      --qualifier=QUALIFIER               function version or alias
-      --function-url                      create function url definition file
+      --function-name=            Function name for init
+      --download                  Download function.zip
+      --unzip                     Unzip function.zip and delete it
+      --src="."                   Source directory for unzipping function.zip
+      --jsonnet                   render function.json as jsonnet
+      --qualifier=QUALIFIER       function version or alias
+      --function-url              create function url definition file
+      --force-overwrite           Overwrite existing files without prompting
 ```
 
 `init` creates `function.json` as a configuration file of the function.
+
+`--unzip` extracts the function code into the `--src` directory. Entries that would be written outside of the `--src` directory (e.g. paths containing `..`, absolute paths, or symbolic links pointing outside of the directory) are rejected with an error.
 
 #### Deploy
 
