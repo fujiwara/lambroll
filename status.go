@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -28,6 +29,8 @@ type StatusOutput struct {
 	State           string `json:"State"`
 	LastUpdateState string `json:"LastUpdateState"`
 	FunctionURL     string `json:"FunctionURL,omitempty"`
+
+	ReservedConcurrentExecutions *int32 `json:"ReservedConcurrentExecutions,omitempty"`
 }
 
 func (o *StatusOutput) String() string {
@@ -46,6 +49,9 @@ func (o *StatusOutput) String() string {
 	w.Append("LastUpdateState", o.LastUpdateState)
 	if o.FunctionURL != "" {
 		w.Append("FunctionURL", o.FunctionURL)
+	}
+	if o.ReservedConcurrentExecutions != nil {
+		w.Append("ReservedConcurrentExecutions", strconv.Itoa(int(*o.ReservedConcurrentExecutions)))
 	}
 	w.Render()
 	return buf.String()
@@ -74,6 +80,9 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 		PackageType:     string(res.Configuration.PackageType),
 		State:           string(res.Configuration.State),
 		LastUpdateState: string(res.Configuration.LastUpdateStatus),
+	}
+	if res.Concurrency != nil {
+		out.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
 	}
 	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 		FunctionName: &name,
