@@ -35,13 +35,11 @@ var retryPolicy = retry.Policy{
 	MaxCount: 30,
 }
 
-// Function represents configuration of Lambda function.
-// It embeds lambda.CreateFunctionInput, so the keys of function.json are the same as CreateFunctionInput.
+// Function represents configuration of Lambda function
 type Function struct {
 	lambda.CreateFunctionInput
 
-	// ReservedConcurrentExecutions is applied by PutFunctionConcurrency / DeleteFunctionConcurrency.
-	// nil: not managed, -1: remove the reserved concurrency, >= 0: set the reserved concurrency.
+	// nil: not managed, -1: remove, >= 0: set. Not a part of CreateFunctionInput.
 	ReservedConcurrentExecutions *int32 `json:",omitempty"`
 }
 

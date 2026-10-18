@@ -777,7 +777,7 @@ If you hope to remove all tags, set `"Tags": {}` expressly.
 
 ### Reserved concurrency
 
-When "ReservedConcurrentExecutions" key exists in function.json, lambroll sets / removes the [reserved concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html) of the lambda function at deploy.
+When "ReservedConcurrentExecutions" key exists in function.json, lambroll sets / removes the [reserved concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html) of the function at deploy.
 
 ```json5
 {
@@ -786,14 +786,14 @@ When "ReservedConcurrentExecutions" key exists in function.json, lambroll sets /
 }
 ```
 
-- `0` or a positive number: lambroll sets the reserved concurrency by PutFunctionConcurrency API. `0` means that the function is throttled.
-- `-1`: lambroll removes the reserved concurrency by DeleteFunctionConcurrency API.
+- `0` or more: set it. `0` throttles the function.
+- `-1`: remove it.
 
-When "ReservedConcurrentExecutions" key does not exist, lambroll doesn't manage the reserved concurrency. `lambroll diff` also doesn't show it.
+When the key does not exist, lambroll doesn't manage the reserved concurrency, and `lambroll diff` doesn't compare it.
 
-The reserved concurrency is a function-level setting, so it applies to all versions and aliases of the function. When updating an existing function, it is updated with the function configuration, so `--skip-configuration` skips it.
+It is a function-level setting shared by all versions and aliases. `--skip-configuration` skips updating it.
 
-Managing the reserved concurrency requires `lambda:GetFunctionConcurrency`, `lambda:PutFunctionConcurrency` and `lambda:DeleteFunctionConcurrency` permissions.
+Managing it requires `lambda:GetFunctionConcurrency`, `lambda:PutFunctionConcurrency` and `lambda:DeleteFunctionConcurrency` permissions. `lambroll init` / `lambroll status` with `--qualifier` also require `lambda:GetFunctionConcurrency`.
 
 ### Environment variables from envfile
 

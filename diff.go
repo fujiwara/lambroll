@@ -91,9 +91,7 @@ func normalizeCodeForDiff(local, remote *Function) {
 	}
 }
 
-// normalizeReservedConcurrencyForDiff hides the reserved concurrency of the remote
-// function when the local definition does not manage it, and treats "not set" on
-// the remote function as -1 (unreserved) when the local definition removes it.
+// normalizeReservedConcurrencyForDiff skips comparing when the key is not in function.json, and treats -1 as "not set" on remote.
 func normalizeReservedConcurrencyForDiff(local, remote *Function) {
 	if remote == nil {
 		return
@@ -132,7 +130,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		remote = res.Configuration
 		code = res.Code
 		if fn.ReservedConcurrentExecutions != nil {
-			// call GetFunctionConcurrency only when function.json manages it
+			// only when managed, so users without the key need no new IAM permission
 			if concurrency, err = app.getReservedConcurrency(ctx, name); err != nil {
 				return false, err
 			}

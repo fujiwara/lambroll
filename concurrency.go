@@ -11,8 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-// unreservedConcurrency is the value of ReservedConcurrentExecutions in function.json
-// that means removing the reserved concurrency of the function.
+// unreservedConcurrency in function.json removes the reserved concurrency.
 const unreservedConcurrency int32 = -1
 
 type concurrencyAction int
@@ -23,8 +22,7 @@ const (
 	concurrencyActionDelete
 )
 
-// planReservedConcurrency decides how to update the reserved concurrency of the function.
-// local is ReservedConcurrentExecutions in function.json, current is the value of the deployed function (nil if not set).
+// planReservedConcurrency compares function.json (local) with the deployed function (current, nil if not set).
 func planReservedConcurrency(local, current *int32) (concurrencyAction, error) {
 	if local == nil {
 		return concurrencyActionNone, nil
@@ -96,8 +94,6 @@ func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, opt
 	}
 }
 
-// getReservedConcurrency returns the reserved concurrency of the function.
-// It returns nil if the reserved concurrency is not set or the function does not exist.
 // GetFunction with a qualifier does not return Concurrency, so use GetFunctionConcurrency.
 func (app *App) getReservedConcurrency(ctx context.Context, name string) (*int32, error) {
 	res, err := app.lambda.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
