@@ -91,6 +91,21 @@ func normalizeCodeForDiff(local, remote *Function) {
 	}
 }
 
+// normalizeReservedConcurrencyForDiff hides the reserved concurrency of the remote
+// function when the local definition does not manage it, and treats "not set" on
+// the remote function as -1 (unreserved) when the local definition removes it.
+func normalizeReservedConcurrencyForDiff(local, remote *Function) {
+	if remote == nil {
+		return
+	}
+	switch {
+	case local.ReservedConcurrentExecutions == nil:
+		remote.ReservedConcurrentExecutions = nil
+	case *local.ReservedConcurrentExecutions == unreservedConcurrency && remote.ReservedConcurrentExecutions == nil:
+		remote.ReservedConcurrentExecutions = aws.Int32(unreservedConcurrency)
+	}
+}
+
 func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption) (bool, error) {
 	if opt.SkipFunction {
 		return false, nil
@@ -100,6 +115,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	var code *types.FunctionCodeLocation
 
 	var tags Tags
+	var concurrency *types.Concurrency
 	var currentCodeSha256 string
 	var packageType types.PackageType
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
@@ -115,6 +131,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	} else {
 		remote = res.Configuration
 		code = res.Code
+		concurrency = res.Concurrency
 		{
 			slog.Debug("list tags", "resource", app.functionArn(ctx, name))
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
@@ -131,8 +148,12 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		packageType = res.Configuration.PackageType
 	}
 	remoteFunc := newFunctionFrom(remote, code, tags)
+	if remoteFunc != nil && concurrency != nil {
+		remoteFunc.ReservedConcurrentExecutions = concurrency.ReservedConcurrentExecutions
+	}
 	fillDefaultValues(remoteFunc)
 	normalizeCodeForDiff(fn, remoteFunc)
+	normalizeReservedConcurrencyForDiff(fn, remoteFunc)
 
 	// AWS returns VPC subnet/security group IDs in an arbitrary order, so
 	// normalize the ordering on both sides to avoid a spurious diff.

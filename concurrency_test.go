@@ -50,6 +50,35 @@ func TestPlanReservedConcurrency(t *testing.T) {
 	}
 }
 
+func TestNormalizeReservedConcurrencyForDiff(t *testing.T) {
+	cases := []struct {
+		name   string
+		local  *int32
+		remote *int32
+		expect *int32
+	}{
+		{"not managed", nil, aws.Int32(10), nil},
+		{"not managed and not set", nil, nil, nil},
+		{"managed", aws.Int32(5), aws.Int32(10), aws.Int32(10)},
+		{"managed and not set", aws.Int32(5), nil, nil},
+		{"remove and not set", aws.Int32(-1), nil, aws.Int32(-1)},
+		{"remove and set", aws.Int32(-1), aws.Int32(10), aws.Int32(10)},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			local := &lambroll.Function{ReservedConcurrentExecutions: c.local}
+			remote := &lambroll.Function{ReservedConcurrentExecutions: c.remote}
+			lambroll.NormalizeReservedConcurrencyForDiff(local, remote)
+			got := remote.ReservedConcurrentExecutions
+			if (got == nil) != (c.expect == nil) || (c.expect != nil && *got != *c.expect) {
+				t.Errorf("unexpected remote ReservedConcurrentExecutions %v, expected %v", got, c.expect)
+			}
+		})
+	}
+	// remote function does not exist
+	lambroll.NormalizeReservedConcurrencyForDiff(&lambroll.Function{ReservedConcurrentExecutions: aws.Int32(-1)}, nil)
+}
+
 func TestLoadFunctionReservedConcurrentExecutions(t *testing.T) {
 	app, err := lambroll.New(context.Background(), &lambroll.Option{})
 	if err != nil {

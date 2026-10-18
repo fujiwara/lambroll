@@ -83,6 +83,9 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		code = res.Code
 	}
 	fn := newFunctionFrom(c, code, tags)
+	if res != nil && res.Concurrency != nil {
+		fn.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
+	}
 	if fn.Code != nil {
 		// The version resolved at GetFunction becomes stale immediately after
 		// the next upload. Writing it to the generated file would pin

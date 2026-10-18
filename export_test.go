@@ -25,6 +25,8 @@ var (
 	NewUpdateFunctionCodeInput = newUpdateFunctionCodeInput
 	NormalizeCodeForDiff       = normalizeCodeForDiff
 	PlanReservedConcurrency    = planReservedConcurrency
+
+	NormalizeReservedConcurrencyForDiff = normalizeReservedConcurrencyForDiff
 )
 
 const (
