@@ -24,6 +24,13 @@ var (
 	RenderForExternalDiff      = renderForExternalDiff
 	NewUpdateFunctionCodeInput = newUpdateFunctionCodeInput
 	NormalizeCodeForDiff       = normalizeCodeForDiff
+	PlanReservedConcurrency    = planReservedConcurrency
+)
+
+const (
+	ConcurrencyActionNone   = concurrencyActionNone
+	ConcurrencyActionPut    = concurrencyActionPut
+	ConcurrencyActionDelete = concurrencyActionDelete
 )
 
 func (o *DiffOption) SetWriter(w io.Writer) {

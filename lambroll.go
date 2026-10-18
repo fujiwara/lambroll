@@ -39,6 +39,10 @@ var retryPolicy = retry.Policy{
 // It embeds lambda.CreateFunctionInput, so the keys of function.json are the same as CreateFunctionInput.
 type Function struct {
 	lambda.CreateFunctionInput
+
+	// ReservedConcurrentExecutions is applied by PutFunctionConcurrency / DeleteFunctionConcurrency.
+	// nil: not managed, -1: remove the reserved concurrency, >= 0: set the reserved concurrency.
+	ReservedConcurrentExecutions *int32 `json:",omitempty"`
 }
 
 func isForManagedInstance(fn *Function) bool {

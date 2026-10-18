@@ -78,6 +78,9 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
 	}
+	if err := validateReservedConcurrency(fn); err != nil {
+		return err
+	}
 
 	deployFunctionURL := func(context.Context) error { return nil }
 	if opt.FunctionURL != "" {
@@ -227,6 +230,9 @@ func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, o
 		}
 	}
 	if err := app.updateTags(ctx, fn, opt); err != nil {
+		return err
+	}
+	if err := app.updateReservedConcurrency(ctx, fn, opt); err != nil {
 		return err
 	}
 	return nil
