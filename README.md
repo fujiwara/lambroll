@@ -791,7 +791,9 @@ When "ReservedConcurrentExecutions" key exists in function.json, lambroll sets /
 
 When "ReservedConcurrentExecutions" key does not exist, lambroll doesn't manage the reserved concurrency. `lambroll diff` also doesn't show it.
 
-The reserved concurrency is a function-level setting, so it applies to all versions and aliases of the function. It is updated with the function configuration, so `--skip-configuration` skips it.
+The reserved concurrency is a function-level setting, so it applies to all versions and aliases of the function. When updating an existing function, it is updated with the function configuration, so `--skip-configuration` skips it.
+
+Managing the reserved concurrency requires `lambda:GetFunctionConcurrency`, `lambda:PutFunctionConcurrency` and `lambda:DeleteFunctionConcurrency` permissions.
 
 ### Environment variables from envfile
 
