@@ -6,7 +6,7 @@ lambroll does,
 
 - Create a function.
 - Create a Zip archive from a local directory.
-- Deploy function code / configuration / tags / aliases / function URLs.
+- Deploy function code / configuration / tags / reserved concurrency / aliases / function URLs.
 - Rollback a function to the previous version.
 - Invoke a function with payloads.
 - Manage function versions.
@@ -52,6 +52,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 - [Configuration](#configuration)
   - [function.json](#functionjson)
   - [Tags](#tags)
+  - [Reserved concurrency](#reserved-concurrency)
   - [Environment variables from envfile](#environment-variables-from-envfile)
   - [Jsonnet support for function configuration](#jsonnet-support-for-function-configuration)
   - [Expand SSM parameter values](#expand-ssm-parameter-values)
@@ -773,6 +774,24 @@ When "Tags" key exists in function.json, lambroll set / remove tags to the lambd
 
 When "Tags" key does not exist, lambroll doesn't manage tags.
 If you hope to remove all tags, set `"Tags": {}` expressly.
+
+### Reserved concurrency
+
+When "ReservedConcurrentExecutions" key exists in function.json, lambroll sets / removes the [reserved concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html) of the lambda function at deploy.
+
+```json5
+{
+  // ...
+  "ReservedConcurrentExecutions": 10
+}
+```
+
+- `0` or a positive number: lambroll sets the reserved concurrency by PutFunctionConcurrency API. `0` means that the function is throttled.
+- `-1`: lambroll removes the reserved concurrency by DeleteFunctionConcurrency API.
+
+When "ReservedConcurrentExecutions" key does not exist, lambroll doesn't manage the reserved concurrency. `lambroll diff` also doesn't show it.
+
+The reserved concurrency is a function-level setting, so it applies to all versions and aliases of the function. It is updated with the function configuration, so `--skip-configuration` skips it.
 
 ### Environment variables from envfile
 
