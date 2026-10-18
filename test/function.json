@@ -35,6 +35,7 @@
         "SystemLogLevel": "INFO"
     },
     "MemorySize": 128,
+    "ReservedConcurrentExecutions": 1,
     "Role": "{{ tfstate `data.aws_iam_role.lambda.arn` }}",
     "Runtime": "nodejs16.x",
     "Timeout": 5,

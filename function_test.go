@@ -104,7 +104,9 @@ func TestLoadFunction(t *testing.T) {
 				"sg-01a9b01eab0a3c154",
 			},
 		},
-	}}
+	},
+		ReservedConcurrentExecutions: aws.Int32(1),
+	}
 
 	for _, f := range []string{"test/function.json", "test/function.jsonnet"} {
 		fn, err := app.LoadFunction(f)

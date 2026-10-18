@@ -47,6 +47,7 @@ local timeout = std.extVar("timeout");
     SystemLogLevel: 'INFO',
   },
   MemorySize: memory_size,
+  ReservedConcurrentExecutions: 1,
   Role: tfstate('data.aws_iam_role.lambda.arn'),
   Runtime: 'nodejs16.x',
   Timeout: timeout,
