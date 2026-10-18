@@ -88,8 +88,14 @@ func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, cur
 	}
 }
 
-// getReservedConcurrency uses GetFunctionConcurrency because GetFunction with a qualifier does not return Concurrency.
-func (app *App) getReservedConcurrency(ctx context.Context, name string) (*int32, error) {
+// getReservedConcurrency calls GetFunctionConcurrency only with a qualifier, because GetFunction with a qualifier does not return Concurrency.
+func (app *App) getReservedConcurrency(ctx context.Context, fn *lambda.GetFunctionOutput, name string, qualifier *string) (*int32, error) {
+	if qualifier == nil {
+		if fn.Concurrency == nil {
+			return nil, nil
+		}
+		return fn.Concurrency.ReservedConcurrentExecutions, nil
+	}
 	res, err := app.lambda.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
 		FunctionName: aws.String(name),
 	})

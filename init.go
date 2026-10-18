@@ -84,13 +84,9 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	}
 	fn := newFunctionFrom(c, code, tags)
 	if exists {
-		if opt.Qualifier != nil {
-			// GetFunction with a qualifier does not return Concurrency. Not fatal, to keep working without lambda:GetFunctionConcurrency
-			if fn.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, *c.FunctionName); err != nil {
-				slog.Warn("failed to get reserved concurrency", "error", err)
-			}
-		} else if res.Concurrency != nil {
-			fn.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
+		// not fatal, to keep working without lambda:GetFunctionConcurrency
+		if fn.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, res, *c.FunctionName, opt.Qualifier); err != nil {
+			slog.Warn("failed to get reserved concurrency", "error", err)
 		}
 	}
 	if fn.Code != nil {

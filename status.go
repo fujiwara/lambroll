@@ -82,13 +82,9 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 		State:           string(res.Configuration.State),
 		LastUpdateState: string(res.Configuration.LastUpdateStatus),
 	}
-	if opt.Qualifier != nil {
-		// GetFunction with a qualifier does not return Concurrency. Not fatal, to keep working without lambda:GetFunctionConcurrency
-		if out.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, name); err != nil {
-			slog.Warn("failed to get reserved concurrency", "error", err)
-		}
-	} else if res.Concurrency != nil {
-		out.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
+	// not fatal, to keep working without lambda:GetFunctionConcurrency
+	if out.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, res, name, opt.Qualifier); err != nil {
+		slog.Warn("failed to get reserved concurrency", "error", err)
 	}
 	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
 		FunctionName: &name,

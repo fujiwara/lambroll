@@ -127,8 +127,8 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		remote = res.Configuration
 		code = res.Code
 		if fn.ReservedConcurrentExecutions != nil {
-			// only when managed, so users without the key need no new IAM permission
-			if concurrency, err = app.getReservedConcurrency(ctx, name); err != nil {
+			// only when managed, so a missing key is not compared and needs no new IAM permission
+			if concurrency, err = app.getReservedConcurrency(ctx, res, name, opt.Qualifier); err != nil {
 				return false, err
 			}
 		}
