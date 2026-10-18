@@ -793,8 +793,6 @@ When the key does not exist, lambroll doesn't manage the reserved concurrency, a
 
 It is a function-level setting shared by all versions and aliases. `--skip-configuration` skips updating it.
 
-Managing it requires `lambda:GetFunctionConcurrency`, `lambda:PutFunctionConcurrency` and `lambda:DeleteFunctionConcurrency` permissions. `lambroll init` / `lambroll status` with `--qualifier` also require `lambda:GetFunctionConcurrency`.
-
 ### Environment variables from envfile
 
 `lambroll --envfile .env1 .env2` reads files named .env1 and .env2 as environment files and export variables in these files.

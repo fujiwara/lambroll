@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
 
-// unreservedConcurrency in function.json removes the reserved concurrency.
+// a sentinel is needed because null and a missing key both decode to nil (not managed)
 const unreservedConcurrency int32 = -1
 
 type concurrencyAction int
@@ -22,7 +22,6 @@ const (
 	concurrencyActionDelete
 )
 
-// planReservedConcurrency compares function.json (local) with the deployed function (current, nil if not set).
 func planReservedConcurrency(local, current *int32) (concurrencyAction, error) {
 	if local == nil {
 		return concurrencyActionNone, nil
@@ -94,7 +93,7 @@ func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, opt
 	}
 }
 
-// GetFunction with a qualifier does not return Concurrency, so use GetFunctionConcurrency.
+// getReservedConcurrency uses GetFunctionConcurrency because GetFunction with a qualifier does not return Concurrency.
 func (app *App) getReservedConcurrency(ctx context.Context, name string) (*int32, error) {
 	res, err := app.lambda.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
 		FunctionName: aws.String(name),

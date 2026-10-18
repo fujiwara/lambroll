@@ -75,7 +75,7 @@ func TestNormalizeReservedConcurrencyForDiff(t *testing.T) {
 			}
 		})
 	}
-	// remote function does not exist
+	// must not panic when the remote function does not exist
 	lambroll.NormalizeReservedConcurrencyForDiff(&lambroll.Function{ReservedConcurrentExecutions: aws.Int32(-1)}, nil)
 }
 

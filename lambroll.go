@@ -39,7 +39,7 @@ var retryPolicy = retry.Policy{
 type Function struct {
 	lambda.CreateFunctionInput
 
-	// nil: not managed, -1: remove, >= 0: set. Not a part of CreateFunctionInput.
+	// CreateFunctionInput lacks this field, hence the struct instead of a type definition
 	ReservedConcurrentExecutions *int32 `json:",omitempty"`
 }
 

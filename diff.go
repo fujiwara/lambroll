@@ -91,7 +91,7 @@ func normalizeCodeForDiff(local, remote *Function) {
 	}
 }
 
-// normalizeReservedConcurrencyForDiff skips comparing when the key is not in function.json, and treats -1 as "not set" on remote.
+// normalizeReservedConcurrencyForDiff keeps diff --exit-code unchanged for function.json without the key, and matches -1 with no value on remote, which DeleteFunctionConcurrency leaves.
 func normalizeReservedConcurrencyForDiff(local, remote *Function) {
 	if remote == nil {
 		return

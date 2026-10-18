@@ -36,7 +36,7 @@ make clean
 
 ### Core Application Structure
 - **App struct** (lambroll.go): Main application context holding AWS clients, config loader, Jsonnet VM, and native functions
-- **Function type**: Struct embedding `lambda.CreateFunctionInput`, representing Lambda function configuration. It also has `ReservedConcurrentExecutions`, which is not a part of CreateFunctionInput
+- **Function type**: Struct embedding `lambda.CreateFunctionInput`, plus `ReservedConcurrentExecutions` from `lambda.PutFunctionConcurrencyInput`, representing Lambda function configuration
 - The App is initialized via `New()` which:
   - Loads environment files (--envfile)
   - Creates AWS SDK v2 config
@@ -80,7 +80,7 @@ make clean
 - **Terraform state lookup**: `--tfstate` and `--prefixed-tfstate` enable template/Jsonnet functions to lookup values from terraform.tfstate
 - **SSM parameter lookup**: Template and Jsonnet functions to resolve SSM parameter values
 - **Tags management**: When Tags key exists in function.json, lambroll manages tags; when absent, tags are not managed
-- **Reserved concurrency management**: When ReservedConcurrentExecutions key exists in function.json, lambroll sets it (>= 0) or removes it (-1) by Put/DeleteFunctionConcurrency; when absent, it is not managed (concurrency.go)
+- **Reserved concurrency management**: When ReservedConcurrentExecutions key exists in function.json, lambroll sets it (>= 0) or removes it (-1) by Put/DeleteFunctionConcurrency; when absent, it is not managed
 - **Aliases and versioning**: By default, creates "current" alias pointing to published version
 - **Keep versions**: `--keep-versions` flag to retain only N latest versions
 - **Skip options**: `--skip-archive`, `--skip-configuration`, `--skip-function` for partial deployments
