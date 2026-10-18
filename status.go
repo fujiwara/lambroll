@@ -81,7 +81,12 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 		State:           string(res.Configuration.State),
 		LastUpdateState: string(res.Configuration.LastUpdateStatus),
 	}
-	if res.Concurrency != nil {
+	if opt.Qualifier != nil {
+		// GetFunction with a qualifier does not return Concurrency
+		if out.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, name); err != nil {
+			return err
+		}
+	} else if res.Concurrency != nil {
 		out.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
 	}
 	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{

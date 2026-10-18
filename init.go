@@ -83,8 +83,15 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		code = res.Code
 	}
 	fn := newFunctionFrom(c, code, tags)
-	if res != nil && res.Concurrency != nil {
-		fn.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
+	if exists {
+		if opt.Qualifier != nil {
+			// GetFunction with a qualifier does not return Concurrency
+			if fn.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, *c.FunctionName); err != nil {
+				return err
+			}
+		} else if res.Concurrency != nil {
+			fn.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
+		}
 	}
 	if fn.Code != nil {
 		// The version resolved at GetFunction becomes stale immediately after
