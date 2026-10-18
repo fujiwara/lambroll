@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/fujiwara/lambroll"
 )
@@ -63,13 +64,13 @@ func TestNewUpdateFunctionCodeInput(t *testing.T) {
 	})
 
 	t.Run("S3 code without storage mode", func(t *testing.T) {
-		fn := lambroll.Function{
+		fn := lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			FunctionName: aws.String("test"),
 			Code: &types.FunctionCode{
 				S3Bucket: aws.String("my-bucket"),
 				S3Key:    aws.String("function.zip"),
 			},
-		}
+		}}
 		in := lambroll.NewUpdateFunctionCodeInput(&fn)
 		if in.S3ObjectStorageMode != "" {
 			t.Errorf("S3ObjectStorageMode must be empty, got %s", in.S3ObjectStorageMode)

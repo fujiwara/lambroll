@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/fujiwara/lambroll"
 	"github.com/google/go-cmp/cmp"
@@ -16,8 +17,8 @@ var testCasesFillDefaultValues = []struct {
 }{
 	{
 		name: "normal",
-		in:   &lambroll.Function{FunctionName: aws.String("test")},
-		expect: &lambroll.Function{
+		in:   &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{FunctionName: aws.String("test")}},
+		expect: &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			FunctionName:  aws.String("test"),
 			Description:   aws.String(""),
 			Architectures: []types.Architecture{types.ArchitectureX8664},
@@ -37,17 +38,17 @@ var testCasesFillDefaultValues = []struct {
 			TracingConfig: &types.TracingConfig{
 				Mode: types.TracingModePassThrough,
 			},
-		},
+		}},
 	},
 	{
 		name: "logging config JSON",
-		in: &lambroll.Function{
+		in: &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			FunctionName: aws.String("test"),
 			LoggingConfig: &types.LoggingConfig{
 				LogFormat: types.LogFormatJson,
 			},
-		},
-		expect: &lambroll.Function{
+		}},
+		expect: &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			FunctionName:  aws.String("test"),
 			Description:   aws.String(""),
 			Architectures: []types.Architecture{types.ArchitectureX8664},
@@ -69,11 +70,11 @@ var testCasesFillDefaultValues = []struct {
 			TracingConfig: &types.TracingConfig{
 				Mode: types.TracingModePassThrough,
 			},
-		},
+		}},
 	},
 	{
 		name: "file system configs (S3 Files gets DirectS3Read AUTO, EFS untouched)",
-		in: &lambroll.Function{
+		in: &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			FunctionName: aws.String("test"),
 			FileSystemConfigs: []types.FileSystemConfig{
 				{
@@ -95,8 +96,8 @@ var testCasesFillDefaultValues = []struct {
 					S3FilesConfig:  &types.S3FilesConfig{DirectS3Read: types.DirectS3ReadEnabled},
 				},
 			},
-		},
-		expect: &lambroll.Function{
+		}},
+		expect: &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			FunctionName:  aws.String("test"),
 			Description:   aws.String(""),
 			Architectures: []types.Architecture{types.ArchitectureX8664},
@@ -137,7 +138,7 @@ var testCasesFillDefaultValues = []struct {
 			TracingConfig: &types.TracingConfig{
 				Mode: types.TracingModePassThrough,
 			},
-		},
+		}},
 	},
 }
 

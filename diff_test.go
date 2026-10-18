@@ -6,13 +6,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/fujiwara/lambroll"
 	"github.com/google/go-cmp/cmp"
 )
 
 func TestSortFunctionForDiff(t *testing.T) {
-	fn := &lambroll.Function{
+	fn := &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		VpcConfig: &types.VpcConfig{
 			SubnetIds: []string{
 				"subnet-08dc9a51660120991",
@@ -24,7 +25,7 @@ func TestSortFunctionForDiff(t *testing.T) {
 				"sg-11111111",
 			},
 		},
-	}
+	}}
 	lambroll.SortFunctionForDiff(fn)
 
 	wantSubnets := []string{

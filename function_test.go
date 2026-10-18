@@ -53,7 +53,7 @@ func TestLoadFunction(t *testing.T) {
 			UserId:  aws.String("AIXXXXXXXXXXXXXXXXXX"),
 		}, nil
 	}
-	expected := lambroll.Function{
+	expected := lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		Architectures: []types.Architecture{types.ArchitectureX8664},
 		Description:   aws.String("hello function"),
 		Environment: &types.Environment{
@@ -104,7 +104,7 @@ func TestLoadFunction(t *testing.T) {
 				"sg-01a9b01eab0a3c154",
 			},
 		},
-	}
+	}}
 
 	for _, f := range []string{"test/function.json", "test/function.jsonnet"} {
 		fn, err := app.LoadFunction(f)
@@ -133,7 +133,7 @@ func TestNewFunction(t *testing.T) {
 	}
 	fn := lambroll.NewFunctionFrom(conf, nil, tags)
 
-	expected := lambroll.Function{
+	expected := lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		FunctionName: aws.String("hello"),
 		MemorySize:   aws.Int32(128),
 		Runtime:      types.RuntimeNodejs18x,
@@ -141,7 +141,7 @@ func TestNewFunction(t *testing.T) {
 		Handler:      aws.String("index.handler"),
 		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		Tags:         tags,
-	}
+	}}
 
 	fnJSON, _ := lambroll.MarshalJSON(fn)
 	expectedJSON, _ := lambroll.MarshalJSON(expected)
@@ -171,7 +171,7 @@ func TestNewFunctionWithS3FilesConfig(t *testing.T) {
 	}
 	fn := lambroll.NewFunctionFrom(conf, nil, nil)
 
-	expected := lambroll.Function{
+	expected := lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		FunctionName:      aws.String("hello"),
 		MemorySize:        aws.Int32(128),
 		Runtime:           types.RuntimeNodejs18x,
@@ -179,7 +179,7 @@ func TestNewFunctionWithS3FilesConfig(t *testing.T) {
 		Handler:           aws.String("index.handler"),
 		Role:              aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		FileSystemConfigs: fsConfigs,
-	}
+	}}
 
 	fnJSON, _ := lambroll.MarshalJSON(fn)
 	expectedJSON, _ := lambroll.MarshalJSON(expected)
@@ -203,7 +203,7 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 	}
 	fn := lambroll.NewFunctionFrom(conf, nil, nil)
 
-	expected := lambroll.Function{
+	expected := lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		FunctionName: aws.String("hello"),
 		MemorySize:   aws.Int32(128),
 		Runtime:      types.RuntimePython312,
@@ -214,7 +214,7 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 			ExecutionTimeout:      aws.Int32(900),
 			RetentionPeriodInDays: aws.Int32(14),
 		},
-	}
+	}}
 
 	fnJSON, _ := lambroll.MarshalJSON(fn)
 	expectedJSON, _ := lambroll.MarshalJSON(expected)
@@ -242,7 +242,7 @@ func TestNewFunctionWithResolvedS3Object(t *testing.T) {
 	}
 	fn := lambroll.NewFunctionFrom(conf, code, nil)
 
-	expected := lambroll.Function{
+	expected := lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		FunctionName: aws.String("hello"),
 		MemorySize:   aws.Int32(128),
 		Runtime:      types.RuntimeNodejs18x,
@@ -255,7 +255,7 @@ func TestNewFunctionWithResolvedS3Object(t *testing.T) {
 			S3ObjectVersion:     aws.String("version123"),
 			S3ObjectStorageMode: types.S3ObjectStorageModeReference,
 		},
-	}
+	}}
 
 	fnJSON, _ := lambroll.MarshalJSON(fn)
 	expectedJSON, _ := lambroll.MarshalJSON(expected)
@@ -266,24 +266,24 @@ func TestNewFunctionWithResolvedS3Object(t *testing.T) {
 
 func TestNormalizeCodeForDiff(t *testing.T) {
 	newRemote := func() *lambroll.Function {
-		return &lambroll.Function{
+		return &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			Code: &types.FunctionCode{
 				S3Bucket:            aws.String("my-bucket"),
 				S3Key:               aws.String("function.zip"),
 				S3ObjectVersion:     aws.String("version123"),
 				S3ObjectStorageMode: types.S3ObjectStorageModeReference,
 			},
-		}
+		}}
 	}
 
 	t.Run("local does not pin S3ObjectVersion", func(t *testing.T) {
-		local := &lambroll.Function{
+		local := &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			Code: &types.FunctionCode{
 				S3Bucket:            aws.String("my-bucket"),
 				S3Key:               aws.String("function.zip"),
 				S3ObjectStorageMode: types.S3ObjectStorageModeReference,
 			},
-		}
+		}}
 		remote := newRemote()
 		lambroll.NormalizeCodeForDiff(local, remote)
 		if remote.Code.S3ObjectVersion != nil {
@@ -292,13 +292,13 @@ func TestNormalizeCodeForDiff(t *testing.T) {
 	})
 
 	t.Run("local pins S3ObjectVersion", func(t *testing.T) {
-		local := &lambroll.Function{
+		local := &lambroll.Function{CreateFunctionInput: lambda.CreateFunctionInput{
 			Code: &types.FunctionCode{
 				S3Bucket:        aws.String("my-bucket"),
 				S3Key:           aws.String("function.zip"),
 				S3ObjectVersion: aws.String("version456"),
 			},
-		}
+		}}
 		remote := newRemote()
 		lambroll.NormalizeCodeForDiff(local, remote)
 		if aws.ToString(remote.Code.S3ObjectVersion) != "version123" {

@@ -139,7 +139,7 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 }
 
 func (app *App) createFunction(ctx context.Context, fn *Function) (*lambda.CreateFunctionOutput, error) {
-	in := lambda.CreateFunctionInput(*fn)
+	in := fn.CreateFunctionInput
 	if res, err := app.lambda.CreateFunction(ctx, &in); err != nil {
 		return nil, fmt.Errorf("failed to create function: %w", err)
 	} else {

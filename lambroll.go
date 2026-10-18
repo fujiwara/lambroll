@@ -35,9 +35,11 @@ var retryPolicy = retry.Policy{
 	MaxCount: 30,
 }
 
-// Function represents configuration of Lambda function
-// type Function = lambda.CreateFunctionInput
-type Function lambda.CreateFunctionInput
+// Function represents configuration of Lambda function.
+// It embeds lambda.CreateFunctionInput, so the keys of function.json are the same as CreateFunctionInput.
+type Function struct {
+	lambda.CreateFunctionInput
+}
 
 func isForManagedInstance(fn *Function) bool {
 	if fn == nil {
@@ -319,7 +321,7 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 	if c == nil {
 		return nil
 	}
-	fn := &Function{
+	fn := &Function{CreateFunctionInput: lambda.CreateFunctionInput{
 		Architectures:     c.Architectures,
 		Description:       c.Description,
 		EphemeralStorage:  c.EphemeralStorage,
@@ -335,7 +337,7 @@ func newFunctionFrom(c *types.FunctionConfiguration, code *types.FunctionCodeLoc
 		FileSystemConfigs: c.FileSystemConfigs,
 		KMSKeyArn:         c.KMSKeyArn,
 		SnapStart:         newSnapStart(c.SnapStart),
-	}
+	}}
 
 	if e := c.Environment; e != nil {
 		fn.Environment = &types.Environment{
