@@ -115,7 +115,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	var code *types.FunctionCodeLocation
 
 	var tags Tags
-	var concurrency *types.Concurrency
+	var concurrency *int32
 	var currentCodeSha256 string
 	var packageType types.PackageType
 	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
@@ -131,7 +131,12 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	} else {
 		remote = res.Configuration
 		code = res.Code
-		concurrency = res.Concurrency
+		if fn.ReservedConcurrentExecutions != nil {
+			// call GetFunctionConcurrency only when function.json manages it
+			if concurrency, err = app.getReservedConcurrency(ctx, name); err != nil {
+				return false, err
+			}
+		}
 		{
 			slog.Debug("list tags", "resource", app.functionArn(ctx, name))
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
@@ -148,8 +153,8 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		packageType = res.Configuration.PackageType
 	}
 	remoteFunc := newFunctionFrom(remote, code, tags)
-	if remoteFunc != nil && concurrency != nil {
-		remoteFunc.ReservedConcurrentExecutions = concurrency.ReservedConcurrentExecutions
+	if remoteFunc != nil {
+		remoteFunc.ReservedConcurrentExecutions = concurrency
 	}
 	fillDefaultValues(remoteFunc)
 	normalizeCodeForDiff(fn, remoteFunc)

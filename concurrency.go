@@ -57,18 +57,9 @@ func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, opt
 		logger.Debug("ReservedConcurrentExecutions not defined in function.json skip updating reserved concurrency")
 		return nil
 	}
-	var current *int32
-	res, err := app.lambda.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
-		FunctionName: fn.FunctionName,
-	})
+	current, err := app.getReservedConcurrency(ctx, *fn.FunctionName)
 	if err != nil {
-		var nfe *types.ResourceNotFoundException
-		if !errors.As(err, &nfe) {
-			return fmt.Errorf("failed to get function concurrency: %w", err)
-		}
-		// the function does not exist yet (dry-run of creating)
-	} else {
-		current = res.ReservedConcurrentExecutions
+		return err
 	}
 
 	action, err := planReservedConcurrency(fn.ReservedConcurrentExecutions, current)
@@ -103,6 +94,23 @@ func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, opt
 		logger.Debug("no need to update reserved concurrency (unchanged)")
 		return nil
 	}
+}
+
+// getReservedConcurrency returns the reserved concurrency of the function.
+// It returns nil if the reserved concurrency is not set or the function does not exist.
+// GetFunction with a qualifier does not return Concurrency, so use GetFunctionConcurrency.
+func (app *App) getReservedConcurrency(ctx context.Context, name string) (*int32, error) {
+	res, err := app.lambda.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
+		FunctionName: aws.String(name),
+	})
+	if err != nil {
+		var nfe *types.ResourceNotFoundException
+		if errors.As(err, &nfe) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get function concurrency: %w", err)
+	}
+	return res.ReservedConcurrentExecutions, nil
 }
 
 func (app *App) withRetryOnConflict(ctx context.Context, msg string, proc func(ctx context.Context) error) error {
