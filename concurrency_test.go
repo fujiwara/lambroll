@@ -57,7 +57,6 @@ func TestNormalizeReservedConcurrencyForDiff(t *testing.T) {
 		remote *int32
 		expect *int32
 	}{
-		{"not managed", nil, aws.Int32(10), nil},
 		{"not managed and not set", nil, nil, nil},
 		{"managed", aws.Int32(5), aws.Int32(10), aws.Int32(10)},
 		{"managed and not set", aws.Int32(5), nil, nil},

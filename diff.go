@@ -91,15 +91,12 @@ func normalizeCodeForDiff(local, remote *Function) {
 	}
 }
 
-// normalizeReservedConcurrencyForDiff keeps diff --exit-code unchanged for function.json without the key, and matches -1 with no value on remote, which DeleteFunctionConcurrency leaves.
+// normalizeReservedConcurrencyForDiff matches -1 with no value on remote, which DeleteFunctionConcurrency leaves.
 func normalizeReservedConcurrencyForDiff(local, remote *Function) {
 	if remote == nil {
 		return
 	}
-	switch {
-	case local.ReservedConcurrentExecutions == nil:
-		remote.ReservedConcurrentExecutions = nil
-	case *local.ReservedConcurrentExecutions == unreservedConcurrency && remote.ReservedConcurrentExecutions == nil:
+	if l := local.ReservedConcurrentExecutions; l != nil && *l == unreservedConcurrency && remote.ReservedConcurrentExecutions == nil {
 		remote.ReservedConcurrentExecutions = aws.Int32(unreservedConcurrency)
 	}
 }

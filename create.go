@@ -118,7 +118,7 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 	if err := app.updateTags(ctx, fn, opt); err != nil {
 		return err
 	}
-	if err := app.updateReservedConcurrency(ctx, fn, opt); err != nil {
+	if err := app.updateReservedConcurrency(ctx, fn, nil, opt); err != nil {
 		return err
 	}
 

@@ -47,18 +47,13 @@ func validateReservedConcurrency(fn *Function) error {
 	return err
 }
 
-func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, opt *DeployOption) error {
+func (app *App) updateReservedConcurrency(ctx context.Context, fn *Function, current *int32, opt *DeployOption) error {
 	logger := opt.logger()
 
 	if fn.ReservedConcurrentExecutions == nil {
 		logger.Debug("ReservedConcurrentExecutions not defined in function.json skip updating reserved concurrency")
 		return nil
 	}
-	current, err := app.getReservedConcurrency(ctx, *fn.FunctionName)
-	if err != nil {
-		return err
-	}
-
 	action, err := planReservedConcurrency(fn.ReservedConcurrentExecutions, current)
 	if err != nil {
 		return err

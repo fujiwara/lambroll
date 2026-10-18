@@ -99,6 +99,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	}
 
 	logger.Info("starting deploy function", "function", *fn.FunctionName)
+	var concurrency *int32
 	if current, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
 	}); err != nil {
@@ -115,6 +116,8 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return nil
 	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
+	} else if current.Concurrency != nil {
+		concurrency = current.Concurrency.ReservedConcurrentExecutions
 	}
 	fillDefaultValues(fn)
 
@@ -151,7 +154,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if opt.SkipConfiguration {
 		logger.Info("skip to deploy function configuration")
 	} else {
-		if err := app.deployFunctionConfiguration(ctx, fn, opt); err != nil {
+		if err := app.deployFunctionConfiguration(ctx, fn, concurrency, opt); err != nil {
 			return fmt.Errorf("failed to deploy function configuration: %w", err)
 		}
 	}
@@ -194,7 +197,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	return nil
 }
 
-func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, opt *DeployOption) error {
+func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, concurrency *int32, opt *DeployOption) error {
 	logger := opt.logger()
 
 	logger.Info("updating function configuration")
@@ -232,7 +235,7 @@ func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, o
 	if err := app.updateTags(ctx, fn, opt); err != nil {
 		return err
 	}
-	if err := app.updateReservedConcurrency(ctx, fn, opt); err != nil {
+	if err := app.updateReservedConcurrency(ctx, fn, concurrency, opt); err != nil {
 		return err
 	}
 	return nil
@@ -284,20 +287,10 @@ func newUpdateFunctionCodeInput(fn *Function) *lambda.UpdateFunctionCodeInput {
 }
 
 func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.UpdateFunctionConfigurationInput) error {
-	retryer := retryPolicy.Start(ctx)
-	for retryer.Continue() {
+	return app.withRetryOnConflict(ctx, "update function configuration", func(ctx context.Context) error {
 		_, err := app.lambda.UpdateFunctionConfiguration(ctx, in)
-		if err != nil {
-			var rce *types.ResourceConflictException
-			if errors.As(err, &rce) {
-				slog.Debug("retrying", "error", rce.Error())
-				continue
-			}
-			return fmt.Errorf("failed to update function configuration: %w", err)
-		}
-		return nil
-	}
-	return fmt.Errorf("failed to update function configuration (max retries reached)")
+		return err
+	})
 }
 
 func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.UpdateFunctionCodeOutput, error) {

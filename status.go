@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strconv"
 	"strings"
 
@@ -82,9 +83,9 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 		LastUpdateState: string(res.Configuration.LastUpdateStatus),
 	}
 	if opt.Qualifier != nil {
-		// GetFunction with a qualifier does not return Concurrency
+		// GetFunction with a qualifier does not return Concurrency. Not fatal, to keep working without lambda:GetFunctionConcurrency
 		if out.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, name); err != nil {
-			return err
+			slog.Warn("failed to get reserved concurrency", "error", err)
 		}
 	} else if res.Concurrency != nil {
 		out.ReservedConcurrentExecutions = res.Concurrency.ReservedConcurrentExecutions
