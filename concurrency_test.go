@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/lambda"
+	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/fujiwara/lambroll"
 )
 
@@ -119,6 +121,64 @@ func TestLoadFunctionReservedConcurrentExecutions(t *testing.T) {
 			has := strings.Contains(string(b), `"ReservedConcurrentExecutions"`)
 			if has != (c.expect != nil) {
 				t.Errorf("unexpected marshaled JSON %s", string(b))
+			}
+		})
+	}
+}
+
+func TestGetReservedConcurrencyWithoutQualifier(t *testing.T) {
+	cases := []struct {
+		name   string
+		res    *lambda.GetFunctionOutput
+		expect *int32
+	}{
+		{"not set", &lambda.GetFunctionOutput{}, nil},
+		{"set", &lambda.GetFunctionOutput{Concurrency: &types.Concurrency{ReservedConcurrentExecutions: aws.Int32(5)}}, aws.Int32(5)},
+		{"zero", &lambda.GetFunctionOutput{Concurrency: &types.Concurrency{ReservedConcurrentExecutions: aws.Int32(0)}}, aws.Int32(0)},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			// without a qualifier, the value is read from GetFunction and no API is called
+			got, err := lambroll.GetReservedConcurrency(&lambroll.App{}, context.Background(), c.res, "fn", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if aws.ToInt32(got) != aws.ToInt32(c.expect) || (got == nil) != (c.expect == nil) {
+				t.Errorf("unexpected %v, expected %v", got, c.expect)
+			}
+		})
+	}
+}
+
+func TestStatusOutputReservedConcurrentExecutions(t *testing.T) {
+	cases := []struct {
+		name   string
+		value  *int32
+		expect string
+	}{
+		{"not set", nil, ""},
+		{"zero", aws.Int32(0), "0"},
+		{"set", aws.Int32(5), "5"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			out := &lambroll.StatusOutput{ReservedConcurrentExecutions: c.value}
+			b, err := lambroll.MarshalJSON(out)
+			if err != nil {
+				t.Fatal(err)
+			}
+			table := out.String()
+			if c.expect == "" {
+				if strings.Contains(string(b), "ReservedConcurrentExecutions") || strings.Contains(table, "ReservedConcurrentExecutions") {
+					t.Errorf("unexpected ReservedConcurrentExecutions in %s %s", b, table)
+				}
+				return
+			}
+			if !strings.Contains(string(b), `"ReservedConcurrentExecutions": `+c.expect) {
+				t.Errorf("unexpected json %s", b)
+			}
+			if !strings.Contains(table, "| ReservedConcurrentExecutions | "+c.expect) {
+				t.Errorf("unexpected table %s", table)
 			}
 		})
 	}

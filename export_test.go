@@ -27,6 +27,7 @@ var (
 	PlanReservedConcurrency    = planReservedConcurrency
 
 	NormalizeReservedConcurrencyForDiff = normalizeReservedConcurrencyForDiff
+	GetReservedConcurrency              = (*App).getReservedConcurrency
 )
 
 const (
