@@ -38,8 +38,6 @@ var retryPolicy = retry.Policy{
 // Function represents configuration of Lambda function
 type Function struct {
 	lambda.CreateFunctionInput
-
-	// CreateFunctionInput lacks this field, hence the struct instead of a type definition
 	ReservedConcurrentExecutions *int32 `json:",omitempty"`
 }
 

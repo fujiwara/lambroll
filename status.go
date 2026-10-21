@@ -22,15 +22,14 @@ type StatusOption struct {
 }
 
 type StatusOutput struct {
-	FunctionName    string `json:"FunctionName"`
-	FunctionArn     string `json:"FunctionArn"`
-	Version         string `json:"Version"`
-	Runtime         string `json:"Runtime,omitempty"`
-	PackageType     string `json:"PackageType"`
-	State           string `json:"State"`
-	LastUpdateState string `json:"LastUpdateState"`
-	FunctionURL     string `json:"FunctionURL,omitempty"`
-
+	FunctionName                 string `json:"FunctionName"`
+	FunctionArn                  string `json:"FunctionArn"`
+	Version                      string `json:"Version"`
+	Runtime                      string `json:"Runtime,omitempty"`
+	PackageType                  string `json:"PackageType"`
+	State                        string `json:"State"`
+	LastUpdateState              string `json:"LastUpdateState"`
+	FunctionURL                  string `json:"FunctionURL,omitempty"`
 	ReservedConcurrentExecutions *int32 `json:"ReservedConcurrentExecutions,omitempty"`
 }
 
@@ -82,8 +81,8 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 		State:           string(res.Configuration.State),
 		LastUpdateState: string(res.Configuration.LastUpdateStatus),
 	}
-	// not fatal, to keep working without lambda:GetFunctionConcurrency
 	if out.ReservedConcurrentExecutions, err = app.getReservedConcurrency(ctx, res, name, opt.Qualifier); err != nil {
+		// not fatal, to keep working without lambda:GetFunctionConcurrency
 		slog.Warn("failed to get reserved concurrency", "error", err)
 	}
 	if res, err := app.lambda.GetFunctionUrlConfig(ctx, &lambda.GetFunctionUrlConfigInput{
