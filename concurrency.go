@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
@@ -107,21 +106,4 @@ func (app *App) getReservedConcurrency(ctx context.Context, fn *lambda.GetFuncti
 		return nil, fmt.Errorf("failed to get function concurrency: %w", err)
 	}
 	return res.ReservedConcurrentExecutions, nil
-}
-
-func (app *App) withRetryOnConflict(ctx context.Context, msg string, proc func(ctx context.Context) error) error {
-	retryer := retryPolicy.Start(ctx)
-	for retryer.Continue() {
-		err := proc(ctx)
-		if err == nil {
-			return nil
-		}
-		var rce *types.ResourceConflictException
-		if errors.As(err, &rce) {
-			slog.Debug("retrying", "error", rce.Error())
-			continue
-		}
-		return fmt.Errorf("failed to %s: %w", msg, err)
-	}
-	return fmt.Errorf("failed to %s (max retries reached)", msg)
 }

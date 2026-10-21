@@ -293,6 +293,23 @@ func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.Upda
 	})
 }
 
+func (app *App) withRetryOnConflict(ctx context.Context, msg string, proc func(ctx context.Context) error) error {
+	retryer := retryPolicy.Start(ctx)
+	for retryer.Continue() {
+		err := proc(ctx)
+		if err == nil {
+			return nil
+		}
+		var rce *types.ResourceConflictException
+		if errors.As(err, &rce) {
+			slog.Debug("retrying", "error", rce.Error())
+			continue
+		}
+		return fmt.Errorf("failed to %s: %w", msg, err)
+	}
+	return fmt.Errorf("failed to %s (max retries reached)", msg)
+}
+
 func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctionCodeInput) (*lambda.UpdateFunctionCodeOutput, error) {
 	var res *lambda.UpdateFunctionCodeOutput
 	retryer := retryPolicy.Start(ctx)
