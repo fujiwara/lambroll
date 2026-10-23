@@ -18,16 +18,17 @@ import (
 
 // DeployOption represents an option for Deploy()
 type DeployOption struct {
-	Src               string `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
-	Publish           bool   `help:"publish function" default:"true" negatable:"" json:"publish,omitempty"`
-	AliasName         string `name:"alias" help:"alias name for publish" default:"current" json:"alias,omitempty"`
-	AliasToLatest     bool   `help:"set alias to unpublished $LATEST version" default:"false" json:"alias_to_latest,omitempty"`
-	SkipArchive       bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false" json:"skip_archive,omitempty"`
-	KeepVersions      int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0" json:"keep_versions,omitempty"`
-	Ignore            string `help:"ignore fields by jq queries in function.json" default:"" json:"ignore,omitempty"`
-	FunctionURL       string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
-	SkipConfiguration bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false" json:"skip_configuration,omitempty"`
-	SkipFunction      bool   `help:"skip to deploy a function. deploy function-url only" default:"false" json:"skip_function,omitempty"`
+	Src                 string `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
+	Publish             bool   `help:"publish function" default:"true" negatable:"" json:"publish,omitempty"`
+	AliasName           string `name:"alias" help:"alias name for publish" default:"current" json:"alias,omitempty"`
+	AliasToLatest       bool   `help:"set alias to unpublished $LATEST version" default:"false" json:"alias_to_latest,omitempty"`
+	SkipArchive         bool   `help:"skip to create zip archive. requires Code.S3Bucket and Code.S3Key in function definition" default:"false" json:"skip_archive,omitempty"`
+	KeepVersions        int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0" json:"keep_versions,omitempty"`
+	Ignore              string `help:"ignore fields by jq queries in function.json" default:"" json:"ignore,omitempty"`
+	FunctionURL         string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
+	SkipConfiguration   bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false" json:"skip_configuration,omitempty"`
+	SkipFunction        bool   `help:"skip to deploy a function. deploy function-url and reserved concurrency only" default:"false" json:"skip_function,omitempty"`
+	ReservedConcurrency *int32 `help:"reserved concurrency of the function. -1 to remove" env:"LAMBROLL_RESERVED_CONCURRENCY" json:"reserved_concurrency,omitempty"`
 
 	DryRunOption
 	ZipOption
@@ -74,6 +75,10 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	}
 	logger.Debug("deploy options", "options", opt.String())
 
+	if err := validateReservedConcurrency(opt.ReservedConcurrency); err != nil {
+		return err
+	}
+
 	fn, err := app.loadFunction(app.functionFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to load function: %w", err)
@@ -91,8 +96,11 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	}
 
 	if opt.SkipFunction {
-		// skip to deploy a function. deploy function-url only
-		return deployFunctionURL(ctx)
+		// skip to deploy a function. deploy function-url and reserved concurrency only
+		if err := deployFunctionURL(ctx); err != nil {
+			return err
+		}
+		return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 	}
 
 	logger.Info("starting deploy function", "function", *fn.FunctionName)
@@ -108,7 +116,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		if err := deployFunctionURL(ctx); err != nil {
 			return err
 		}
-		return nil
+		return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
@@ -159,7 +167,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	}
 
 	if opt.DryRun {
-		return nil
+		return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 	}
 
 	// publish function only for managed instance
@@ -187,7 +195,8 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		return err
 	}
 
-	return nil
+	// apply reserved concurrency after the function and function-url are deployed successfully
+	return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 }
 
 func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, opt *DeployOption) error {
