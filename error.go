@@ -33,8 +33,7 @@ func extractExitCodeAndError(err error) (int, error) {
 	if err == nil {
 		return int(ExitCodeOK), nil
 	}
-	var e *ExitError
-	if errors.As(err, &e) {
+	if e, ok := errors.AsType[*ExitError](err); ok {
 		return int(e.Code), e.Err
 	}
 	return int(ExitCodeGeneralError), err

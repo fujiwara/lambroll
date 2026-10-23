@@ -87,8 +87,7 @@ VERSIONS:
 			Qualifier:    aws.String(vs),
 		})
 		if err != nil {
-			var nfe *types.ResourceNotFoundException
-			if errors.As(err, &nfe) {
+			if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 				slog.Debug("version not found", "version", vs)
 				continue VERSIONS
 			} else {

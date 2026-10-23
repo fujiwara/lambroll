@@ -25,8 +25,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 		Resource: aws.String(arn),
 	})
 	if err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			tags, err = &lambda.ListTagsOutput{}, nil
 		} else {
 			return fmt.Errorf("failed to list tags of %s: %w", arn, err)

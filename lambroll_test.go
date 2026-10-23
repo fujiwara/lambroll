@@ -154,6 +154,7 @@ func TestFillDefaultValues(t *testing.T) {
 	}
 }
 
+//go:fix inline
 func ptr[T any](v T) *T {
-	return &v
+	return new(v)
 }

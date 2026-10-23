@@ -106,8 +106,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		FunctionName: &name,
 		Qualifier:    opt.Qualifier,
 	}); err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			slog.Info("function not found. lambroll deploy will create a new function", "function", name)
 		} else {
 			return false, fmt.Errorf("failed to GetFunction %s: %w", name, err)
@@ -222,8 +221,7 @@ func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOptio
 		FunctionName: &name,
 		Qualifier:    qualifier,
 	}); err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			// empty
 			remote = &types.FunctionUrlConfig{}
 		} else {

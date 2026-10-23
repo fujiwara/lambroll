@@ -79,8 +79,7 @@ func (app *App) Status(ctx context.Context, opt *StatusOption) error {
 		FunctionName: &name,
 		Qualifier:    opt.Qualifier,
 	}); err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			// do nothing
 		} else {
 			return fmt.Errorf("failed to GetFunctionUrlConfig %s: %w", name, err)
