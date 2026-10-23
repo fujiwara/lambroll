@@ -97,10 +97,10 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 
 	if opt.SkipFunction {
 		// skip to deploy a function. deploy function-url and reserved concurrency only
-		if err := app.deployReservedConcurrency(ctx, *fn.FunctionName, opt); err != nil {
+		if err := deployFunctionURL(ctx); err != nil {
 			return err
 		}
-		return deployFunctionURL(ctx)
+		return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 	}
 
 	logger.Info("starting deploy function", "function", *fn.FunctionName)
@@ -113,13 +113,10 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		if err := app.create(ctx, opt, fn); err != nil {
 			return err
 		}
-		if err := app.deployReservedConcurrency(ctx, *fn.FunctionName, opt); err != nil {
-			return err
-		}
 		if err := deployFunctionURL(ctx); err != nil {
 			return err
 		}
-		return nil
+		return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 	} else if err := validateUpdateFunction(current.Configuration, current.Code, fn); err != nil {
 		return err
 	}
@@ -193,17 +190,13 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 		}
 	}
 
-	// apply reserved concurrency after the function is deployed successfully
-	if err := app.deployReservedConcurrency(ctx, *fn.FunctionName, opt); err != nil {
-		return err
-	}
-
 	// deploy function-url
 	if err := deployFunctionURL(ctx); err != nil {
 		return err
 	}
 
-	return nil
+	// apply reserved concurrency after the function and function-url are deployed successfully
+	return app.deployReservedConcurrency(ctx, *fn.FunctionName, opt)
 }
 
 func (app *App) deployFunctionConfiguration(ctx context.Context, fn *Function, opt *DeployOption) error {

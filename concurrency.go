@@ -57,8 +57,8 @@ func (app *App) deployReservedConcurrency(ctx context.Context, name string, opt 
 		FunctionName: aws.String(name),
 	})
 	if err != nil {
-		// the function may not exist yet in dry-run
-		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); !ok {
+		// the function may not exist yet only in dry-run
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); !ok || !opt.DryRun {
 			return fmt.Errorf("failed to get function concurrency: %w", err)
 		}
 	} else {

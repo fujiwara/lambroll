@@ -1232,7 +1232,7 @@ Specifying `SourceArn` as `*` is not recommended because it allows access from a
 - `-1`: remove it by DeleteFunctionConcurrency API.
 - not specified: lambroll does not touch the reserved concurrency.
 
-It is applied after the function (code, configuration and aliases) is deployed successfully, so a failed deploy does not change the reserved concurrency.
+It is applied after the function (code, configuration and aliases) and the function URL are deployed successfully, so a failed deploy does not change the reserved concurrency.
 
 Write `--reserved-concurrency=-1` with `=`, because `--reserved-concurrency -1` is parsed as a short flag.
 
