@@ -39,8 +39,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	var c *types.FunctionConfiguration
 	exists := true
 	if err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			slog.Info("function not found", "function", *opt.FunctionName)
 			c = &types.FunctionConfiguration{
 				FunctionName: opt.FunctionName,

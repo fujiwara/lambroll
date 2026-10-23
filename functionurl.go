@@ -292,8 +292,7 @@ func (app *App) deployFunctionURLConfig(ctx context.Context, fc *FunctionURL, op
 		Qualifier:    fc.Config.Qualifier,
 	})
 	if err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			logger.Info("function url config not found. creating", "function", fqFunctionName)
 			create = true
 		} else {
@@ -363,8 +362,7 @@ func (app *App) deployFunctionURLPermissions(ctx context.Context, fc *FunctionUR
 				Qualifier:    perm.Qualifier,
 				StatementId:  perm.StatementId,
 			}); err != nil {
-				var nfe *types.ResourceNotFoundException
-				if errors.As(err, &nfe) {
+				if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 					slog.Warn("permission Sid not found. skipped removing", "sid", *perm.StatementId)
 					continue
 				}
@@ -432,8 +430,7 @@ func (app *App) getFunctionURLPermissions(ctx context.Context, functionName stri
 		Qualifier:    qualifier,
 	})
 	if err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			// do nothing
 		} else {
 			return nil, fmt.Errorf("failed to get policy: %w", err)
@@ -483,8 +480,7 @@ func (app *App) initFunctionURL(ctx context.Context, fn *Function, exists bool, 
 		Qualifier:    opt.Qualifier,
 	})
 	if err != nil {
-		var nfe *types.ResourceNotFoundException
-		if errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 			if exists {
 				slog.Warn("function url config not found", "function", *fn.FunctionName)
 				return nil

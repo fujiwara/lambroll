@@ -99,8 +99,7 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 	if current, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
 		FunctionName: fn.FunctionName,
 	}); err != nil {
-		var nfe *types.ResourceNotFoundException
-		if !errors.As(err, &nfe) {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); !ok {
 			return err
 		}
 		if err := app.create(ctx, opt, fn); err != nil {
@@ -282,8 +281,7 @@ func (app *App) updateFunctionConfiguration(ctx context.Context, in *lambda.Upda
 	for retryer.Continue() {
 		_, err := app.lambda.UpdateFunctionConfiguration(ctx, in)
 		if err != nil {
-			var rce *types.ResourceConflictException
-			if errors.As(err, &rce) {
+			if rce, ok := errors.AsType[*types.ResourceConflictException](err); ok {
 				slog.Debug("retrying", "error", rce.Error())
 				continue
 			}
@@ -301,8 +299,7 @@ func (app *App) updateFunctionCode(ctx context.Context, in *lambda.UpdateFunctio
 		var err error
 		res, err = app.lambda.UpdateFunctionCode(ctx, in)
 		if err != nil {
-			var rce *types.ResourceConflictException
-			if errors.As(err, &rce) {
+			if _, ok := errors.AsType[*types.ResourceConflictException](err); ok {
 				slog.Debug("retrying", "error", err)
 				continue
 			}
@@ -373,8 +370,7 @@ func (app *App) updateAliases(ctx context.Context, functionName string, vs ...ve
 			Name:            aws.String(v.Name),
 		})
 		if err != nil {
-			var nfe *types.ResourceNotFoundException
-			if errors.As(err, &nfe) {
+			if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 				slog.Info("alias not found. creating alias", "name", v.Name)
 				_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 					FunctionName:    aws.String(functionName),

@@ -19,8 +19,7 @@ func jsonObjectKeys(t reflect.Type) map[string]bool {
 	if t.Kind() != reflect.Struct {
 		return keys
 	}
-	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
+	for f := range t.Fields() {
 		name, _, _ := strings.Cut(f.Tag.Get("json"), ",")
 		if f.Anonymous && name == "" {
 			for k := range jsonObjectKeys(f.Type) {
@@ -59,8 +58,7 @@ func TestOptionFileSubcommandTags(t *testing.T) {
 	}
 
 	cliT := reflect.TypeFor[CLIOptions]()
-	for i := 0; i < cliT.NumField(); i++ {
-		field := cliT.Field(i)
+	for field := range cliT.Fields() {
 		cmd, ok := field.Tag.Lookup("cmd")
 		if !ok {
 			continue // embedded Option etc.
