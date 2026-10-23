@@ -80,6 +80,7 @@ make clean
 - **Terraform state lookup**: `--tfstate` and `--prefixed-tfstate` enable template/Jsonnet functions to lookup values from terraform.tfstate
 - **SSM parameter lookup**: Template and Jsonnet functions to resolve SSM parameter values
 - **Tags management**: When Tags key exists in function.json, lambroll manages tags; when absent, tags are not managed
+- **Reserved concurrency**: Managed by `deploy --reserved-concurrency` (not in function.json); `-1` removes it, unspecified leaves it untouched
 - **Aliases and versioning**: By default, creates "current" alias pointing to published version
 - **Keep versions**: `--keep-versions` flag to retain only N latest versions
 - **Skip options**: `--skip-archive`, `--skip-configuration`, `--skip-function` for partial deployments

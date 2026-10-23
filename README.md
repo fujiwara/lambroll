@@ -6,7 +6,7 @@ lambroll does,
 
 - Create a function.
 - Create a Zip archive from a local directory.
-- Deploy function code / configuration / tags / aliases / function URLs.
+- Deploy function code / configuration / tags / aliases / function URLs / reserved concurrency.
 - Rollback a function to the previous version.
 - Invoke a function with payloads.
 - Manage function versions.
@@ -64,6 +64,7 @@ When you hope to manage these resources, we recommend other deployment tools ([A
 - [Advanced Features](#advanced-features)
   - [Lambda@Edge support](#lambdaedge-support)
   - [Lambda function URLs support](#lambda-function-urls-support)
+  - [Reserved concurrency](#reserved-concurrency)
   - [File system mounts (EFS / S3 Files)](#file-system-mounts-efs--s3-files)
   - [Lambda Managed Instances support](#lambda-managed-instances-support)
   - [Tenant Isolation support](#tenant-isolation-support)
@@ -389,7 +390,11 @@ Flags:
                                   ($LAMBROLL_FUNCTION_URL)
       --skip-configuration        skip updating function configuration, deploy function
                                   code and aliases only
-      --skip-function             skip to deploy a function. deploy function-url only
+      --skip-function             skip to deploy a function. deploy function-url and
+                                  reserved concurrency only
+      --reserved-concurrency=RESERVED-CONCURRENCY
+                                  reserved concurrency of the function. -1 to remove
+                                  ($LAMBROLL_RESERVED_CONCURRENCY)
       --exclude-file=".lambdaignore"
                                   exclude file
       --symlink                   keep symlink (same as zip --symlink,-y)
@@ -1218,6 +1223,38 @@ See also [Restricting access to an AWS Lambda function URL origin](https://docs.
 If you need to allow access from any CloudFront distributions in your account, you can specify `SourceArn` as `arn:aws:cloudfront::123456789012:distribution/*`.
 
 Specifying `SourceArn` as `*` is not recommended because it allows access from any CloudFront distribution in any AWS account.
+
+### Reserved concurrency
+
+`lambroll deploy --reserved-concurrency=N` sets the [reserved concurrency](https://docs.aws.amazon.com/lambda/latest/dg/configuration-concurrency.html) of the function. (This is not the provisioned concurrency.)
+
+- `0` or more: set it by PutFunctionConcurrency API. `0` throttles the function.
+- `-1`: remove it by DeleteFunctionConcurrency API.
+- not specified: lambroll does not touch the reserved concurrency.
+
+It is applied after the function (code, configuration and aliases) is deployed successfully, so a failed deploy does not change the reserved concurrency.
+
+Write `--reserved-concurrency=-1` with `=`, because `--reserved-concurrency -1` is parsed as a short flag.
+
+The value is not defined in function.json, because the reserved concurrency is a function-level setting independent of the function code and configuration. For example, you may set it to `0` to stop the function in an emergency, and `lambroll deploy` without `--reserved-concurrency` never reverts it.
+
+To manage it with the function, specify it in the option file or the `LAMBROLL_RESERVED_CONCURRENCY` environment variable.
+
+```jsonnet
+{
+  deploy: {
+    reserved_concurrency: 10,
+  },
+}
+```
+
+To update only the reserved concurrency without deploying the function code (and publishing a new version), use `--skip-function`.
+
+```console
+$ lambroll deploy --skip-function --reserved-concurrency=0
+```
+
+`lambda:GetFunctionConcurrency` permission is required in addition to `lambda:PutFunctionConcurrency` or `lambda:DeleteFunctionConcurrency` when `--reserved-concurrency` is specified.
 
 ### File system mounts (EFS / S3 Files)
 
