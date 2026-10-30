@@ -34,7 +34,7 @@ type DiffOption struct {
 	Ignore            string  `help:"ignore diff by jq query" default:"" json:"ignore,omitempty"`
 	ExitCode          bool    `help:"exit with code 2 if there are differences" default:"false" json:"exit_code,omitempty"`
 	SkipFunction      bool    `help:"skip function diff. shows function-url only" default:"false" json:"skip_function,omitempty"`
-	SkipConfiguration bool    `help:"compare only ZIP code SHA256 (implies --code); skip function and function-url configuration" default:"false" json:"skip_configuration,omitempty"`
+	SkipConfiguration bool    `help:"skip function configuration and tags; compare ZIP code SHA256 (implies --code)" default:"false" json:"skip_configuration,omitempty"`
 	External          string  `help:"external command to display diff" default:"" env:"LAMBROLL_DIFF_COMMAND" json:"external,omitempty"`
 
 	Mask []string `help:"mask values in diff output by jq selector or environment variable name (repeatable)" json:"mask,omitempty"`
@@ -201,7 +201,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 }
 
 func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) (bool, error) {
-	if opt.FunctionURL == "" || opt.SkipConfiguration {
+	if opt.FunctionURL == "" {
 		// skip function-url diff
 		return false, nil
 	}
