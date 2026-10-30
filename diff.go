@@ -27,14 +27,15 @@ import (
 
 // DiffOption represents options for Diff()
 type DiffOption struct {
-	Src          string  `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
-	CodeSha256   bool    `name:"code" help:"diff of code sha256" default:"false" json:"code,omitempty"`
-	Qualifier    *string `help:"the qualifier to compare" json:"qualifier,omitempty"`
-	FunctionURL  string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
-	Ignore       string  `help:"ignore diff by jq query" default:"" json:"ignore,omitempty"`
-	ExitCode     bool    `help:"exit with code 2 if there are differences" default:"false" json:"exit_code,omitempty"`
-	SkipFunction bool    `help:"skip function diff. shows function-url only" default:"false" json:"skip_function,omitempty"`
-	External     string  `help:"external command to display diff" default:"" env:"LAMBROLL_DIFF_COMMAND" json:"external,omitempty"`
+	Src               string  `help:"function zip archive or src dir" default:"." json:"src,omitempty"`
+	CodeSha256        bool    `name:"code" help:"diff of code sha256" default:"false" json:"code,omitempty"`
+	Qualifier         *string `help:"the qualifier to compare" json:"qualifier,omitempty"`
+	FunctionURL       string  `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
+	Ignore            string  `help:"ignore diff by jq query" default:"" json:"ignore,omitempty"`
+	ExitCode          bool    `help:"exit with code 2 if there are differences" default:"false" json:"exit_code,omitempty"`
+	SkipFunction      bool    `help:"skip function diff. shows function-url only" default:"false" json:"skip_function,omitempty"`
+	SkipConfiguration bool    `help:"skip function configuration and tags; compare ZIP code SHA256 (implies --code)" default:"false" json:"skip_configuration,omitempty"`
+	External          string  `help:"external command to display diff" default:"" env:"LAMBROLL_DIFF_COMMAND" json:"external,omitempty"`
 
 	Mask []string `help:"mask values in diff output by jq selector or environment variable name (repeatable)" json:"mask,omitempty"`
 
@@ -45,6 +46,9 @@ type DiffOption struct {
 
 // Diff prints diff of function.json compared with latest function
 func (app *App) Diff(ctx context.Context, opt *DiffOption) error {
+	if opt.SkipConfiguration && opt.SkipFunction {
+		return errors.New("--skip-configuration and --skip-function cannot be combined")
+	}
 	if err := opt.Expand(); err != nil {
 		return err
 	}
@@ -114,7 +118,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 	} else {
 		remote = res.Configuration
 		code = res.Code
-		{
+		if !opt.SkipConfiguration {
 			slog.Debug("list tags", "resource", app.functionArn(ctx, name))
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				// Tagging operations are permitted on Lambda functions only.
@@ -129,47 +133,53 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		currentCodeSha256 = *res.Configuration.CodeSha256
 		packageType = res.Configuration.PackageType
 	}
-	remoteFunc := newFunctionFrom(remote, code, tags)
-	fillDefaultValues(remoteFunc)
-	normalizeCodeForDiff(fn, remoteFunc)
-
-	// AWS returns VPC subnet/security group IDs in an arbitrary order, so
-	// normalize the ordering on both sides to avoid a spurious diff.
-	sortFunctionForDiff(fn)
-	sortFunctionForDiff(remoteFunc)
-
-	remoteJSON, _ := marshalAny(remoteFunc)
-	newJSON, _ := marshalAny(fn)
+	if opt.SkipConfiguration && remote == nil {
+		return false, fmt.Errorf("function %s not found; cannot compare code sha256", name)
+	}
 	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
 	hasDiff := false
+	if !opt.SkipConfiguration {
+		remoteFunc := newFunctionFrom(remote, code, tags)
+		fillDefaultValues(remoteFunc)
+		normalizeCodeForDiff(fn, remoteFunc)
 
-	// masking applies only to the function configuration diff. The selectors are
-	// resolved once and emitDiff shares a single token registry between the two
-	// sides so equal values collapse to the same token.
-	maskSelectors := resolveMaskSelectors(opt.Mask)
+		// AWS returns VPC subnet/security group IDs in an arbitrary order, so
+		// normalize the ordering on both sides to avoid a spurious diff.
+		sortFunctionForDiff(fn)
+		sortFunctionForDiff(remoteFunc)
 
-	if d, err := app.emitDiff(ctx, opt, "function.json",
-		&jsondiff.Input{Name: remoteArn, X: remoteJSON},
-		&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
-		opt.Ignore, maskSelectors,
-	); err != nil {
-		return false, err
-	} else if d {
-		hasDiff = true
+		remoteJSON, _ := marshalAny(remoteFunc)
+		newJSON, _ := marshalAny(fn)
+
+		// masking applies only to the function configuration diff. The selectors are
+		// resolved once and emitDiff shares a single token registry between the two
+		// sides so equal values collapse to the same token.
+		maskSelectors := resolveMaskSelectors(opt.Mask)
+
+		if d, err := app.emitDiff(ctx, opt, "function.json",
+			&jsondiff.Input{Name: remoteArn, X: remoteJSON},
+			&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
+			opt.Ignore, maskSelectors,
+		); err != nil {
+			return false, err
+		} else if d {
+			hasDiff = true
+		}
+
+		if err := validateUpdateFunction(remote, code, fn); err != nil {
+			return false, err
+		}
 	}
 
-	if err := validateUpdateFunction(remote, code, fn); err != nil {
-		return false, err
-	}
-
-	if opt.CodeSha256 {
-		if packageType != types.PackageTypeZip {
+	if opt.CodeSha256 || opt.SkipConfiguration {
+		if packageType != types.PackageTypeZip || (fn.PackageType != "" && fn.PackageType != types.PackageTypeZip) || (fn.Code != nil && fn.Code.ImageUri != nil) {
 			return false, fmt.Errorf("code-sha256 is only supported for Zip package type")
 		}
 		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes, opt.KeepSymlink)
 		if err != nil {
 			return false, err
 		}
+		defer zipfile.Close()
 		h := sha256.New()
 		if _, err := io.Copy(h, zipfile); err != nil {
 			return false, err

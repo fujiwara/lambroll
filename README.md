@@ -574,7 +574,11 @@ $ lambroll diff --code        # Compare code SHA256
 $ lambroll diff --qualifier current  # Compare with specific version/alias
 $ lambroll diff --ignore='.Environment.Variables.TIMESTAMP'  # Ignore specific fields
 $ lambroll diff --exit-code   # Exit with code 2 if differences exist
+$ lambroll diff --skip-configuration --exit-code # Compare ZIP code, skipping function configuration and tags
+$ lambroll diff --skip-configuration --function-url function_url.json # Also compare function URL configuration and permissions
 ```
+
+`--skip-configuration` implies `--code` and skips function configuration and tags, matching `deploy --skip-configuration`. When `--function-url` is given, function URL configuration and permissions are still compared. Code comparison requires ZIP packages in both the local definition and the deployed function; container images are not supported. It cannot be combined with `--skip-function`. Use `--exit-code` to return status 2 for code or requested function URL differences.
 
 Use `--ignore` with jq query syntax to ignore specific fields when comparing.
 
