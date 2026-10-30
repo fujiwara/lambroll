@@ -13,9 +13,9 @@ func TestCallerIdentity(t *testing.T) {
 	c := lambroll.NewCallerIdentity(aws.Config{})
 	c.Resolver = func(_ context.Context) (*sts.GetCallerIdentityOutput, error) {
 		return &sts.GetCallerIdentityOutput{
-			Account: aws.String("123456789012"),
-			Arn:     aws.String("arn:aws:iam::123456789012:user/test-user"),
-			UserId:  aws.String("AIXXXXXXXXX"),
+			Account: new("123456789012"),
+			Arn:     new("arn:aws:iam::123456789012:user/test-user"),
+			UserId:  new("AIXXXXXXXXX"),
 		}, nil
 	}
 	ctx := context.Background()

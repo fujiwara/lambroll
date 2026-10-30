@@ -396,10 +396,10 @@ func fillDefaultValues(fn *Function) {
 		fn.Architectures = []types.Architecture{types.ArchitectureX8664}
 	}
 	if fn.Description == nil {
-		fn.Description = aws.String("")
+		fn.Description = new("")
 	}
 	if fn.MemorySize == nil {
-		fn.MemorySize = aws.Int32(128)
+		fn.MemorySize = new(int32(128))
 	}
 	if fn.Layers == nil {
 		fn.Layers = []string{}
@@ -407,14 +407,14 @@ func fillDefaultValues(fn *Function) {
 	if lc := fn.LoggingConfig; lc == nil {
 		fn.LoggingConfig = &types.LoggingConfig{
 			LogFormat: types.LogFormatText,
-			LogGroup:  aws.String(resolveLogGroup(fn)),
+			LogGroup:  new(resolveLogGroup(fn)),
 		}
 	} else {
 		if lc.LogFormat == "" {
 			lc.LogFormat = types.LogFormatText
 		}
 		if lc.LogGroup == nil {
-			lc.LogGroup = aws.String(resolveLogGroup(fn))
+			lc.LogGroup = new(resolveLogGroup(fn))
 		}
 		if lc.ApplicationLogLevel == "" && lc.LogFormat == types.LogFormatJson {
 			lc.ApplicationLogLevel = types.ApplicationLogLevelInfo
@@ -430,11 +430,11 @@ func fillDefaultValues(fn *Function) {
 	}
 	if fn.EphemeralStorage == nil {
 		fn.EphemeralStorage = &types.EphemeralStorage{
-			Size: aws.Int32(512),
+			Size: new(int32(512)),
 		}
 	}
 	if fn.Timeout == nil {
-		fn.Timeout = aws.Int32(3)
+		fn.Timeout = new(int32(3))
 	}
 	if fn.SnapStart == nil {
 		fn.SnapStart = &types.SnapStart{

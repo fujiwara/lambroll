@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/fujiwara/lambroll/wildcard"
 )
@@ -194,8 +193,8 @@ func (app *App) uploadFunctionToS3(ctx context.Context, f *os.File, bucket, key 
 	svc := s3.NewFromConfig(app.awsConfig)
 	slog.Debug("PutObject to S3", "bucket", bucket, "key", key)
 	res, err := svc.PutObject(ctx, &s3.PutObjectInput{
-		Bucket: aws.String(bucket),
-		Key:    aws.String(key),
+		Bucket: new(bucket),
+		Key:    new(key),
 		Body:   f,
 	})
 	if err != nil {

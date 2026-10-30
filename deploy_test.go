@@ -64,10 +64,10 @@ func TestNewUpdateFunctionCodeInput(t *testing.T) {
 
 	t.Run("S3 code without storage mode", func(t *testing.T) {
 		fn := lambroll.Function{
-			FunctionName: aws.String("test"),
+			FunctionName: new("test"),
 			Code: &types.FunctionCode{
-				S3Bucket: aws.String("my-bucket"),
-				S3Key:    aws.String("function.zip"),
+				S3Bucket: new("my-bucket"),
+				S3Key:    new("function.zip"),
 			},
 		}
 		in := lambroll.NewUpdateFunctionCodeInput(&fn)

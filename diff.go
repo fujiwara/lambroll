@@ -123,7 +123,7 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
 				// Tagging operations are permitted on Lambda functions only.
 				// Tags on aliases and versions are not supported.
-				Resource: aws.String(app.functionArn(ctx, name)),
+				Resource: new(app.functionArn(ctx, name)),
 			})
 			if err != nil {
 				return false, fmt.Errorf("failed to list tags: %w", err)

@@ -197,8 +197,8 @@ func TestDiffSkipConfiguration(t *testing.T) {
 					}
 					policy := lambroll.PolicyOutput{Version: "2012-10-17", Statement: []lambroll.PolicyStatement{}}
 					if tt.matchingPermissions {
-						config := &lambroll.FunctionURL{Config: &lambroll.FunctionURLConfig{FunctionName: aws.String("diff-test"), Qualifier: aws.String("live"), AuthType: types.FunctionUrlAuthTypeNone}}
-						permission := &lambroll.FunctionURLPermission{Principal: aws.String("*")}
+						config := &lambroll.FunctionURL{Config: &lambroll.FunctionURLConfig{FunctionName: new("diff-test"), Qualifier: new("live"), AuthType: types.FunctionUrlAuthTypeNone}}
+						permission := &lambroll.FunctionURLPermission{Principal: new("*")}
 						for _, input := range permission.AddPermissionInputs(config) {
 							policy.Statement = append(policy.Statement, lambroll.PolicyStatement{Sid: aws.ToString(input.StatementId), Effect: "Allow", Principal: "*", Action: aws.ToString(input.Action)})
 						}
@@ -217,14 +217,14 @@ func TestDiffSkipConfiguration(t *testing.T) {
 			}))
 			defer server.Close()
 			ctx := context.Background()
-			app, err := lambroll.New(ctx, &lambroll.Option{Function: function, Region: aws.String("ap-northeast-1"), Endpoint: aws.String(server.URL)})
+			app, err := lambroll.New(ctx, &lambroll.Option{Function: function, Region: new("ap-northeast-1"), Endpoint: new(server.URL)})
 			if err != nil {
 				t.Fatal(err)
 			}
 			app.CallerIdentity().Resolver = func(context.Context) (*sts.GetCallerIdentityOutput, error) {
-				return &sts.GetCallerIdentityOutput{Account: aws.String("000000000000"), Arn: aws.String("arn:aws:iam::000000000000:user/test"), UserId: aws.String("test")}, nil
+				return &sts.GetCallerIdentityOutput{Account: new("000000000000"), Arn: new("arn:aws:iam::000000000000:user/test"), UserId: new("test")}, nil
 			}
-			opt := &lambroll.DiffOption{Src: src, CodeSha256: tt.code, SkipConfiguration: tt.skip, SkipFunction: tt.skipFunction, ExitCode: tt.exitCode, Qualifier: aws.String("live"), FunctionURL: functionURL}
+			opt := &lambroll.DiffOption{Src: src, CodeSha256: tt.code, SkipConfiguration: tt.skip, SkipFunction: tt.skipFunction, ExitCode: tt.exitCode, Qualifier: new("live"), FunctionURL: functionURL}
 			var output bytes.Buffer
 			opt.SetWriter(&output)
 			err = app.Diff(ctx, opt)

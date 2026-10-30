@@ -6,7 +6,6 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
@@ -19,7 +18,7 @@ func (app *App) List(ctx context.Context, opt *ListOption) error {
 	var marker *string
 	for {
 		res, err := app.lambda.ListFunctions(ctx, &lambda.ListFunctionsInput{
-			MaxItems: aws.Int32(50),
+			MaxItems: new(int32(50)),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to ListFunctions: %w", err)
@@ -28,7 +27,7 @@ func (app *App) List(ctx context.Context, opt *ListOption) error {
 			arn := app.functionArn(ctx, *c.FunctionName)
 			slog.Debug("listing tags", "arn", arn)
 			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
-				Resource: aws.String(arn),
+				Resource: new(arn),
 			})
 			if err != nil {
 				return fmt.Errorf("failed to list tags: %w", err)

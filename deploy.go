@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/aereal/jsondiff"
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/itchyny/gojq"
@@ -339,7 +338,7 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 	retryer := retryPolicy.Start(ctx)
 	for retryer.Continue() {
 		res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
-			FunctionName: aws.String(name),
+			FunctionName: new(name),
 		})
 		if err != nil {
 			slog.Warn("failed to get function, retrying", "error", err)
@@ -360,7 +359,7 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 func (app *App) publishFunction(ctx context.Context, functionName string) error {
 	slog.Info("publishing function", "function", functionName, "to", types.FunctionVersionLatestPublishedLatestPublished)
 	_, err := app.lambda.PublishVersion(ctx, &lambda.PublishVersionInput{
-		FunctionName: aws.String(functionName),
+		FunctionName: new(functionName),
 		PublishTo:    types.FunctionVersionLatestPublishedLatestPublished,
 	})
 	if err != nil {
@@ -374,17 +373,17 @@ func (app *App) updateAliases(ctx context.Context, functionName string, vs ...ve
 	for _, v := range vs {
 		slog.Info("updating alias", "name", v.Name, "version", v.Version)
 		_, err := app.lambda.UpdateAlias(ctx, &lambda.UpdateAliasInput{
-			FunctionName:    aws.String(functionName),
-			FunctionVersion: aws.String(v.Version),
-			Name:            aws.String(v.Name),
+			FunctionName:    new(functionName),
+			FunctionVersion: new(v.Version),
+			Name:            new(v.Name),
 		})
 		if err != nil {
 			if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
 				slog.Info("alias not found. creating alias", "name", v.Name)
 				_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
-					FunctionName:    aws.String(functionName),
-					FunctionVersion: aws.String(v.Version),
-					Name:            aws.String(v.Name),
+					FunctionName:    new(functionName),
+					FunctionVersion: new(v.Version),
+					Name:            new(v.Name),
 				})
 				if err != nil {
 					return fmt.Errorf("failed to create alias: %w", err)
@@ -405,7 +404,7 @@ func (app *App) deleteVersions(ctx context.Context, functionName string, keepVer
 	}
 
 	params := &lambda.ListVersionsByFunctionInput{
-		FunctionName: aws.String(functionName),
+		FunctionName: new(functionName),
 	}
 
 	// versions will be set asc order, like 1 to N
@@ -434,7 +433,7 @@ func (app *App) deleteVersions(ctx context.Context, functionName string, keepVer
 
 		slog.Info("deleting function version", "version", *v.Version)
 		_, err := app.lambda.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
-			FunctionName: aws.String(functionName),
+			FunctionName: new(functionName),
 			Qualifier:    v.Version,
 		})
 		if err != nil {
