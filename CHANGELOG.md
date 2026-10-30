@@ -4,7 +4,7 @@
 
 - Require Go 1.26 by @fujiwara in https://github.com/fujiwara/lambroll/pull/663
 - Update dependencies by @fujiwara in https://github.com/fujiwara/lambroll/pull/666
-- Add --reserved-concurrency flag to deploy by @fujiwara in https://github.com/fujiwara/lambroll/pull/665
+- Add --reserved-concurrency flag to deploy by @fujiwara in https://github.com/fujiwara/lambroll/pull/665 (based on the proposal by @h-matsuo in https://github.com/fujiwara/lambroll/pull/662)
 - Clarify --skip-configuration help for deploy by @fujiwara in https://github.com/fujiwara/lambroll/pull/668
 - feat: support code-only diff with --skip-configuration by @owenshen0907 in https://github.com/fujiwara/lambroll/pull/667
 - Use new(expr) instead of aws pointer helpers by @fujiwara in https://github.com/fujiwara/lambroll/pull/669
