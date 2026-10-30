@@ -7,23 +7,34 @@ import (
 )
 
 var (
-	CreateZipArchive           = createZipArchive
-	ExpandExcludeFile          = expandExcludeFile
-	LoadZipArchive             = loadZipArchive
-	MergeTags                  = mergeTags
-	FillDefaultValues          = fillDefaultValues
-	JSONStr                    = jsonStr
-	MarshalJSON                = marshalJSON
-	NewFunctionFrom            = newFunctionFrom
-	SortFunctionForDiff        = sortFunctionForDiff
-	NewCallerIdentity          = newCallerIdentity
-	Unzip                      = unzip
-	ExtractExitCodeAndError    = extractExitCodeAndError
-	IsAWSManagedTag            = isAWSManagedTag
-	RunExternalDiff            = runExternalDiff
-	RenderForExternalDiff      = renderForExternalDiff
-	NewUpdateFunctionCodeInput = newUpdateFunctionCodeInput
-	NormalizeCodeForDiff       = normalizeCodeForDiff
+	CreateZipArchive            = createZipArchive
+	ExpandExcludeFile           = expandExcludeFile
+	LoadZipArchive              = loadZipArchive
+	MergeTags                   = mergeTags
+	FillDefaultValues           = fillDefaultValues
+	JSONStr                     = jsonStr
+	MarshalJSON                 = marshalJSON
+	NewFunctionFrom             = newFunctionFrom
+	SortFunctionForDiff         = sortFunctionForDiff
+	NewCallerIdentity           = newCallerIdentity
+	Unzip                       = unzip
+	ExtractExitCodeAndError     = extractExitCodeAndError
+	IsAWSManagedTag             = isAWSManagedTag
+	RunExternalDiff             = runExternalDiff
+	RenderForExternalDiff       = renderForExternalDiff
+	NewUpdateFunctionCodeInput  = newUpdateFunctionCodeInput
+	NormalizeCodeForDiff        = normalizeCodeForDiff
+	ValidateReservedConcurrency = validateReservedConcurrency
+	PlanReservedConcurrency     = planReservedConcurrency
+	FormatReservedConcurrency   = formatReservedConcurrency
+)
+
+type ConcurrencyAction = concurrencyAction
+
+const (
+	ConcurrencyActionNone   = concurrencyActionNone
+	ConcurrencyActionPut    = concurrencyActionPut
+	ConcurrencyActionDelete = concurrencyActionDelete
 )
 
 func (o *DiffOption) SetWriter(w io.Writer) {

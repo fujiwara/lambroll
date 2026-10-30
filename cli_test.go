@@ -144,8 +144,8 @@ var cliTests = []struct {
 			Envfile:        []string{},
 			LogLevel:       "trace", // option file's priority is higher than env
 			LogFormat:      "text",
-			Profile:        ptr("mine"),
-			Region:         ptr("us-west-2"),
+			Profile:        new("mine"),
+			Region:         new("us-west-2"),
 		},
 	},
 	{
@@ -164,8 +164,8 @@ var cliTests = []struct {
 			Envfile:        []string{},
 			LogLevel:       "trace", // option file's priority is higher than env
 			LogFormat:      "text",
-			Profile:        ptr("mine"),
-			Region:         ptr("us-west-2"),
+			Profile:        new("mine"),
+			Region:         new("us-west-2"),
 		},
 	},
 	{
@@ -317,6 +317,35 @@ func TestParseCLISubcommandOption(t *testing.T) {
 		}
 		if diff := cmp.Diff([]string{"FOO"}, opt.Diff.Mask); diff != "" {
 			t.Errorf("CLI --mask should replace option file diff.mask: %s", diff)
+		}
+	})
+
+	t.Run("deploy.reserved_concurrency", func(t *testing.T) {
+		for _, tc := range []struct {
+			name string
+			args []string
+			env  map[string]string
+			want *int32
+		}{
+			{name: "not specified", args: []string{"deploy"}, want: nil},
+			{name: "CLI", args: []string{"deploy", "--reserved-concurrency", "0"}, want: new(int32(0))},
+			{name: "env", args: []string{"deploy"}, env: map[string]string{"LAMBROLL_RESERVED_CONCURRENCY": "10"}, want: new(int32(10))},
+			{name: "option file", args: []string{"deploy", "--option", "reserved_concurrency.jsonnet"}, want: new(int32(-1))},
+			{name: "CLI overrides option file", args: []string{"deploy", "--option", "reserved_concurrency.jsonnet", "--reserved-concurrency", "5"}, want: new(int32(5))},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				for k, v := range tc.env {
+					lambroll.Setenv(k, v)
+				}
+				defer lambroll.ResetEnv()
+				_, opt, _, err := lambroll.ParseCLI(tc.args)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if diff := cmp.Diff(tc.want, opt.Deploy.ReservedConcurrency); diff != "" {
+					t.Errorf("unexpected reserved concurrency: %s", diff)
+				}
+			})
 		}
 	})
 
