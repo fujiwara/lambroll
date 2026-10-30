@@ -100,104 +100,136 @@ func (app *App) diffFunction(ctx context.Context, fn *Function, opt *DiffOption)
 		return false, nil
 	}
 	name := aws.ToString(fn.FunctionName)
-	var remote *types.FunctionConfiguration
-	var code *types.FunctionCodeLocation
-
-	var tags Tags
-	var currentCodeSha256 string
-	var packageType types.PackageType
-	if res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
-		FunctionName: &name,
-		Qualifier:    opt.Qualifier,
-	}); err != nil {
-		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
-			slog.Info("function not found. lambroll deploy will create a new function", "function", name)
-		} else {
-			return false, fmt.Errorf("failed to GetFunction %s: %w", name, err)
-		}
-	} else {
-		remote = res.Configuration
-		code = res.Code
-		if !opt.SkipConfiguration {
-			slog.Debug("list tags", "resource", app.functionArn(ctx, name))
-			res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
-				// Tagging operations are permitted on Lambda functions only.
-				// Tags on aliases and versions are not supported.
-				Resource: new(app.functionArn(ctx, name)),
-			})
-			if err != nil {
-				return false, fmt.Errorf("failed to list tags: %w", err)
-			}
-			tags = res.Tags
-		}
-		currentCodeSha256 = *res.Configuration.CodeSha256
-		packageType = res.Configuration.PackageType
+	remote, err := app.getFunctionForDiff(ctx, name, opt)
+	if err != nil {
+		return false, err
 	}
-	if opt.SkipConfiguration && remote == nil {
+	if opt.SkipConfiguration && remote.Configuration == nil {
 		return false, fmt.Errorf("function %s not found; cannot compare code sha256", name)
 	}
 	remoteArn := fullQualifiedFunctionName(app.functionArn(ctx, name), opt.Qualifier)
+
 	hasDiff := false
 	if !opt.SkipConfiguration {
-		remoteFunc := newFunctionFrom(remote, code, tags)
-		fillDefaultValues(remoteFunc)
-		normalizeCodeForDiff(fn, remoteFunc)
-
-		// AWS returns VPC subnet/security group IDs in an arbitrary order, so
-		// normalize the ordering on both sides to avoid a spurious diff.
-		sortFunctionForDiff(fn)
-		sortFunctionForDiff(remoteFunc)
-
-		remoteJSON, _ := marshalAny(remoteFunc)
-		newJSON, _ := marshalAny(fn)
-
-		// masking applies only to the function configuration diff. The selectors are
-		// resolved once and emitDiff shares a single token registry between the two
-		// sides so equal values collapse to the same token.
-		maskSelectors := resolveMaskSelectors(opt.Mask)
-
-		if d, err := app.emitDiff(ctx, opt, "function.json",
-			&jsondiff.Input{Name: remoteArn, X: remoteJSON},
-			&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
-			opt.Ignore, maskSelectors,
-		); err != nil {
-			return false, err
-		} else if d {
-			hasDiff = true
-		}
-
-		if err := validateUpdateFunction(remote, code, fn); err != nil {
-			return false, err
-		}
-	}
-
-	if opt.CodeSha256 || opt.SkipConfiguration {
-		if packageType != types.PackageTypeZip || (fn.PackageType != "" && fn.PackageType != types.PackageTypeZip) || (fn.Code != nil && fn.Code.ImageUri != nil) {
-			return false, fmt.Errorf("code-sha256 is only supported for Zip package type")
-		}
-		zipfile, _, err := prepareZipfile(opt.Src, opt.excludes, opt.KeepSymlink)
+		d, err := app.diffFunctionConfiguration(ctx, fn, remote, remoteArn, opt)
 		if err != nil {
 			return false, err
 		}
-		defer zipfile.Close()
-		h := sha256.New()
-		if _, err := io.Copy(h, zipfile); err != nil {
+		hasDiff = d
+	}
+	if opt.CodeSha256 || opt.SkipConfiguration {
+		d, err := app.diffCodeSha256(ctx, fn, remote, remoteArn, opt)
+		if err != nil {
 			return false, err
 		}
-		newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
-
-		prefix := "CodeSha256: "
-		if d, err := app.emitDiff(ctx, opt, "CodeSha256.txt",
-			&jsondiff.Input{Name: remoteArn, X: prefix + currentCodeSha256},
-			&jsondiff.Input{Name: "--src=" + opt.Src, X: prefix + newCodeSha256},
-			"", nil,
-		); err != nil {
-			return false, err
-		} else if d {
-			hasDiff = true
-		}
+		hasDiff = hasDiff || d
 	}
 	return hasDiff, nil
+}
+
+// remoteFunction represents the deployed function to compare with.
+// Configuration is nil if the function does not exist.
+type remoteFunction struct {
+	Configuration *types.FunctionConfiguration
+	Code          *types.FunctionCodeLocation
+	Tags          Tags
+}
+
+// getFunctionForDiff returns the deployed function.
+// Tags are fetched only when the function configuration is compared.
+func (app *App) getFunctionForDiff(ctx context.Context, name string, opt *DiffOption) (remoteFunction, error) {
+	res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
+		FunctionName: &name,
+		Qualifier:    opt.Qualifier,
+	})
+	if err != nil {
+		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
+			slog.Info("function not found. lambroll deploy will create a new function", "function", name)
+			return remoteFunction{}, nil
+		}
+		return remoteFunction{}, fmt.Errorf("failed to GetFunction %s: %w", name, err)
+	}
+	remote := remoteFunction{
+		Configuration: res.Configuration,
+		Code:          res.Code,
+	}
+	if !opt.SkipConfiguration {
+		slog.Debug("list tags", "resource", app.functionArn(ctx, name))
+		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
+			// Tagging operations are permitted on Lambda functions only.
+			// Tags on aliases and versions are not supported.
+			Resource: new(app.functionArn(ctx, name)),
+		})
+		if err != nil {
+			return remoteFunction{}, fmt.Errorf("failed to list tags: %w", err)
+		}
+		remote.Tags = res.Tags
+	}
+	return remote, nil
+}
+
+// diffFunctionConfiguration compares the function configuration and tags.
+func (app *App) diffFunctionConfiguration(ctx context.Context, fn *Function, remote remoteFunction, remoteArn string, opt *DiffOption) (bool, error) {
+	remoteFunc := newFunctionFrom(remote.Configuration, remote.Code, remote.Tags)
+	fillDefaultValues(remoteFunc)
+	normalizeCodeForDiff(fn, remoteFunc)
+
+	// AWS returns VPC subnet/security group IDs in an arbitrary order, so
+	// normalize the ordering on both sides to avoid a spurious diff.
+	sortFunctionForDiff(fn)
+	sortFunctionForDiff(remoteFunc)
+
+	remoteJSON, _ := marshalAny(remoteFunc)
+	newJSON, _ := marshalAny(fn)
+
+	// masking applies only to the function configuration diff. The selectors are
+	// resolved once and emitDiff shares a single token registry between the two
+	// sides so equal values collapse to the same token.
+	maskSelectors := resolveMaskSelectors(opt.Mask)
+
+	hasDiff, err := app.emitDiff(ctx, opt, "function.json",
+		&jsondiff.Input{Name: remoteArn, X: remoteJSON},
+		&jsondiff.Input{Name: app.functionFilePath, X: newJSON},
+		opt.Ignore, maskSelectors,
+	)
+	if err != nil {
+		return false, err
+	}
+	if err := validateUpdateFunction(remote.Configuration, remote.Code, fn); err != nil {
+		return false, err
+	}
+	return hasDiff, nil
+}
+
+// diffCodeSha256 compares the code sha256 of the zip archive made from --src
+// with the deployed one. Only Zip package type is supported.
+func (app *App) diffCodeSha256(ctx context.Context, fn *Function, remote remoteFunction, remoteArn string, opt *DiffOption) (bool, error) {
+	var currentCodeSha256 string
+	var packageType types.PackageType
+	if remote.Configuration != nil {
+		currentCodeSha256 = aws.ToString(remote.Configuration.CodeSha256)
+		packageType = remote.Configuration.PackageType
+	}
+	if packageType != types.PackageTypeZip || (fn.PackageType != "" && fn.PackageType != types.PackageTypeZip) || (fn.Code != nil && fn.Code.ImageUri != nil) {
+		return false, fmt.Errorf("code-sha256 is only supported for Zip package type")
+	}
+	zipfile, _, err := prepareZipfile(opt.Src, opt.excludes, opt.KeepSymlink)
+	if err != nil {
+		return false, err
+	}
+	defer zipfile.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, zipfile); err != nil {
+		return false, err
+	}
+	newCodeSha256 := base64.StdEncoding.EncodeToString(h.Sum(nil))
+
+	prefix := "CodeSha256: "
+	return app.emitDiff(ctx, opt, "CodeSha256.txt",
+		&jsondiff.Input{Name: remoteArn, X: prefix + currentCodeSha256},
+		&jsondiff.Input{Name: "--src=" + opt.Src, X: prefix + newCodeSha256},
+		"", nil,
+	)
 }
 
 func (app *App) diffFunctionURL(ctx context.Context, name string, opt *DiffOption) (bool, error) {
