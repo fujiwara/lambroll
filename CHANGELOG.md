@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.6.0](https://github.com/fujiwara/lambroll/compare/v1.5.4...v1.6.0) - 2026-10-30
+
+- Require Go 1.26 by @fujiwara in https://github.com/fujiwara/lambroll/pull/663
+- Update dependencies by @fujiwara in https://github.com/fujiwara/lambroll/pull/666
+- Add --reserved-concurrency flag to deploy by @fujiwara in https://github.com/fujiwara/lambroll/pull/665
+- Clarify --skip-configuration help for deploy by @fujiwara in https://github.com/fujiwara/lambroll/pull/668
+- feat: support code-only diff with --skip-configuration by @owenshen0907 in https://github.com/fujiwara/lambroll/pull/667
+- Use new(expr) instead of aws pointer helpers by @fujiwara in https://github.com/fujiwara/lambroll/pull/669
+- Split diffFunction into smaller functions by @fujiwara in https://github.com/fujiwara/lambroll/pull/670
+
 ## [v1.5.4](https://github.com/fujiwara/lambroll/compare/v1.5.3...v1.5.4) - 2026-10-03
 
 - Fix path traversal in `init --unzip` ([GHSA-p9xj-8cwq-6fmf](https://github.com/fujiwara/lambroll/security/advisories/GHSA-p9xj-8cwq-6fmf)). Zip entries escaping the `--src` directory are rejected, and symlinks pointing outside of it are skipped with a warning. Reported by @real-kicktheball
