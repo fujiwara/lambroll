@@ -388,8 +388,7 @@ Flags:
       --ignore=""                 ignore fields by jq queries in function.json
       --function-url=""           path to function-url definition
                                   ($LAMBROLL_FUNCTION_URL)
-      --skip-configuration        skip updating function configuration, deploy function
-                                  code and aliases only
+      --skip-configuration        skip updating function configuration and tags
       --skip-function             skip to deploy a function. deploy function-url and
                                   reserved concurrency only
       --reserved-concurrency=RESERVED-CONCURRENCY
@@ -408,7 +407,7 @@ Flags:
   - If the function does not exist, create a new function.
   - If the function exists, update the function code.
   - Create / Update function configuration
-    - If `--skip-configuration` is specified, skip to update the configuration.
+    - If `--skip-configuration` is specified, skip to update the configuration and tags.
   - Create / Update function code
 - Create an alias to the published version when `--publish` (default).
 
