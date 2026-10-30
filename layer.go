@@ -27,7 +27,7 @@ func (r *LayerArnResolver) resolve(ctx context.Context, name, version string) (s
 	case "latest", "":
 		out, err := r.svc.ListLayerVersions(ctx, &lambda.ListLayerVersionsInput{
 			LayerName: &name,
-			MaxItems:  aws.Int32(1),
+			MaxItems:  new(int32(1)),
 		})
 		if err != nil {
 			return "", fmt.Errorf("failed to list layer versions: %w", err)

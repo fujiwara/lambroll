@@ -43,11 +43,11 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			slog.Info("function not found", "function", *opt.FunctionName)
 			c = &types.FunctionConfiguration{
 				FunctionName: opt.FunctionName,
-				MemorySize:   aws.Int32(128),
+				MemorySize:   new(int32(128)),
 				Runtime:      types.RuntimeNodejs18x,
-				Timeout:      aws.Int32(3),
-				Handler:      aws.String("index.handler"),
-				Role: aws.String(
+				Timeout:      new(int32(3)),
+				Handler:      new("index.handler"),
+				Role: new(
 					fmt.Sprintf(
 						"arn:aws:iam::%s:role/YOUR_LAMBDA_ROLE_NAME",
 						app.AWSAccountID(ctx),
@@ -69,7 +69,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 		arn := app.functionArn(ctx, *c.FunctionName)
 		slog.Debug("listing tags", "arn", arn)
 		res, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
-			Resource: aws.String(arn), // tags are not supported for alias
+			Resource: new(arn), // tags are not supported for alias
 		})
 		if err != nil {
 			return fmt.Errorf("failed to list tags: %w", err)

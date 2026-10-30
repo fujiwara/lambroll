@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/samber/lo"
@@ -22,7 +21,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 	}
 	arn := app.functionArn(ctx, *fn.FunctionName)
 	tags, err := app.lambda.ListTags(ctx, &lambda.ListTagsInput{
-		Resource: aws.String(arn),
+		Resource: new(arn),
 	})
 	if err != nil {
 		if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
@@ -51,7 +50,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 		logger.Info("setting tags", "count", n)
 		if !opt.DryRun {
 			_, err = app.lambda.TagResource(ctx, &lambda.TagResourceInput{
-				Resource: aws.String(arn),
+				Resource: new(arn),
 				Tags:     setTags,
 			})
 			if err != nil {
@@ -64,7 +63,7 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 		logger.Info("removing tags", "count", n)
 		if !opt.DryRun {
 			_, err = app.lambda.UntagResource(ctx, &lambda.UntagResourceInput{
-				Resource: aws.String(arn),
+				Resource: new(arn),
 				TagKeys:  removeTagKeys,
 			})
 			if err != nil {

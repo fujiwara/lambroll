@@ -31,7 +31,7 @@ var permissionsTestCases = []struct {
 			"Resource": "arn:aws:lambda:ap-northeast-1:123456789012:function:hello",
 			"Sid": "lambroll-8f4ec83e623a309d9ca15db9276da30b2129be9c"
 		}`),
-		expectedPrincipal:      aws.String("*"),
+		expectedPrincipal:      new("*"),
 		expectedPrincipalOrgID: nil,
 	},
 	{
@@ -49,8 +49,8 @@ var permissionsTestCases = []struct {
 				}
 			}
 		}`),
-		expectedPrincipal:      aws.String("*"),
-		expectedPrincipalOrgID: aws.String("o-xxxxxxxxxx"),
+		expectedPrincipal:      new("*"),
+		expectedPrincipalOrgID: new("o-xxxxxxxxxx"),
 	},
 	{
 		subject: "AuthType AWS_IAM with Principal",
@@ -68,7 +68,7 @@ var permissionsTestCases = []struct {
 			"Resource": "arn:aws:lambda:ap-northeast-1:123456789012:function:hello",
 			"Sid": "lambroll-3b135eca4b14335775cda9f947966093a57d270f"
 		}`),
-		expectedPrincipal:      aws.String("123456789012"),
+		expectedPrincipal:      new("123456789012"),
 		expectedPrincipalOrgID: nil,
 	},
 	{
@@ -87,9 +87,9 @@ var permissionsTestCases = []struct {
 			"Resource": "arn:aws:lambda:ap-northeast-1:123456789012:function:hello",
 			"Sid": "lambroll-3b135eca4b14335775cda9f947966093a57d270f"
 		}`),
-		expectedPrincipal:      aws.String("cloudfront.amazonaws.com"),
+		expectedPrincipal:      new("cloudfront.amazonaws.com"),
 		expectedPrincipalOrgID: nil,
-		expectedSourceArn:      aws.String("arn:aws:cloudfront::123456789012:distribution/ABCDEFG12345678"),
+		expectedSourceArn:      new("arn:aws:cloudfront::123456789012:distribution/ABCDEFG12345678"),
 	},
 }
 
@@ -121,50 +121,50 @@ func TestFunctionURLPermission_Equals(t *testing.T) {
 		{
 			name: "identical permissions",
 			p1: &lambroll.FunctionURLPermission{
-				Principal:      aws.String("*"),
-				PrincipalOrgID: aws.String("o-xxxxxxxxxx"),
-				SourceArn:      aws.String("arn:aws:cloudfront::123456789012:distribution/ABCDEFG12345678"),
-				SourceAccount:  aws.String("123456789012"),
+				Principal:      new("*"),
+				PrincipalOrgID: new("o-xxxxxxxxxx"),
+				SourceArn:      new("arn:aws:cloudfront::123456789012:distribution/ABCDEFG12345678"),
+				SourceAccount:  new("123456789012"),
 			},
 			p2: &lambroll.FunctionURLPermission{
-				Principal:      aws.String("*"),
-				PrincipalOrgID: aws.String("o-xxxxxxxxxx"),
-				SourceArn:      aws.String("arn:aws:cloudfront::123456789012:distribution/ABCDEFG12345678"),
-				SourceAccount:  aws.String("123456789012"),
+				Principal:      new("*"),
+				PrincipalOrgID: new("o-xxxxxxxxxx"),
+				SourceArn:      new("arn:aws:cloudfront::123456789012:distribution/ABCDEFG12345678"),
+				SourceAccount:  new("123456789012"),
 			},
 			want: true,
 		},
 		{
 			name: "different principal",
 			p1: &lambroll.FunctionURLPermission{
-				Principal: aws.String("*"),
+				Principal: new("*"),
 			},
 			p2: &lambroll.FunctionURLPermission{
-				Principal: aws.String("123456789012"),
+				Principal: new("123456789012"),
 			},
 			want: false,
 		},
 		{
 			name: "different principal org ID",
 			p1: &lambroll.FunctionURLPermission{
-				Principal:      aws.String("*"),
-				PrincipalOrgID: aws.String("o-aaaaaaaaaa"),
+				Principal:      new("*"),
+				PrincipalOrgID: new("o-aaaaaaaaaa"),
 			},
 			p2: &lambroll.FunctionURLPermission{
-				Principal:      aws.String("*"),
-				PrincipalOrgID: aws.String("o-bbbbbbbbbb"),
+				Principal:      new("*"),
+				PrincipalOrgID: new("o-bbbbbbbbbb"),
 			},
 			want: false,
 		},
 		{
 			name: "different source arn",
 			p1: &lambroll.FunctionURLPermission{
-				Principal: aws.String("*"),
-				SourceArn: aws.String("arn:aws:cloudfront::123456789012:distribution/AAA"),
+				Principal: new("*"),
+				SourceArn: new("arn:aws:cloudfront::123456789012:distribution/AAA"),
 			},
 			p2: &lambroll.FunctionURLPermission{
-				Principal: aws.String("*"),
-				SourceArn: aws.String("arn:aws:cloudfront::123456789012:distribution/BBB"),
+				Principal: new("*"),
+				SourceArn: new("arn:aws:cloudfront::123456789012:distribution/BBB"),
 			},
 			want: false,
 		},
@@ -174,7 +174,7 @@ func TestFunctionURLPermission_Equals(t *testing.T) {
 				Principal: nil,
 			},
 			p2: &lambroll.FunctionURLPermission{
-				Principal: aws.String(""),
+				Principal: new(""),
 			},
 			want: true,
 		},
@@ -203,8 +203,8 @@ func TestFunctionURLPermission_Equals(t *testing.T) {
 func TestFunctionURLPermission_AddPermissionInputs(t *testing.T) {
 	fc := &lambroll.FunctionURL{
 		Config: &lambroll.FunctionURLConfig{
-			FunctionName: aws.String("test-function"),
-			Qualifier:    aws.String("1"),
+			FunctionName: new("test-function"),
+			Qualifier:    new("1"),
 			AuthType:     "AWS_IAM",
 		},
 	}
@@ -217,8 +217,8 @@ func TestFunctionURLPermission_AddPermissionInputs(t *testing.T) {
 		{
 			name: "basic permission without actualSids",
 			permission: &lambroll.FunctionURLPermission{
-				Principal:      aws.String("*"),
-				PrincipalOrgID: aws.String("o-xxxxxxxxxx"),
+				Principal:      new("*"),
+				PrincipalOrgID: new("o-xxxxxxxxxx"),
 			},
 			validate: func(t *testing.T, perms []*lambda.AddPermissionInput) {
 				// Should return 2 permissions
@@ -281,7 +281,7 @@ func TestFunctionURLPermission_AddPermissionInputs(t *testing.T) {
 		{
 			name: "permission with actualSids",
 			permission: &lambroll.FunctionURLPermission{
-				Principal: aws.String("*"),
+				Principal: new("*"),
 				// actualSids would be set internally
 			},
 			validate: func(t *testing.T, perms []*lambda.AddPermissionInput) {
@@ -299,9 +299,9 @@ func TestFunctionURLPermission_AddPermissionInputs(t *testing.T) {
 		{
 			name: "permission with SourceArn and SourceAccount",
 			permission: &lambroll.FunctionURLPermission{
-				Principal:     aws.String("cloudfront.amazonaws.com"),
-				SourceArn:     aws.String("arn:aws:cloudfront::123456789012:distribution/ABCDEFG"),
-				SourceAccount: aws.String("123456789012"),
+				Principal:     new("cloudfront.amazonaws.com"),
+				SourceArn:     new("arn:aws:cloudfront::123456789012:distribution/ABCDEFG"),
+				SourceAccount: new("123456789012"),
 			},
 			validate: func(t *testing.T, perms []*lambda.AddPermissionInput) {
 				if len(perms) != 2 {
@@ -334,8 +334,8 @@ func TestFunctionURLPermission_AddPermissionInputs(t *testing.T) {
 func TestFunctionURLPermission_AddPermissionInputs_WithActualSids(t *testing.T) {
 	fc := &lambroll.FunctionURL{
 		Config: &lambroll.FunctionURLConfig{
-			FunctionName: aws.String("test-function"),
-			Qualifier:    aws.String("1"),
+			FunctionName: new("test-function"),
+			Qualifier:    new("1"),
 			AuthType:     "AWS_IAM",
 		},
 	}
@@ -344,7 +344,7 @@ func TestFunctionURLPermission_AddPermissionInputs_WithActualSids(t *testing.T) 
 	// Since actualSids is a private field, we test that StatementIds are deterministic
 	// by generating permissions multiple times and verifying the SIDs match
 	permission := &lambroll.FunctionURLPermission{
-		Principal: aws.String("*"),
+		Principal: new("*"),
 	}
 
 	perms1 := permission.AddPermissionInputs(fc)

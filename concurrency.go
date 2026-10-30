@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -54,7 +53,7 @@ func (app *App) deployReservedConcurrency(ctx context.Context, name string, opt 
 
 	var current *int32
 	res, err := app.lambda.GetFunctionConcurrency(ctx, &lambda.GetFunctionConcurrencyInput{
-		FunctionName: aws.String(name),
+		FunctionName: new(name),
 	})
 	if err != nil {
 		// the function may not exist yet only in dry-run
@@ -72,7 +71,7 @@ func (app *App) deployReservedConcurrency(ctx context.Context, name string, opt 
 			return nil
 		}
 		if _, err := app.lambda.PutFunctionConcurrency(ctx, &lambda.PutFunctionConcurrencyInput{
-			FunctionName:                 aws.String(name),
+			FunctionName:                 new(name),
 			ReservedConcurrentExecutions: desired,
 		}); err != nil {
 			return fmt.Errorf("failed to put function concurrency: %w", err)
@@ -83,7 +82,7 @@ func (app *App) deployReservedConcurrency(ctx context.Context, name string, opt 
 			return nil
 		}
 		if _, err := app.lambda.DeleteFunctionConcurrency(ctx, &lambda.DeleteFunctionConcurrencyInput{
-			FunctionName: aws.String(name),
+			FunctionName: new(name),
 		}); err != nil {
 			return fmt.Errorf("failed to delete function concurrency: %w", err)
 		}

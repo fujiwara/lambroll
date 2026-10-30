@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -34,7 +33,7 @@ func (app *App) Rollback(ctx context.Context, opt *RollbackOption) error {
 
 	res, err := app.lambda.GetAlias(ctx, &lambda.GetAliasInput{
 		FunctionName: fn.FunctionName,
-		Name:         aws.String(opt.Alias),
+		Name:         new(opt.Alias),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to get alias: %w", err)
@@ -83,8 +82,8 @@ VERSIONS:
 		slog.Debug("get function version", "version", v)
 		vs := strconv.FormatInt(v, 10)
 		res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
-			FunctionName: aws.String(name),
-			Qualifier:    aws.String(vs),
+			FunctionName: new(name),
+			Qualifier:    new(vs),
 		})
 		if err != nil {
 			if _, ok := errors.AsType[*types.ResourceNotFoundException](err); ok {
@@ -111,8 +110,8 @@ VERSIONS:
 func (app *App) deleteFunctionVersion(ctx context.Context, functionName, version string) error {
 	slog.Info("deleting function version", "version", version)
 	_, err := app.lambda.DeleteFunction(ctx, &lambda.DeleteFunctionInput{
-		FunctionName: aws.String(functionName),
-		Qualifier:    aws.String(version),
+		FunctionName: new(functionName),
+		Qualifier:    new(version),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to delete version: %w", err)

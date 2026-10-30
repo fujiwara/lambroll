@@ -27,7 +27,7 @@ var ignore = cmpopts.IgnoreUnexported(
 func TestLoadFunction(t *testing.T) {
 	t.Setenv("FUNCTION_NAME", "test")
 	app, err := lambroll.New(context.Background(), &lambroll.Option{
-		TFState: aws.String("test/terraform.tfstate"),
+		TFState: new("test/terraform.tfstate"),
 		PrefixedTFState: map[string]string{
 			"prefix1_": "test/terraform_1.tfstate",
 			"prefix2_": "test/terraform_2.tfstate",
@@ -48,14 +48,14 @@ func TestLoadFunction(t *testing.T) {
 	}
 	app.CallerIdentity().Resolver = func(_ context.Context) (*sts.GetCallerIdentityOutput, error) {
 		return &sts.GetCallerIdentityOutput{
-			Account: aws.String("123456789012"),
-			Arn:     aws.String("arn:aws:iam::123456789012:user/test-user"),
-			UserId:  aws.String("AIXXXXXXXXXXXXXXXXXX"),
+			Account: new("123456789012"),
+			Arn:     new("arn:aws:iam::123456789012:user/test-user"),
+			UserId:  new("AIXXXXXXXXXXXXXXXXXX"),
 		}, nil
 	}
 	expected := lambroll.Function{
 		Architectures: []types.Architecture{types.ArchitectureX8664},
-		Description:   aws.String("hello function"),
+		Description:   new("hello function"),
 		Environment: &types.Environment{
 			Variables: map[string]string{
 				"PREFIXED_TFSTATE_1": "arn:aws:iam::123456789012:role/test_lambda_role_1",
@@ -64,33 +64,33 @@ func TestLoadFunction(t *testing.T) {
 			},
 		},
 		EphemeralStorage: &types.EphemeralStorage{
-			Size: aws.Int32(1024),
+			Size: new(int32(1024)),
 		},
 		FileSystemConfigs: []types.FileSystemConfig{
 			{
-				Arn:            aws.String("arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a"),
-				LocalMountPath: aws.String("/mnt/lambda"),
+				Arn:            new("arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a"),
+				LocalMountPath: new("/mnt/lambda"),
 			},
 			{
-				Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
-				LocalMountPath: aws.String("/mnt/data"),
+				Arn:            new("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
+				LocalMountPath: new("/mnt/data"),
 				S3FilesConfig: &types.S3FilesConfig{
 					DirectS3Read: types.DirectS3ReadEnabled,
 				},
 			},
 		},
-		FunctionName: aws.String("test"),
-		Handler:      aws.String("index.js"),
+		FunctionName: new("test"),
+		Handler:      new("index.js"),
 		LoggingConfig: &types.LoggingConfig{
 			ApplicationLogLevel: "DEBUG",
-			LogGroup:            aws.String("/aws/lambda/test/json"),
+			LogGroup:            new("/aws/lambda/test/json"),
 			SystemLogLevel:      "INFO",
 			LogFormat:           types.LogFormatJson,
 		},
-		MemorySize: aws.Int32(128),
+		MemorySize: new(int32(128)),
 		Runtime:    types.RuntimeNodejs16x,
-		Role:       aws.String("arn:aws:iam::123456789012:role/test_lambda_role"),
-		Timeout:    aws.Int32(5),
+		Role:       new("arn:aws:iam::123456789012:role/test_lambda_role"),
+		Timeout:    new(int32(5)),
 		TracingConfig: &types.TracingConfig{
 			Mode: types.TracingModePassThrough,
 		},
@@ -121,12 +121,12 @@ func TestLoadFunction(t *testing.T) {
 
 func TestNewFunction(t *testing.T) {
 	conf := &types.FunctionConfiguration{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
+		FunctionName: new("hello"),
+		MemorySize:   new(int32(128)),
 		Runtime:      types.RuntimeNodejs18x,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:      new(int32(3)),
+		Handler:      new("index.handler"),
+		Role:         new("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 	}
 	tags := map[string]string{
 		"foo": "bar",
@@ -134,12 +134,12 @@ func TestNewFunction(t *testing.T) {
 	fn := lambroll.NewFunctionFrom(conf, nil, tags)
 
 	expected := lambroll.Function{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
+		FunctionName: new("hello"),
+		MemorySize:   new(int32(128)),
 		Runtime:      types.RuntimeNodejs18x,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:      new(int32(3)),
+		Handler:      new("index.handler"),
+		Role:         new("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		Tags:         tags,
 	}
 
@@ -153,31 +153,31 @@ func TestNewFunction(t *testing.T) {
 func TestNewFunctionWithS3FilesConfig(t *testing.T) {
 	fsConfigs := []types.FileSystemConfig{
 		{
-			Arn:            aws.String("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
-			LocalMountPath: aws.String("/mnt/data"),
+			Arn:            new("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
+			LocalMountPath: new("/mnt/data"),
 			S3FilesConfig: &types.S3FilesConfig{
 				DirectS3Read: types.DirectS3ReadDisabled,
 			},
 		},
 	}
 	conf := &types.FunctionConfiguration{
-		FunctionName:      aws.String("hello"),
-		MemorySize:        aws.Int32(128),
+		FunctionName:      new("hello"),
+		MemorySize:        new(int32(128)),
 		Runtime:           types.RuntimeNodejs18x,
-		Timeout:           aws.Int32(3),
-		Handler:           aws.String("index.handler"),
-		Role:              aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:           new(int32(3)),
+		Handler:           new("index.handler"),
+		Role:              new("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		FileSystemConfigs: fsConfigs,
 	}
 	fn := lambroll.NewFunctionFrom(conf, nil, nil)
 
 	expected := lambroll.Function{
-		FunctionName:      aws.String("hello"),
-		MemorySize:        aws.Int32(128),
+		FunctionName:      new("hello"),
+		MemorySize:        new(int32(128)),
 		Runtime:           types.RuntimeNodejs18x,
-		Timeout:           aws.Int32(3),
-		Handler:           aws.String("index.handler"),
-		Role:              aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:           new(int32(3)),
+		Handler:           new("index.handler"),
+		Role:              new("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		FileSystemConfigs: fsConfigs,
 	}
 
@@ -190,29 +190,29 @@ func TestNewFunctionWithS3FilesConfig(t *testing.T) {
 
 func TestNewFunctionWithDurableConfig(t *testing.T) {
 	conf := &types.FunctionConfiguration{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
+		FunctionName: new("hello"),
+		MemorySize:   new(int32(128)),
 		Runtime:      types.RuntimePython312,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:      new(int32(3)),
+		Handler:      new("index.handler"),
+		Role:         new("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		DurableConfig: &types.DurableConfig{
-			ExecutionTimeout:      aws.Int32(900),
-			RetentionPeriodInDays: aws.Int32(14),
+			ExecutionTimeout:      new(int32(900)),
+			RetentionPeriodInDays: new(int32(14)),
 		},
 	}
 	fn := lambroll.NewFunctionFrom(conf, nil, nil)
 
 	expected := lambroll.Function{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
+		FunctionName: new("hello"),
+		MemorySize:   new(int32(128)),
 		Runtime:      types.RuntimePython312,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:      new(int32(3)),
+		Handler:      new("index.handler"),
+		Role:         new("arn:aws:iam::123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		DurableConfig: &types.DurableConfig{
-			ExecutionTimeout:      aws.Int32(900),
-			RetentionPeriodInDays: aws.Int32(14),
+			ExecutionTimeout:      new(int32(900)),
+			RetentionPeriodInDays: new(int32(14)),
 		},
 	}
 
@@ -225,34 +225,34 @@ func TestNewFunctionWithDurableConfig(t *testing.T) {
 
 func TestNewFunctionWithResolvedS3Object(t *testing.T) {
 	conf := &types.FunctionConfiguration{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
+		FunctionName: new("hello"),
+		MemorySize:   new(int32(128)),
 		Runtime:      types.RuntimeNodejs18x,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:      new(int32(3)),
+		Handler:      new("index.handler"),
+		Role:         new("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 	}
 	code := &types.FunctionCodeLocation{
-		RepositoryType: aws.String("S3"),
+		RepositoryType: new("S3"),
 		ResolvedS3Object: &types.ResolvedS3Object{
-			S3Bucket:        aws.String("my-bucket"),
-			S3Key:           aws.String("function.zip"),
-			S3ObjectVersion: aws.String("version123"),
+			S3Bucket:        new("my-bucket"),
+			S3Key:           new("function.zip"),
+			S3ObjectVersion: new("version123"),
 		},
 	}
 	fn := lambroll.NewFunctionFrom(conf, code, nil)
 
 	expected := lambroll.Function{
-		FunctionName: aws.String("hello"),
-		MemorySize:   aws.Int32(128),
+		FunctionName: new("hello"),
+		MemorySize:   new(int32(128)),
 		Runtime:      types.RuntimeNodejs18x,
-		Timeout:      aws.Int32(3),
-		Handler:      aws.String("index.handler"),
-		Role:         aws.String("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
+		Timeout:      new(int32(3)),
+		Handler:      new("index.handler"),
+		Role:         new("arn:aws:iam::0123456789012:role/YOUR_LAMBDA_ROLE_NAME"),
 		Code: &types.FunctionCode{
-			S3Bucket:            aws.String("my-bucket"),
-			S3Key:               aws.String("function.zip"),
-			S3ObjectVersion:     aws.String("version123"),
+			S3Bucket:            new("my-bucket"),
+			S3Key:               new("function.zip"),
+			S3ObjectVersion:     new("version123"),
 			S3ObjectStorageMode: types.S3ObjectStorageModeReference,
 		},
 	}
@@ -268,9 +268,9 @@ func TestNormalizeCodeForDiff(t *testing.T) {
 	newRemote := func() *lambroll.Function {
 		return &lambroll.Function{
 			Code: &types.FunctionCode{
-				S3Bucket:            aws.String("my-bucket"),
-				S3Key:               aws.String("function.zip"),
-				S3ObjectVersion:     aws.String("version123"),
+				S3Bucket:            new("my-bucket"),
+				S3Key:               new("function.zip"),
+				S3ObjectVersion:     new("version123"),
 				S3ObjectStorageMode: types.S3ObjectStorageModeReference,
 			},
 		}
@@ -279,8 +279,8 @@ func TestNormalizeCodeForDiff(t *testing.T) {
 	t.Run("local does not pin S3ObjectVersion", func(t *testing.T) {
 		local := &lambroll.Function{
 			Code: &types.FunctionCode{
-				S3Bucket:            aws.String("my-bucket"),
-				S3Key:               aws.String("function.zip"),
+				S3Bucket:            new("my-bucket"),
+				S3Key:               new("function.zip"),
 				S3ObjectStorageMode: types.S3ObjectStorageModeReference,
 			},
 		}
@@ -294,9 +294,9 @@ func TestNormalizeCodeForDiff(t *testing.T) {
 	t.Run("local pins S3ObjectVersion", func(t *testing.T) {
 		local := &lambroll.Function{
 			Code: &types.FunctionCode{
-				S3Bucket:        aws.String("my-bucket"),
-				S3Key:           aws.String("function.zip"),
-				S3ObjectVersion: aws.String("version456"),
+				S3Bucket:        new("my-bucket"),
+				S3Key:           new("function.zip"),
+				S3ObjectVersion: new("version456"),
 			},
 		}
 		remote := newRemote()

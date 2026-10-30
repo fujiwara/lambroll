@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 )
@@ -69,7 +68,7 @@ func (app *App) prepareFunctionCodeForDeploy(ctx context.Context, opt *DeployOpt
 			}
 			if versionID != "" {
 				slog.Info("object created", "version", versionID)
-				fn.Code.S3ObjectVersion = aws.String(versionID)
+				fn.Code.S3ObjectVersion = new(versionID)
 			} else {
 				slog.Info("object created")
 				fn.Code.S3ObjectVersion = nil
@@ -127,8 +126,8 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 	if !opt.DryRun {
 		_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,
-			FunctionVersion: aws.String(version),
-			Name:            aws.String(opt.AliasName),
+			FunctionVersion: new(version),
+			Name:            new(opt.AliasName),
 		})
 		if err != nil {
 			return fmt.Errorf("failed to create alias: %w", err)

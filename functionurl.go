@@ -32,13 +32,13 @@ func (f *FunctionURL) Validate(functionName string) error {
 	if f.Config == nil {
 		return errors.New("function url 'Config' attribute is required")
 	}
-	f.Config.FunctionName = aws.String(functionName)
+	f.Config.FunctionName = new(functionName)
 	// fill default values
 	switch f.Config.AuthType {
 	case types.FunctionUrlAuthTypeNone:
 		if len(f.Permissions) == 0 {
 			f.Permissions = append(f.Permissions, &FunctionURLPermission{
-				Principal: aws.String("*"),
+				Principal: new("*"),
 			})
 		}
 	case types.FunctionUrlAuthTypeAwsIam:
@@ -55,7 +55,7 @@ func (fc *FunctionURL) RemovePermissionInput(sid string) *lambda.RemovePermissio
 	return &lambda.RemovePermissionInput{
 		FunctionName: fc.Config.FunctionName,
 		Qualifier:    fc.Config.Qualifier,
-		StatementId:  aws.String(sid),
+		StatementId:  new(sid),
 	}
 }
 
@@ -87,7 +87,7 @@ func (p *FunctionURLPermission) Equals(o *FunctionURLPermission) bool {
 func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.AddPermissionInput {
 	perms := []*lambda.AddPermissionInput{
 		{
-			Action:              aws.String("lambda:InvokeFunctionUrl"),
+			Action:              new("lambda:InvokeFunctionUrl"),
 			FunctionName:        fc.Config.FunctionName,
 			Qualifier:           fc.Config.Qualifier,
 			FunctionUrlAuthType: fc.Config.AuthType,
@@ -97,14 +97,14 @@ func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.A
 			SourceAccount:       p.SourceAccount,
 		},
 		{
-			Action:                aws.String("lambda:InvokeFunction"),
+			Action:                new("lambda:InvokeFunction"),
 			FunctionName:          fc.Config.FunctionName,
 			Qualifier:             fc.Config.Qualifier,
 			Principal:             p.Principal,
 			PrincipalOrgID:        p.PrincipalOrgID,
 			SourceArn:             p.SourceArn,
 			SourceAccount:         p.SourceAccount,
-			InvokedViaFunctionUrl: aws.Bool(true),
+			InvokedViaFunctionUrl: new(true),
 		},
 	}
 	ret := make([]*lambda.AddPermissionInput, 0, len(perms))
@@ -112,7 +112,7 @@ func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.A
 		// use actual StatementId if exists
 		if p.actualSids != nil {
 			if sid, ok := p.actualSids[aws.ToString(perm.Action)]; ok {
-				perm.StatementId = aws.String(sid)
+				perm.StatementId = new(sid)
 				ret = append(ret, perm)
 			} else {
 				// not exists on remote, do not add
@@ -123,7 +123,7 @@ func (p *FunctionURLPermission) AddPermissionInputs(fc *FunctionURL) []*lambda.A
 		// generate StatementId based on permission content
 		b, _ := marshalJSON(perm)
 		sid := fmt.Sprintf(SidFormat, sha1.Sum(b))
-		perm.StatementId = aws.String(sid)
+		perm.StatementId = new(sid)
 		ret = append(ret, perm)
 	}
 	return ret
@@ -150,20 +150,20 @@ func (ps *PolicyStatement) PrincipalString() *string {
 	}
 	switch v := ps.Principal.(type) {
 	case string:
-		return aws.String(v)
+		return new(v)
 	case map[string]any:
 		if v["AWS"] != nil {
 			switch vv := v["AWS"].(type) {
 			case string:
 				if a, err := arn.Parse(vv); err == nil {
-					return aws.String(a.AccountID)
+					return new(a.AccountID)
 				}
-				return aws.String(vv)
+				return new(vv)
 			}
 		} else if v["Service"] != nil {
 			switch vv := v["Service"].(type) {
 			case string:
-				return aws.String(vv)
+				return new(vv)
 			}
 		}
 	}
@@ -196,7 +196,7 @@ func (ps *PolicyStatement) PrincipalOrgID() *string {
 		return nil
 	}
 	if v, ok := mm["aws:PrincipalOrgID"].(string); ok {
-		return aws.String(v)
+		return new(v)
 	}
 	return nil
 }
@@ -220,7 +220,7 @@ func (ps *PolicyStatement) SourceAccount() *string {
 		return nil
 	}
 	if v, ok := mm["aws:SourceAccount"].(string); ok {
-		return aws.String(v)
+		return new(v)
 	}
 	return nil
 }
@@ -251,7 +251,7 @@ func (ps *PolicyStatement) SourceArn() *string {
 		return nil
 	}
 	if v, ok := sourceArn.(string); ok {
-		return aws.String(v)
+		return new(v)
 	}
 	return nil
 }
