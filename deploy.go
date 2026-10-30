@@ -26,7 +26,7 @@ type DeployOption struct {
 	KeepVersions        int    `help:"Number of latest versions to keep. Older versions will be deleted. (Optional value: default 0)." default:"0" json:"keep_versions,omitempty"`
 	Ignore              string `help:"ignore fields by jq queries in function.json" default:"" json:"ignore,omitempty"`
 	FunctionURL         string `help:"path to function-url definition" default:"" env:"LAMBROLL_FUNCTION_URL" json:"function_url,omitempty"`
-	SkipConfiguration   bool   `help:"skip updating function configuration, deploy function code and aliases only" default:"false" json:"skip_configuration,omitempty"`
+	SkipConfiguration   bool   `help:"skip updating function configuration and tags" default:"false" json:"skip_configuration,omitempty"`
 	SkipFunction        bool   `help:"skip to deploy a function. deploy function-url and reserved concurrency only" default:"false" json:"skip_function,omitempty"`
 	ReservedConcurrency *int32 `help:"reserved concurrency of the function. -1 to remove" env:"LAMBROLL_RESERVED_CONCURRENCY" json:"reserved_concurrency,omitempty"`
 
