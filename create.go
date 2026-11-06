@@ -124,6 +124,9 @@ func (app *App) create(ctx context.Context, opt *DeployOption, fn *Function) err
 
 	logger.Info("creating alias", "name", opt.AliasName, "version", version)
 	if !opt.DryRun {
+		if err := app.waitForFunctionActive(ctx, *fn.FunctionName, version); err != nil {
+			return err
+		}
 		_, err := app.lambda.CreateAlias(ctx, &lambda.CreateAliasInput{
 			FunctionName:    fn.FunctionName,
 			FunctionVersion: new(version),

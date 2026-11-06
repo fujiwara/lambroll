@@ -178,6 +178,11 @@ func (app *App) Deploy(ctx context.Context, opt *DeployOption) error {
 
 	// update function aliases
 	if opt.Publish || opt.AliasToLatest {
+		if opt.Publish {
+			if err := app.waitForFunctionActive(ctx, *fn.FunctionName, newerVersion); err != nil {
+				return err
+			}
+		}
 		err := app.updateAliases(ctx, *fn.FunctionName, versionAlias{newerVersion, opt.AliasName})
 		if err != nil {
 			return err
@@ -354,6 +359,35 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 		}
 	}
 	return fmt.Errorf("max retries reached")
+}
+
+func (app *App) waitForFunctionActive(ctx context.Context, name, version string) error {
+	slog.Info("waiting for function version to be Active", "function", name, "version", version)
+	retryer := retryPolicy.Start(ctx)
+	for retryer.Continue() {
+		res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
+			FunctionName: new(name),
+			Qualifier:    new(version),
+		})
+		if err != nil {
+			return fmt.Errorf("failed to wait for function %s version %s to be Active: %w", name, version, err)
+		}
+		if res.Configuration == nil {
+			continue
+		}
+		state := res.Configuration.State
+		slog.Info("function version status", "function", name, "version", version, "state", state)
+		switch state {
+		case types.StateActive:
+			return nil
+		case types.StateFailed:
+			return fmt.Errorf("failed to wait for function %s version %s to be Active: state is Failed", name, version)
+		}
+	}
+	if err := retryer.Err(); err != nil {
+		return fmt.Errorf("failed to wait for function %s version %s to be Active: %w", name, version, err)
+	}
+	return fmt.Errorf("failed to wait for function %s version %s to be Active: max retries reached", name, version)
 }
 
 func (app *App) publishFunction(ctx context.Context, functionName string) error {
