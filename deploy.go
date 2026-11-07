@@ -8,8 +8,10 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/aereal/jsondiff"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
 	"github.com/itchyny/gojq"
@@ -361,33 +363,46 @@ func (app *App) waitForLastUpdateStatusSuccessful(ctx context.Context, name stri
 	return fmt.Errorf("max retries reached")
 }
 
+// publishedVersionActiveWaiterConfig controls waiting for a published version to be Active.
+// Activating a published version (e.g. SnapStart snapshot creation) may take much longer
+// than other function updates, so this uses a longer limit than retryPolicy.
+var publishedVersionActiveWaiterConfig = struct {
+	MinDelay time.Duration
+	MaxDelay time.Duration
+	MaxWait  time.Duration
+}{
+	MinDelay: 5 * time.Second,
+	MaxDelay: 10 * time.Second,
+	MaxWait:  1560 * time.Second, // same as the AWS waiter model (5s delay * 312 attempts)
+}
+
 func (app *App) waitForFunctionActive(ctx context.Context, name, version string) error {
 	slog.Info("waiting for function version to be Active", "function", name, "version", version)
-	retryer := retryPolicy.Start(ctx)
-	for retryer.Continue() {
-		res, err := app.lambda.GetFunction(ctx, &lambda.GetFunctionInput{
-			FunctionName: new(name),
-			Qualifier:    new(version),
-		})
-		if err != nil {
-			return fmt.Errorf("failed to wait for function %s version %s to be Active: %w", name, version, err)
+	cfg := publishedVersionActiveWaiterConfig
+	waiter := lambda.NewPublishedVersionActiveWaiter(app.lambda, func(o *lambda.PublishedVersionActiveWaiterOptions) {
+		o.MinDelay = cfg.MinDelay
+		o.MaxDelay = cfg.MaxDelay
+		o.Retryable = func(ctx context.Context, in *lambda.GetFunctionConfigurationInput, out *lambda.GetFunctionConfigurationOutput, err error) (bool, error) {
+			if err != nil {
+				return false, err
+			}
+			slog.Info("function version status", "function", name, "version", version, "state", out.State)
+			switch out.State {
+			case types.StateActive:
+				return false, nil
+			case types.StateFailed:
+				return false, fmt.Errorf("state is Failed: %s %s", out.StateReasonCode, aws.ToString(out.StateReason))
+			}
+			return true, nil
 		}
-		if res.Configuration == nil {
-			continue
-		}
-		state := res.Configuration.State
-		slog.Info("function version status", "function", name, "version", version, "state", state)
-		switch state {
-		case types.StateActive:
-			return nil
-		case types.StateFailed:
-			return fmt.Errorf("failed to wait for function %s version %s to be Active: state is Failed", name, version)
-		}
-	}
-	if err := retryer.Err(); err != nil {
+	})
+	if err := waiter.Wait(ctx, &lambda.GetFunctionConfigurationInput{
+		FunctionName: new(name),
+		Qualifier:    new(version),
+	}, cfg.MaxWait); err != nil {
 		return fmt.Errorf("failed to wait for function %s version %s to be Active: %w", name, version, err)
 	}
-	return fmt.Errorf("failed to wait for function %s version %s to be Active: max retries reached", name, version)
+	return nil
 }
 
 func (app *App) publishFunction(ctx context.Context, functionName string) error {

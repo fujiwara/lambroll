@@ -410,6 +410,8 @@ Flags:
     - If `--skip-configuration` is specified, skip to update the configuration and tags.
   - Create / Update function code
 - Create an alias to the published version when `--publish` (default).
+  - Before creating / updating the alias, lambroll waits for the published version to be `Active` (up to 26 minutes). For example, a version with [SnapStart](https://docs.aws.amazon.com/lambda/latest/dg/snapstart.html) stays `Pending` while its snapshot is being created.
+  - If the version becomes `Failed` or the wait times out, the deployment fails and the alias is not changed.
 
 ##### Ignore some configurations
 

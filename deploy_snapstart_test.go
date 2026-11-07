@@ -11,15 +11,23 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 func TestDeployWaitsForPublishedVersion(t *testing.T) {
 	originalPolicy := retryPolicy
-	t.Cleanup(func() { retryPolicy = originalPolicy })
-	// Exercise retry exhaustion without waiting through production backoff delays.
+	originalWaiter := publishedVersionActiveWaiterConfig
+	t.Cleanup(func() {
+		retryPolicy = originalPolicy
+		publishedVersionActiveWaiterConfig = originalWaiter
+	})
+	// Avoid waiting through production backoff delays.
 	retryPolicy.MinDelay = 0
 	retryPolicy.MaxDelay = 0
 	retryPolicy.MaxCount = 3
+	publishedVersionActiveWaiterConfig.MinDelay = 10 * time.Millisecond
+	publishedVersionActiveWaiterConfig.MaxDelay = 10 * time.Millisecond
+	publishedVersionActiveWaiterConfig.MaxWait = 100 * time.Millisecond
 	t.Setenv("AWS_ACCESS_KEY_ID", "test")
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "test")
 	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
@@ -39,8 +47,8 @@ func TestDeployWaitsForPublishedVersion(t *testing.T) {
 		{name: "failed snapshot preserves alias", state: "Failed", wantError: true},
 		{name: "failed snapshot prevents alias creation", create: true, state: "Failed", wantError: true},
 		{name: "cancellation preserves alias", state: "Pending", cancel: true, wantError: true},
-		{name: "retry exhaustion preserves alias", state: "Pending", exhaust: true, wantError: true},
-		{name: "retry exhaustion prevents alias creation", create: true, state: "Pending", exhaust: true, wantError: true},
+		{name: "wait timeout preserves alias", state: "Pending", exhaust: true, wantError: true},
+		{name: "wait timeout prevents alias creation", create: true, state: "Pending", exhaust: true, wantError: true},
 		{name: "no publish", noPublish: true},
 		{name: "dry run", dryRun: true},
 		{name: "create dry run", create: true, dryRun: true},
@@ -60,25 +68,27 @@ func TestDeployWaitsForPublishedVersion(t *testing.T) {
 				defer mu.Unlock()
 				w.Header().Set("Content-Type", "application/json")
 				switch {
-				case r.Method == http.MethodGet && r.URL.Path == "/2015-03-31/functions/snap-test":
-					qualifier := r.URL.Query().Get("Qualifier")
-					if qualifier != "" {
-						if qualifier != "42" {
-							t.Errorf("polled version %q, want published version 42", qualifier)
-						}
-						polls++
-						state := tt.state
-						if polls > 1 && state == "Pending" && !tt.exhaust {
-							state = "Active"
-						}
-						active = state == "Active"
-						if tt.cancel {
-							cancel()
-						}
-						// LastUpdateStatus can be Successful while SnapStart is Pending.
-						_ = json.NewEncoder(w).Encode(map[string]any{"Configuration": map[string]string{"State": state, "LastUpdateStatus": "Successful", "Version": "42"}})
-						return
+				case r.Method == http.MethodGet && r.URL.Path == "/2015-03-31/functions/snap-test/configuration":
+					if qualifier := r.URL.Query().Get("Qualifier"); qualifier != "42" {
+						t.Errorf("polled version %q, want published version 42", qualifier)
 					}
+					polls++
+					state := tt.state
+					if polls > 1 && state == "Pending" && !tt.exhaust {
+						state = "Active"
+					}
+					active = state == "Active"
+					if tt.cancel {
+						cancel()
+					}
+					conf := map[string]string{"State": state, "LastUpdateStatus": "Successful", "Version": "42"}
+					if state == "Failed" {
+						conf["StateReasonCode"] = "SnapStartTimeout"
+						conf["StateReason"] = "snapshot creation timed out"
+					}
+					// LastUpdateStatus can be Successful while SnapStart is Pending.
+					_ = json.NewEncoder(w).Encode(conf)
+				case r.Method == http.MethodGet && r.URL.Path == "/2015-03-31/functions/snap-test":
 					if tt.create && !created {
 						w.WriteHeader(http.StatusNotFound)
 						_, _ = w.Write([]byte(`{"__type":"ResourceNotFoundException"}`))
@@ -123,13 +133,17 @@ func TestDeployWaitsForPublishedVersion(t *testing.T) {
 			if tt.cancel && !errors.Is(err, context.Canceled) {
 				t.Fatalf("expected context cancellation, got %v", err)
 			}
-			if tt.exhaust && !strings.Contains(err.Error(), "max retries reached") {
-				t.Fatalf("expected retry exhaustion, got %v", err)
+			// The wait limit may expire between polls or during an in-flight request.
+			if tt.exhaust && !strings.Contains(err.Error(), "exceeded max wait time") && !errors.Is(err, context.DeadlineExceeded) {
+				t.Fatalf("expected wait timeout, got %v", err)
+			}
+			if tt.state == "Failed" && !strings.Contains(err.Error(), "SnapStartTimeout snapshot creation timed out") {
+				t.Fatalf("error must include the state reason: %v", err)
 			}
 			mu.Lock()
 			defer mu.Unlock()
-			if tt.exhaust && polls != retryPolicy.MaxCount {
-				t.Errorf("version checks = %d, want policy limit %d", polls, retryPolicy.MaxCount)
+			if tt.exhaust && polls < 2 {
+				t.Errorf("version checks = %d, want polling until timeout", polls)
 			}
 			wantAliases := 1
 			if tt.wantError || tt.noPublish || tt.dryRun {
