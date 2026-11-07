@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.6.1](https://github.com/fujiwara/lambroll/compare/v1.6.0...v1.6.1) - 2026-11-07
+
+- Bump github.com/go-jose/go-jose/v4 from 4.1.4 to 4.1.6 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/675
+- Wait for the published version to be Active before updating alias by @fujiwara in https://github.com/fujiwara/lambroll/pull/679
+- Wait for the published version to reach State: Active before creating or updating alias by @leodc in https://github.com/fujiwara/lambroll/pull/678
+- Update dependencies by @fujiwara in https://github.com/fujiwara/lambroll/pull/680
+
 ## [v1.6.0](https://github.com/fujiwara/lambroll/compare/v1.5.4...v1.6.0) - 2026-10-30
 
 - Require Go 1.26 by @fujiwara in https://github.com/fujiwara/lambroll/pull/663
