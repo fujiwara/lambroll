@@ -1,5 +1,15 @@
 # Changelog
 
+## [v1.6.2](https://github.com/fujiwara/lambroll/compare/v1.6.1...v1.6.2) - 2026-11-13
+
+- Use the AWS SDK HTTP client for init --download by @fujiwara in https://github.com/fujiwara/lambroll/pull/681
+- Accept RFC 3339 LastModified in versions by @fujiwara in https://github.com/fujiwara/lambroll/pull/683
+- ci: replace floci with AWS Emulator by @fujiwara in https://github.com/fujiwara/lambroll/pull/684
+- Add an end-to-end test against AWS Emulator by @fujiwara in https://github.com/fujiwara/lambroll/pull/685
+- Use nodejs26.x as the default runtime of init by @fujiwara in https://github.com/fujiwara/lambroll/pull/686
+- docs: add testing guidance for following new Lambda features by @fujiwara in https://github.com/fujiwara/lambroll/pull/687
+- Replace samber/lo with the standard library by @fujiwara in https://github.com/fujiwara/lambroll/pull/688
+
 ## [v1.6.1](https://github.com/fujiwara/lambroll/compare/v1.6.0...v1.6.1) - 2026-11-07
 
 - Bump github.com/go-jose/go-jose/v4 from 4.1.4 to 4.1.6 by @dependabot[bot] in https://github.com/fujiwara/lambroll/pull/675
