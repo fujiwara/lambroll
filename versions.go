@@ -112,9 +112,9 @@ func (app *App) Versions(ctx context.Context, opt *VersionsOption) error {
 	vos := make(versionsOutputs, 0, len(versions))
 	var latestVo versionsOutput
 	for _, v := range versions {
-		lm, err := time.Parse("2006-01-02T15:04:05.999-0700", *v.LastModified)
+		lm, err := parseLastModified(aws.ToString(v.LastModified))
 		if err != nil {
-			return fmt.Errorf("failed to parse last modified: %w", err)
+			return err
 		}
 		vo := versionsOutput{
 			Version:      *v.Version,
@@ -171,4 +171,23 @@ func (app *App) getAliases(ctx context.Context, name string) (map[string][]strin
 		}
 	}
 	return aliases, nil
+}
+
+// lastModifiedLayouts are the timestamp layouts accepted for LastModified.
+// Lambda returns "2006-01-02T15:04:05.999+0000", but compatible
+// implementations (e.g. emulators) may return RFC 3339 such as a "Z" suffix.
+var lastModifiedLayouts = []string{
+	"2006-01-02T15:04:05.999Z0700",
+	time.RFC3339Nano,
+}
+
+func parseLastModified(s string) (time.Time, error) {
+	var err error
+	for _, layout := range lastModifiedLayouts {
+		var t time.Time
+		if t, err = time.Parse(layout, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("failed to parse last modified: %w", err)
 }

@@ -59,3 +59,27 @@ func TestVersionsTable(t *testing.T) {
 		t.Errorf("Table mismatch: diff:%s", d)
 	}
 }
+
+func TestParseLastModified(t *testing.T) {
+	want := time.Date(2023, 8, 30, 3, 34, 56, 789000000, time.UTC)
+	for _, s := range []string{
+		"2023-08-30T03:34:56.789+0000", // Lambda
+		"2023-08-30T12:34:56.789+0900",
+		"2023-08-30T03:34:56.789Z",
+		"2023-08-30T12:34:56.789+09:00",
+	} {
+		got, err := lambroll.ParseLastModified(s)
+		if err != nil {
+			t.Errorf("failed to parse %q: %s", s, err)
+			continue
+		}
+		if !got.Equal(want) {
+			t.Errorf("unexpected time for %q: got %s, want %s", s, got, want)
+		}
+	}
+	for _, s := range []string{"", "2023-08-30", "invalid"} {
+		if _, err := lambroll.ParseLastModified(s); err == nil {
+			t.Errorf("parsing %q must fail", s)
+		}
+	}
+}
