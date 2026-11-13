@@ -394,3 +394,43 @@ func TestParseCLI(t *testing.T) {
 		})
 	}
 }
+
+func TestUniq(t *testing.T) {
+	tests := []struct {
+		in   []string
+		want []string
+	}{
+		{in: nil, want: []string{}},
+		{in: []string{}, want: []string{}},
+		{in: []string{"a", "b", "c"}, want: []string{"a", "b", "c"}},
+		{in: []string{"b", "a", "b", "c", "a"}, want: []string{"b", "a", "c"}},
+	}
+	for _, tt := range tests {
+		got := lambroll.Uniq(tt.in)
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Errorf("Uniq(%v) mismatch (-want +got):\n%s", tt.in, diff)
+		}
+	}
+}
+
+func TestMergeMaps(t *testing.T) {
+	tests := []struct {
+		a, b map[string]string
+		want map[string]string
+	}{
+		{a: nil, b: nil, want: map[string]string{}},
+		{a: map[string]string{"x": "1"}, b: nil, want: map[string]string{"x": "1"}},
+		{a: nil, b: map[string]string{"y": "2"}, want: map[string]string{"y": "2"}},
+		{
+			a:    map[string]string{"x": "1", "y": "1"},
+			b:    map[string]string{"y": "2", "z": "2"},
+			want: map[string]string{"x": "1", "y": "2", "z": "2"},
+		},
+	}
+	for _, tt := range tests {
+		got := lambroll.MergeMaps(tt.a, tt.b)
+		if diff := cmp.Diff(tt.want, got); diff != "" {
+			t.Errorf("MergeMaps(%v, %v) mismatch (-want +got):\n%s", tt.a, tt.b, diff)
+		}
+	}
+}
