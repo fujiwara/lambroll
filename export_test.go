@@ -29,6 +29,7 @@ var (
 	FormatReservedConcurrency   = formatReservedConcurrency
 	Download                    = download
 	NewAwsConfig                = newAwsConfig
+	ParseLastModified           = parseLastModified
 )
 
 type ConcurrencyAction = concurrencyAction
