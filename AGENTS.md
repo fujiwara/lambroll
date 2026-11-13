@@ -89,6 +89,7 @@ make clean
 
 - Unit tests alongside each .go file (e.g., archive_test.go, deploy_test.go)
 - test/ directory contains integration test fixtures
+- `test/e2e.sh` runs an end-to-end scenario (deploy, diff, status, invoke, versions, rollback, init, delete) against an [AWS Emulator](https://github.com/aws/aws-emulator) endpoint. CI runs it; locally, start the emulator and set `AWS_CA_BUNDLE` to its `ca.pem`
 
 ## Git Workflow
 

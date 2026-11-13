@@ -99,3 +99,6 @@ jobs:
           AWS_ACCESS_KEY_ID: dummy
           AWS_SECRET_ACCESS_KEY: dummy
           WORLD: a
+
+      - name: e2e test
+        run: test/e2e.sh
