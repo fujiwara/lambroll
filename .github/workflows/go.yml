@@ -13,11 +13,10 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
-    services:
-      floci:
-        image: floci/floci@sha256:4060e0f8ded3cf0f53bde641ce6b8d2ec8a6355d936cc856ac806cc88dda1a49 # 1.5.21
-        ports:
-          - 4566:4566
+    env:
+      # https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/versions.json
+      AWS_EMULATOR_VERSION: "1.0.342"
+      AWS_EMULATOR_KEY_FINGERPRINT: 98BCF336A3BE53B734E967C52E5BF49BD940F624
 
     steps:
       - name: Check out code into the Go module directory
@@ -39,13 +38,39 @@ jobs:
         env:
           TZ: Asia/Tokyo
 
+      - name: Start AWS Emulator
+        run: |
+          base=https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS
+          deb="aws-emulator_${AWS_EMULATOR_VERSION}-1_amd64.deb"
+          cd "$RUNNER_TEMP"
+          curl -fsSLO "$base/$deb"
+          curl -fsSLO "$base/$deb.sig"
+          curl -fsSLo aws-emulator-key.asc https://downloads.aws.com/keys/gpg/current.asc
+          export GNUPGHOME="$(mktemp -d)"
+          gpg --batch --quiet --import aws-emulator-key.asc
+          gpg --batch --status-fd 1 --verify "$deb.sig" "$deb" \
+            | grep -q "^\[GNUPG:\] VALIDSIG .* ${AWS_EMULATOR_KEY_FINGERPRINT}\$"
+          sudo apt-get install -y "./$deb"
+          aws-emulator -v
+          nohup aws-emulator --telemetry off --auth off > aws-emulator.log 2>&1 &
+          ca="$HOME/.aws/emulator/9297/ca.pem"
+          for _ in $(seq 1 30); do
+            if curl -fs --cacert "$ca" https://127.0.0.1:9297/__admin/health; then
+              echo "AWS_CA_BUNDLE=$ca" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          cat aws-emulator.log
+          exit 1
+
       - name: create test
         run: |
           make
           ./cmd/lambroll/lambroll deploy \
             --function test/function.json \
             --src test/src \
-            --endpoint http://127.0.0.1:4566 \
+            --endpoint https://127.0.0.1:9297 \
             --tfstate test/terraform.tfstate \
             --prefixed-tfstate "prefix1_=test/terraform_1.tfstate" \
             --prefixed-tfstate "prefix2_=test/terraform_2.tfstate" \
@@ -63,7 +88,7 @@ jobs:
           ./cmd/lambroll/lambroll deploy \
             --function test/function.json \
             --src test/src \
-            --endpoint http://127.0.0.1:4566 \
+            --endpoint https://127.0.0.1:9297 \
             --tfstate test/terraform.tfstate \
             --prefixed-tfstate "prefix1_=test/terraform_1.tfstate" \
             --prefixed-tfstate "prefix2_=test/terraform_2.tfstate" \
