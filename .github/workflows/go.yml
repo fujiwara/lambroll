@@ -17,6 +17,9 @@ jobs:
       # https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/versions.json
       AWS_EMULATOR_VERSION: "1.0.342"
       AWS_EMULATOR_KEY_FINGERPRINT: 98BCF336A3BE53B734E967C52E5BF49BD940F624
+      # https://github.com/k1LoW/runn/releases
+      RUNN_VERSION: v1.11.1
+      RUNN_SHA256: 3bdb4a48368ba45831c69719f0c72228c7c8405338ff27f7369095ccf07ea248
 
     steps:
       - name: Check out code into the Go module directory
@@ -99,3 +102,19 @@ jobs:
           AWS_ACCESS_KEY_ID: dummy
           AWS_SECRET_ACCESS_KEY: dummy
           WORLD: a
+
+      - name: Install runn
+        run: |
+          cd "$RUNNER_TEMP"
+          tarball="runn_${RUNN_VERSION}_linux_amd64.tar.gz"
+          curl -fsSLO "https://github.com/k1LoW/runn/releases/download/${RUNN_VERSION}/${tarball}"
+          echo "${RUNN_SHA256}  ${tarball}" | sha256sum -c -
+          mkdir runn && tar -xzf "$tarball" -C runn
+          echo "$RUNNER_TEMP/runn" >> "$GITHUB_PATH"
+
+      - name: e2e test
+        run: runn run test/e2e.yml --scopes run:exec --verbose < /dev/null
+        env:
+          AWS_REGION: ap-northeast-1
+          AWS_ACCESS_KEY_ID: dummy
+          AWS_SECRET_ACCESS_KEY: dummy

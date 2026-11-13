@@ -1,0 +1,161 @@
+# End-to-end test of lambroll against an AWS emulator.
+#
+#   runn run test/e2e.yml --scopes run:exec
+#
+# Every lambroll call passes --endpoint, so this never runs against real AWS.
+# Use `--var endpoint:URL` for another endpoint. For an HTTPS endpoint with a
+# self-signed certificate, set AWS_CA_BUNDLE.
+desc: lambroll function lifecycle
+vars:
+  endpoint: https://127.0.0.1:9297
+  src: test/e2e/src
+  lambroll: cmd/lambroll/lambroll --function test/e2e/function.json --no-color
+steps:
+  cleanup_before:
+    desc: delete a function left by a previous run
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} delete --force || true"
+
+  deploy_create:
+    desc: deploy creates the function
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} deploy --src {{ vars.src }}"
+      env:
+        E2E_MESSAGE: v1
+    test: current.exit_code == 0
+
+  diff_after_create:
+    desc: diff shows no differences after deploy
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} diff --src {{ vars.src }} --code --exit-code"
+      env:
+        E2E_MESSAGE: v1
+    test: current.exit_code == 0
+
+  status:
+    desc: status shows the function, and the alias current points to version 1
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} status --qualifier current --output json"
+    test: |
+      current.exit_code == 0
+      && compare(pick(fromJSON(current.stdout), "FunctionName", "State", "Runtime", "Version"), {
+        FunctionName: "lambroll-e2e",
+        State: "Active",
+        Runtime: "nodejs26.x",
+        Version: "1",
+      })
+
+  invoke:
+    desc: invoke returns the payload of the function
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} invoke --qualifier current --payload '{\"key\":\"value\"}'"
+    test: |
+      current.exit_code == 0
+      && compare(fromJSON(current.stdout), {message: "v1", event: {key: "value"}})
+
+  diff_changed:
+    desc: diff detects a changed configuration
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} diff --src {{ vars.src }} --exit-code"
+      env:
+        E2E_MESSAGE: v2
+    test: current.exit_code == 2
+
+  deploy_update:
+    desc: deploy updates the function
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} deploy --src {{ vars.src }}"
+      env:
+        E2E_MESSAGE: v2
+    test: current.exit_code == 0
+
+  diff_after_update:
+    desc: diff shows no differences after the update
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} diff --src {{ vars.src }} --code --exit-code"
+      env:
+        E2E_MESSAGE: v2
+    test: current.exit_code == 0
+
+  versions_after_update:
+    desc: versions lists version 1 and 2, and the alias current points to version 2
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} versions --output json"
+    test: |
+      current.exit_code == 0
+      && map(fromJSON(current.stdout), .Version) == ["1", "2", "$LATEST"]
+      && fromJSON(current.stdout)[1].Aliases == ["current"]
+
+  invoke_after_update:
+    desc: invoke runs the updated function
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} invoke --qualifier current --payload '{}'"
+    test: current.exit_code == 0 && fromJSON(current.stdout).message == "v2"
+
+  rollback:
+    desc: rollback moves the alias current back
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} rollback"
+    test: current.exit_code == 0
+
+  status_after_rollback:
+    desc: the alias current points to version 1 again
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} status --qualifier current --output json"
+    test: current.exit_code == 0 && fromJSON(current.stdout).Version == "1"
+
+  invoke_after_rollback:
+    desc: invoke runs the previous version
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} invoke --qualifier current --payload '{}'"
+    test: current.exit_code == 0 && fromJSON(current.stdout).message == "v1"
+
+  deploy_keep_versions:
+    desc: deploy --keep-versions deletes older versions
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} deploy --src {{ vars.src }} --keep-versions 1"
+      env:
+        E2E_MESSAGE: v3
+    test: current.exit_code == 0
+
+  versions_after_keep_versions:
+    desc: only version 3 remains, and the alias current points to it
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} versions --output json"
+    test: |
+      current.exit_code == 0
+      && map(fromJSON(current.stdout), .Version) == ["3", "$LATEST"]
+      && fromJSON(current.stdout)[0].Aliases == ["current"]
+
+  init_download:
+    desc: init --download fetches the function definition and code
+    exec:
+      command: |
+        lambroll="$PWD/cmd/lambroll/lambroll"
+        dir=$(mktemp -d)
+        trap 'rm -rf "$dir"' EXIT
+        (cd "$dir" && "$lambroll" --endpoint {{ vars.endpoint }} --no-color init --function-name lambroll-e2e --download --unzip --src src) >&2
+        cmp {{ vars.src }}/index.js "$dir/src/index.js" >&2
+        cat "$dir/function.json"
+    test: |
+      current.exit_code == 0
+      && fromJSON(current.stdout).FunctionName == "lambroll-e2e"
+      && fromJSON(current.stdout).Environment.Variables.MESSAGE == "v3"
+
+  delete:
+    desc: delete removes the function
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} delete --force"
+    test: current.exit_code == 0
+
+  status_after_delete:
+    desc: status fails for the deleted function
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} status"
+    test: current.exit_code == 1
+
+  cleanup_after:
+    desc: delete the function even if a step failed
+    defer: true
+    exec:
+      command: "{{ vars.lambroll }} --endpoint {{ vars.endpoint }} delete --force || true"

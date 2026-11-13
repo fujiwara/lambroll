@@ -1,0 +1,17 @@
+{
+    "Architectures": [
+        "x86_64"
+    ],
+    "Description": "lambroll e2e test",
+    "Environment": {
+        "Variables": {
+            "MESSAGE": "{{ env `E2E_MESSAGE` `v1` }}"
+        }
+    },
+    "FunctionName": "{{ env `E2E_FUNCTION_NAME` `lambroll-e2e` }}",
+    "Handler": "index.handler",
+    "MemorySize": 128,
+    "Role": "arn:aws:iam::{{ caller_identity.Account }}:role/lambroll-e2e",
+    "Runtime": "nodejs26.x",
+    "Timeout": 5
+}
