@@ -752,7 +752,7 @@ function.json is a definition for Lambda function. JSON structure is based from 
   "Handler": "index.js",
   "MemorySize": 128,
   "Role": "arn:aws:iam::123456789012:role/hello_lambda_function",
-  "Runtime": "nodejs18.x",
+  "Runtime": "nodejs26.x",
   "Tags": {
     "Env": "dev"
   },
@@ -805,7 +805,7 @@ lambroll also can read function.jsonnet as [Jsonnet](https://jsonnet.org/) forma
   Handler: 'index.handler',
   MemorySize: std.extVar('memorySize'),
   Role: 'arn:aws:iam::%s:role/lambda_role' % [ std.extVar('accountID') ],
-  Runtime: 'nodejs20.x',
+  Runtime: 'nodejs26.x',
 }
 ```
 
@@ -1012,7 +1012,7 @@ data "aws_iam_role" "lambda" {
   "Handler": "index.js",
   "MemorySize": 128,
   "Role": "{{ tfstate `data.aws_iam_role.lambda.arn` }}",
-  "Runtime": "nodejs20.x",
+  "Runtime": "nodejs26.x",
   "Timeout": 5,
   "TracingConfig": {
     "Mode": "PassThrough"
@@ -1039,7 +1039,7 @@ local tfstate = std.native('tfstate');
   Handler: 'index.js',
   MemorySize: 128,
   Role: tfstate('data.aws_iam_role.lambda.arn'),
-  Runtime: 'nodejs20.x',
+  Runtime: 'nodejs26.x',
   Timeout: 5,
   TracingConfig: {
     Mode: 'PassThrough',

@@ -44,7 +44,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 			c = &types.FunctionConfiguration{
 				FunctionName: opt.FunctionName,
 				MemorySize:   new(int32(128)),
-				Runtime:      types.RuntimeNodejs18x,
+				Runtime:      types.RuntimeNodejs26x,
 				Timeout:      new(int32(3)),
 				Handler:      new("index.handler"),
 				Role: new(
