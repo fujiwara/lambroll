@@ -5,10 +5,10 @@
     "Description": "lambroll e2e test",
     "Environment": {
         "Variables": {
-            "MESSAGE": "{{ must_env `E2E_MESSAGE` }}"
+            "MESSAGE": "{{ env `E2E_MESSAGE` `v1` }}"
         }
     },
-    "FunctionName": "{{ must_env `E2E_FUNCTION_NAME` }}",
+    "FunctionName": "{{ env `E2E_FUNCTION_NAME` `lambroll-e2e` }}",
     "Handler": "index.handler",
     "MemorySize": 128,
     "Role": "arn:aws:iam::{{ caller_identity.Account }}:role/lambroll-e2e",
