@@ -91,7 +91,7 @@ step "status"
 status=$(lambroll status --output json)
 assert_eq "FunctionName" "$E2E_FUNCTION_NAME" "$(jq -r .FunctionName <<<"$status")"
 assert_eq "State" Active "$(jq -r .State <<<"$status")"
-assert_eq "Runtime" nodejs22.x "$(jq -r .Runtime <<<"$status")"
+assert_eq "Runtime" nodejs26.x "$(jq -r .Runtime <<<"$status")"
 
 step "invoke"
 payload=$(lambroll invoke --qualifier current --payload '{"key":"value"}' | jq -c 'select(.message)')

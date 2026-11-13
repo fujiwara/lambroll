@@ -12,6 +12,6 @@
     "Handler": "index.handler",
     "MemorySize": 128,
     "Role": "arn:aws:iam::{{ caller_identity.Account }}:role/lambroll-e2e",
-    "Runtime": "nodejs22.x",
+    "Runtime": "nodejs26.x",
     "Timeout": 5
 }
