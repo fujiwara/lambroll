@@ -68,10 +68,6 @@ func TestLoadFunction(t *testing.T) {
 		},
 		FileSystemConfigs: []types.FileSystemConfig{
 			{
-				Arn:            new("arn:aws:elasticfilesystem:ap-northeast-1:123456789012:access-point/fsap-04fc0858274e7dd9a"),
-				LocalMountPath: new("/mnt/lambda"),
-			},
-			{
 				Arn:            new("arn:aws:s3files:ap-northeast-1:123456789012:file-system/fs-0a975615cfccfa09f/access-point/fsap-05b7f172fa3e59ee8"),
 				LocalMountPath: new("/mnt/data"),
 				S3FilesConfig: &types.S3FilesConfig{
