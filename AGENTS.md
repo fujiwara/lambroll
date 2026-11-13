@@ -91,6 +91,15 @@ make clean
 - test/ directory contains integration test fixtures
 - `test/e2e.yml` is a [runn](https://github.com/k1LoW/runn) runbook of an end-to-end scenario (deploy, diff, status, invoke, versions, rollback, init, delete) against an [AWS Emulator](https://github.com/aws/aws-emulator) endpoint. CI runs it; locally, start the emulator, set `AWS_CA_BUNDLE` to its `ca.pem`, and run `runn run test/e2e.yml --scopes run:exec`
 
+### Following new Lambda features
+
+The AWS Emulator version is pinned by `AWS_EMULATOR_VERSION` in `.github/workflows/go.yml`. Bumping the AWS SDK alone does not affect the emulator tests, but supporting a new Lambda feature does:
+
+- An emulator older than the feature **silently ignores unknown request fields** (the request succeeds and the field is dropped), so CI can pass without testing anything. Unknown enum values (e.g. a new runtime) are rejected with `ValidationException`.
+- When adding support for a new field, add it to `test/e2e/function.json` and bump `AWS_EMULATOR_VERSION` in the same PR. The `diff --exit-code` steps after deploy fail if the emulator dropped the field, which proves it round-trips.
+- If the latest emulator does not support the feature yet, keep the field out of the fixtures deployed to the emulator and cover it with unit tests only. Note that `test/function.json` is shared by the unit tests and the CI deploy steps.
+- Available emulator versions: https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/versions.json
+
 ## Git Workflow
 
 - **The default branch is `v1`** - base feature branches on `v1` and open PRs against it. The `main` branch is outdated; do not use it as a base or diff target.
