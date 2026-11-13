@@ -11,6 +11,8 @@ var (
 	ExpandExcludeFile           = expandExcludeFile
 	LoadZipArchive              = loadZipArchive
 	MergeTags                   = mergeTags
+	Uniq                        = uniq[string]
+	MergeMaps                   = mergeMaps[string, string]
 	FillDefaultValues           = fillDefaultValues
 	JSONStr                     = jsonStr
 	MarshalJSON                 = marshalJSON

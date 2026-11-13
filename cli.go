@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"maps"
 	"os"
 	"strings"
 
 	"github.com/alecthomas/kong"
 	"github.com/fatih/color"
 	"github.com/fujiwara/sloghandler"
-	"github.com/samber/lo"
 )
 
 type Option struct {
@@ -182,17 +182,17 @@ func ParseCLI(args []string) (string, *CLIOptions, func(), error) {
 	if err != nil {
 		return "", nil, nil, fmt.Errorf("failed to parse args: %w", err)
 	}
-	opts.Envfile = lo.Uniq(envfiles) // envfiles are parsed before, so it's safe to overwrite
+	opts.Envfile = uniq(envfiles) // envfiles are parsed before, so it's safe to overwrite
 
 	// Merge ext_str and ext_code from option file with CLI args
 	// CLI args take precedence over option file values
 	if defaultOpt != nil {
 		defaultOpt.applyLegacyExtVars() // accept deprecated extstr/extcode keys
 		if defaultOpt.ExtStr != nil || opts.ExtStr != nil {
-			opts.ExtStr = lo.Assign(defaultOpt.ExtStr, opts.ExtStr)
+			opts.ExtStr = mergeMaps(defaultOpt.ExtStr, opts.ExtStr)
 		}
 		if defaultOpt.ExtCode != nil || opts.ExtCode != nil {
-			opts.ExtCode = lo.Assign(defaultOpt.ExtCode, opts.ExtCode)
+			opts.ExtCode = mergeMaps(defaultOpt.ExtCode, opts.ExtCode)
 		}
 	}
 
@@ -297,4 +297,29 @@ func dispatchCLI(ctx context.Context, sub string, usage func(), opts *CLIOptions
 		usage()
 	}
 	return nil
+}
+
+// uniq returns a new slice without duplicated elements.
+// The order of the first occurrences is preserved.
+func uniq[T comparable](s []T) []T {
+	result := make([]T, 0, len(s))
+	seen := make(map[T]struct{}, len(s))
+	for _, v := range s {
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		result = append(result, v)
+	}
+	return result
+}
+
+// mergeMaps returns a new map merged from the given maps.
+// Values in later maps take precedence.
+func mergeMaps[K comparable, V any](ms ...map[K]V) map[K]V {
+	result := make(map[K]V)
+	for _, m := range ms {
+		maps.Copy(result, m)
+	}
+	return result
 }

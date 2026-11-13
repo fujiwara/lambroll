@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/samber/lo"
 )
 
 var (
@@ -402,7 +401,17 @@ func (app *App) calcFunctionURLPermissionsDiff(ctx context.Context, fc *Function
 	}
 
 	// calculate difference
-	removeSids, addSids := lo.Difference(lo.Keys(remote), lo.Keys(local))
+	var removeSids, addSids []string
+	for sid := range remote {
+		if _, ok := local[sid]; !ok {
+			removeSids = append(removeSids, sid)
+		}
+	}
+	for sid := range local {
+		if _, ok := remote[sid]; !ok {
+			addSids = append(addSids, sid)
+		}
+	}
 	if len(removeSids) == 0 && len(addSids) == 0 {
 		slog.Debug("no changes in permissions")
 		return nil, nil, nil

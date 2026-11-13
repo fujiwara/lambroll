@@ -5,11 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 	"github.com/aws/aws-sdk-go-v2/service/lambda/types"
-	"github.com/samber/lo"
 )
 
 func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption) error {
@@ -34,12 +35,10 @@ func (app *App) updateTags(ctx context.Context, fn *Function, opt *DeployOption)
 
 	setTags, removeTagKeys := mergeTags(tags.Tags, fn.Tags)
 	// ignore AWS managed tags because they are not allowed to be modified
-	setTags = lo.OmitBy(setTags, func(tag string, _ string) bool {
+	maps.DeleteFunc(setTags, func(tag string, _ string) bool {
 		return isAWSManagedTag(tag)
 	})
-	removeTagKeys = lo.Reject(removeTagKeys, func(tag string, _ int) bool {
-		return isAWSManagedTag(tag)
-	})
+	removeTagKeys = slices.DeleteFunc(removeTagKeys, isAWSManagedTag)
 
 	if len(setTags) == 0 && len(removeTagKeys) == 0 {
 		logger.Debug("no need to update tags (unchanged)")
