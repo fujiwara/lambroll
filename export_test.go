@@ -27,6 +27,8 @@ var (
 	ValidateReservedConcurrency = validateReservedConcurrency
 	PlanReservedConcurrency     = planReservedConcurrency
 	FormatReservedConcurrency   = formatReservedConcurrency
+	Download                    = download
+	NewAwsConfig                = newAwsConfig
 )
 
 type ConcurrencyAction = concurrencyAction
