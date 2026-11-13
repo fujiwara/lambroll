@@ -91,7 +91,7 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 
 	if (opt.DownloadZip || opt.Unzip) && res != nil && res.Code != nil && aws.ToString(res.Code.RepositoryType) == "S3" {
 		slog.Info("downloading file", "file", FunctionZipFilename)
-		if err := download(ctx, *res.Code.Location, FunctionZipFilename); err != nil {
+		if err := download(ctx, app.awsConfig.HTTPClient, *res.Code.Location, FunctionZipFilename); err != nil {
 			return err
 		}
 		if opt.Unzip {
@@ -140,12 +140,17 @@ func (app *App) Init(ctx context.Context, opt *InitOption) error {
 	return nil
 }
 
-func download(ctx context.Context, url, path string) error {
+// download fetches url into path. It uses the HTTP client of the AWS SDK
+// config so that SDK settings such as AWS_CA_BUNDLE are applied.
+func download(ctx context.Context, client aws.HTTPClient, url, path string) error {
+	if client == nil {
+		client = http.DefaultClient
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return fmt.Errorf("failed to new request: %w", err)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to get %s: %w", url, err)
 	}
