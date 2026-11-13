@@ -84,7 +84,7 @@ func TestLoadFunction(t *testing.T) {
 			LogFormat:           types.LogFormatJson,
 		},
 		MemorySize: new(int32(128)),
-		Runtime:    types.RuntimeNodejs16x,
+		Runtime:    types.RuntimeNodejs26x,
 		Role:       new("arn:aws:iam::123456789012:role/test_lambda_role"),
 		Timeout:    new(int32(5)),
 		TracingConfig: &types.TracingConfig{

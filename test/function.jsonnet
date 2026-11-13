@@ -44,7 +44,7 @@ local timeout = std.extVar("timeout");
   },
   MemorySize: memory_size,
   Role: tfstate('data.aws_iam_role.lambda.arn'),
-  Runtime: 'nodejs16.x',
+  Runtime: 'nodejs26.x',
   Timeout: timeout,
   TracingConfig: {
     Mode: 'PassThrough',
